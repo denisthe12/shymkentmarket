@@ -109,7 +109,7 @@ COMMIT;`)
 			t.Fatal("fixture store baskets differ")
 		}
 		for _, basket := range dashboard.Baskets {
-			if len(basket.Items) != 5 || basket.Items[0].CategorySlug != "basket-milk" || basket.Items[4].CategoryName != "Масло подсолнечное 0,8–1 л" {
+			if len(basket.Items) != 5 || basket.Items[0].CategorySlug != "basket-milk" || basket.Items[4].CategoryName != "Лапша Доширак 120 г" {
 				t.Fatal("demo basket slug/label parity")
 			}
 		}

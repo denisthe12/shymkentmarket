@@ -28,7 +28,7 @@ const dashboardSQL = `WITH current_snapshot AS (
  (2,'basket-pasta','Макароны 400 г','groats','weightGrams',400,400,'^(макароны|спагетти)'),
  (3,'basket-rice','Рис 800 г','groats','weightGrams',800,800,'^рис '),
  (4,'basket-yogurt','Йогурт Fruttis 115 г','dairy','weightGrams',115,115,'fruttis'),
- (5,'basket-oil','Масло подсолнечное 0,8–1 л','oil','volumeMl',800,1000,'подсолнеч')
+ (5,'basket-noodles','Лапша Доширак 120 г','groats','weightGrams',120,120,'доширак')
 ), candidates AS (
  SELECT u."storeId",slots.ord,u.id,u.name,u.price,
  row_number() OVER (PARTITION BY u."storeId",slots.ord ORDER BY u.price,u.id COLLATE "C") choice

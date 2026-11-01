@@ -43,26 +43,26 @@ test('demo basket matches category, size range and name pattern per store', () =
     product('rice-noodle', 'Рисовая лапша 800 г', 'groats', { weightGrams: 800 }, [offer('DINA', 1)]),
     product('yogurt', 'Йогурт FRUTTIS 115 г', 'dairy', { weightGrams: 115 },
       [offer('DINA', 231), offer('DANA', 257), offer('FIX_PRICE', 249)]),
-    product('oil-08', 'Масло подсолнечное 0.8 л', 'oil', { volumeMl: 800 }, [offer('DINA', 745)]),
-    product('oil-09', 'Масло подсолнечное 0,9 л', 'oil', { volumeMl: 900 }, [offer('FIX_PRICE', 799)]),
-    product('oil-1l', 'Масло подсолнечное 1 л', 'oil', { volumeMl: 1000 }, [offer('DANA', 920)]),
-    product('oil-5l', 'Масло подсолнечное 5 л', 'oil', { volumeMl: 5000 },
+    product('noodles', 'Лапша Доширак 120 г', 'groats', { weightGrams: 120 },
+      [offer('DINA', 341), offer('DANA', 378), offer('FIX_PRICE', 449)]),
+    product('noodles-90', 'Лапша Доширак 90 г', 'groats', { weightGrams: 90 },
       [offer('DINA', 1), offer('DANA', 1), offer('FIX_PRICE', 1)]),
-    product('oil-str', 'Масло подсолнечное 1 л', 'oil', { volumeMl: '1000' }, [offer('DINA', 1)]),
+    product('noodles-other', 'Лапша Роллтон 120 г', 'groats', { weightGrams: 120 }, [offer('DINA', 1)]),
+    product('noodles-str', 'Лапша Доширак 120 г', 'groats', { weightGrams: '120' }, [offer('DINA', 1)]),
   ];
   const baskets = calculateBaskets(products, stores);
 
   assert.deepEqual(baskets.map((basket) => basket.storeCode), ['DINA', 'DANA', 'FIX_PRICE']);
-  const keys = ['basket-milk', 'basket-pasta', 'basket-rice', 'basket-yogurt', 'basket-oil'];
+  const keys = ['basket-milk', 'basket-pasta', 'basket-rice', 'basket-yogurt', 'basket-noodles'];
   for (const b of baskets) assert.deepEqual(b.items.map((i) => i.categorySlug), keys);
   assert.deepEqual(baskets.map((b) => b.items.map((i) => i.productId)), [
-    ['milk-1l', 'pasta', 'rice', 'yogurt', 'oil-08'],
-    ['milk-1l', 'pasta', 'rice', 'yogurt', 'oil-1l'],
-    ['milk-1l', 'pasta', 'rice', 'yogurt', 'oil-09'],
+    ['milk-1l', 'pasta', 'rice', 'yogurt', 'noodles'],
+    ['milk-1l', 'pasta', 'rice', 'yogurt', 'noodles'],
+    ['milk-1l', 'pasta', 'rice', 'yogurt', 'noodles'],
   ]);
-  assert.deepEqual(baskets.map((b) => b.total), [2296, 2751, 2412]);
+  assert.deepEqual(baskets.map((b) => b.total), [1892, 2209, 2062]);
   assert.deepEqual(baskets[0]?.items.map((i) => i.categoryName), [
-    'Молоко 1 л', 'Макароны 400 г', 'Рис 800 г', 'Йогурт Fruttis 115 г', 'Масло подсолнечное 0,8–1 л',
+    'Молоко 1 л', 'Макароны 400 г', 'Рис 800 г', 'Йогурт Fruttis 115 г', 'Лапша Доширак 120 г',
   ]);
 });
 
