@@ -10,12 +10,12 @@ import { refineCategory } from './milk.js'
 
 const Slug = z.string().refine(isCategorySlug, 'unknown category').transform((s) => s as CategorySlug)
 const Canonical = z.object({
-  name: z.string().min(1), brand: z.string().nullable(), category: Slug, attributes: z.record(z.number()),
+  name: z.string().min(1), brand: z.string().nullable(), category: Slug, attributes: z.record(z.string(), z.number()),
   method: z.enum(['deterministic', 'ai']), confidence: z.number().min(0).max(1), review: z.enum(['approved', 'pending']),
 })
 export const DictionarySchema = z.object({
   version: z.literal(1), generatedAt: z.string().datetime(),
-  canonicals: z.record(Canonical), products: z.record(z.string()), storeCategories: z.record(Slug),
+  canonicals: z.record(z.string(), Canonical), products: z.record(z.string(), z.string()), storeCategories: z.record(z.string(), Slug),
 })
 export type Dictionary = z.infer<typeof DictionarySchema>
 export type DictionaryCanonical = z.infer<typeof Canonical>
