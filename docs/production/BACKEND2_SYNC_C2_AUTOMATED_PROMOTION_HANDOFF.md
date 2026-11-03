@@ -401,3 +401,38 @@ checks before any retry. Preserve source refs, all rollback bytes, reader inode,
 ledger/history, site policy, API and timers. Existing coupled rollback entrypoints
 in section14 remain unchanged; never hand-edit authority/sourceSha or replay
 `--initial-reviewed`. Alignment remains distinct from actual READY/convergence.
+
+## PR86 Part B local source qualification checkpoint — 2026-11-03
+
+This is an append-only **source-only** update, not a production promotion.
+Worktree `feat/pr86-offline-pipeline-promotion` remains uncommitted on baseline
+`49f6823768817b0390f215de42439cce523bf5d3`. No SSH/VPS operation, source switch,
+root upgrade, publication, HMAC request, API/DB/Frontend change or AUTO DEPLOY
+activation was performed. Earlier production evidence above is historical;
+current VPS/publisher/ledger state was not re-observed here.
+
+The candidate supplies a bounded authenticated v2 offline graph, direct sealed
+generations, coupled source/dependency/14-target rollback, a fixed non-root pnpm
+shim, manager-attested boot mounts and a read-only source/runtime verifier.
+Its capture helper never automatically trusts current node_modules. V1 history
+is retained; v1-only rollback after enrollment is blocked. Root/private source
+and namespace authority remain mandatory; no generic dependency bypass exists.
+
+Local tests use disposable Linux resources and explicit synthetic CI/baseline
+records. Their `PRODUCTION_SOURCE_RUNTIME_ALIGNED` output exercises the verifier
+against fixture source/graphs/ELFs; **production result is NOT_RUN**. Likewise
+local Go/Node/PG17/C2 tests do not establish production C2 PASS or three genuine
+consecutive convergence results. Real acceptance remains for natural cycles.
+
+Do not perform CD from this checkpoint. Next gates are independent source review,
+permitted Git publication/CI9, independently verified OLD inventory and baseline
+approval, a new exact-purpose root provisioning review, authenticated fresh
+manual-artifact and one separately authorized promotion/readback. Never reuse a
+consumed old helper, edit authority by hand, install dependencies from the network
+on VPS or launch synthetic sync for PASS. For unknown/replayed/timeout states,
+retain the receipt/interlock, do bounded read-only reconciliation and stop.
+
+The [same Part B report](reports/PIPELINE_DEPENDENCY_PROMOTION_PART_B_REPORT_20261102.md)
+contains detailed evidence and limitations; the
+[Design Contract](reports/PIPELINE_DEPENDENCY_PROMOTION_DESIGN_CONTRACT_20261102.md)
+is the versioned source for the future provisioning packet.

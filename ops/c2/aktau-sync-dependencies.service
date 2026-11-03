@@ -1,0 +1,18 @@
+[Unit]
+Description=Verify and restore committed offline pipeline mount
+Before=aktau-sync.service aktau-sync-full.service
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -I -B /usr/local/libexec/aktau-sync-promotion/publisher-promotion.py --mount-committed-pipeline
+OpenFile=/proc/1/ns/mnt:host-mount:read-only
+AmbientCapabilities=CAP_SETUID CAP_SETGID
+RemainAfterExit=yes
+TimeoutStartSec=30
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_DAC_READ_SEARCH CAP_SETUID CAP_SETGID CAP_KILL
+RestrictAddressFamilies=AF_UNIX
+[Install]
+WantedBy=multi-user.target

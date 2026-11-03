@@ -39,7 +39,12 @@ export function parseRootReply(status,raw) {
     const allowed=new Set(['main_drift','active_runtime','operator_actor_active','pending_promotion_recovery',
       'pending_c2_recovery','active_attempt','old_closure_drift','unapproved_source_drift','dirty_publisher',
       'protected_delta','unexpected_base','replayed_release','producer_source_changed','github_archive_digest',
-      'insufficient_memory_capacity','trusted_authorization_unavailable','command_cleanup_unverified']);
+      'insufficient_memory_capacity','trusted_authorization_unavailable','command_cleanup_unverified',
+      'pipeline_policy_required','dependency_history_unbound','pipeline_baseline_authority','pipeline_baseline_receipt',
+      'pipeline_baseline_legacy_binding','pipeline_exact_old_baseline','pipeline_old_mount_not_attested',
+      'pipeline_child_cleanup_unverified','pipeline_unmount_unknown_or_busy','pipeline_unknown_source',
+      'pipeline_unknown_target','pipeline_unknown_selection','pipeline_unknown_mount','pipeline_manager_attestation',
+      'pipeline_unknown_pending_write','pipeline_retained_payload','pipeline_retained_capsule']);
     const error=Error('root_rejection');error.safeClass=value?.status==='BLOCKED'&&allowed.has(value.errorClass)?value.errorClass:'root_rejection';throw error;
   }
   return value;
@@ -133,7 +138,7 @@ async function promote() {
   const ci=await api('actions/runs/'+manifest.ciRunId);
   validateCI(sha,ci,(await api('actions/runs/'+ci.id+'/jobs?per_page=100')).jobs,sha);
   const result=remote({version:1,operation:'promote',sourceSha:sha,artifactId:a.id,buildRunId:build.id,ciRunId:ci.id,size:zip.length},zip);
-  assert.ok(['NO_OP','C2_CONFIG_SOURCE_ALIGNED'].includes(result.status));
+  assert.ok(['NO_OP','C2_CONFIG_SOURCE_ALIGNED','PIPELINE_V2_COMMITTED'].includes(result.status));
   console.log(result.status);
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href) {

@@ -78,4 +78,63 @@ class RuntimeGateTests(unittest.TestCase):
             self.assertIn('ExecStart=\nExecStart=/usr/bin/python3 -I -B',data)
 
 
+    def test_boot_unit_has_only_capabilities_for_fixed_mount_and_reaped_actor_git(self):
+        data=pathlib.Path(__file__).with_name('aktau-sync-dependencies.service').read_text()
+        self.assertIn('CapabilityBoundingSet=CAP_SYS_ADMIN CAP_DAC_READ_SEARCH CAP_SETUID CAP_SETGID CAP_KILL\n',data)
+        self.assertIn('ExecStart=/usr/bin/python3 -I -B /usr/local/libexec/aktau-sync-promotion/publisher-promotion.py --mount-committed-pipeline\n',data)
+        self.assertIn('OpenFile=/proc/1/ns/mnt:host-mount:read-only\n',data)
+        self.assertIn('AmbientCapabilities=CAP_SETUID CAP_SETGID\n',data)
+        self.assertNotIn('CAP_SYS_PTRACE',data)
+        for forbidden in ['PrivateMounts=','PrivateTmp=','ProtectSystem=','EnvironmentFile=','OnCalendar=']:
+            self.assertNotIn(forbidden,data)
+        for name in ['promotion-daily.conf','promotion-weekly.conf']:
+            dropin=pathlib.Path(__file__).with_name(name).read_text()
+            self.assertIn('Requires=aktau-sync-dependencies.service',dropin)
+            self.assertIn('After=aktau-sync-dependencies.service',dropin)
+        self.assertNotIn('aktau-sync-dependencies.service',pathlib.Path(__file__).with_name('promotion-custodian.conf').read_text())
+
+
+class ActorSelectionTests(unittest.TestCase):
+    def fixture(self):
+        import json,hashlib
+        selected={'version':1,'contract':'pr86-pipeline-v2','sourceSha':'a'*40,
+            'pipelineTreeSha1':'4f1294e3ec73fd477d85825588b8f382125fc1c6','inventorySha256':'b'*64,
+            'descriptorSha256':'c'*64,'releaseIdentity':'fixture','provenanceKind':'github-artifact'}
+        raw=(json.dumps(selected,separators=(',',':'))+'\n').encode()
+        att={'version':1,'bootId':pathlib.Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+            'mountNamespaceInode':os.stat('/proc/self/ns/mnt').st_ino,'mountId':77,
+            'selectionSha256':hashlib.sha256(raw).hexdigest(),'mountedRootDev':11,'mountedRootInode':12,'inventorySha256':'b'*64}
+        return selected,raw,att
+    def verify(self,selected,raw,att,flags='ro,nosuid,nodev',extra=''):
+        original_stat=os.stat;original_read=pathlib.Path.read_text
+        def read(path,*args,**kwargs):
+            if str(path)=='/proc/self/mountinfo':return '77 1 0:1 / /opt/aktau-sync/pipeline '+flags+' - tmpfs tmpfs rw\n'+extra
+            return original_read(path,*args,**kwargs)
+        def stat_target(path,*args,**kwargs):
+            if str(path)=='/opt/aktau-sync/pipeline':return SimpleNamespace(st_mode=stat.S_IFDIR|0o555,st_uid=0,st_dev=11,st_ino=12)
+            return original_stat(path,*args,**kwargs)
+        authority={'version':1,'approved':True,'sourceSha':selected['sourceSha'],'binarySha256':'d'*64,'clockSha256':'e'*64,'buildId':'fixture','platform':'linux/amd64'}
+        files={'fixture'+str(i):'f'*64 for i in range(10)}
+        files.update({'/usr/local/libexec/aktau-c2/c2projection':'d'*64,'/usr/local/libexec/aktau-c2/relayprobe':'e'*64})
+        automatic={'version':2,'enabled':True,'sourceSha':selected['sourceSha'],'sitePolicySha256':'f'*64,'files':files}
+        manifest={'sourceSha':selected['sourceSha'],'recipe':'explicit test fixture','nodeMajor':24}
+        with patch.object(m,'read_control',side_effect=[(selected,raw),(att,b'fixture'),(authority,b'fixture'),(automatic,b'fixture'),(manifest,b'fixture')]),patch.object(m.os,'stat',side_effect=stat_target),patch.object(m.pathlib.Path,'read_text',read),patch('subprocess.run',side_effect=[SimpleNamespace(returncode=0,stdout=selected['sourceSha'].encode()+b'\n'),SimpleNamespace(returncode=0,stdout=selected['pipelineTreeSha1'].encode()+b'\n')]):
+            return m.verify_actor()
+    def test_stable_committed_attestation(self):
+        selected,raw,att=self.fixture();self.assertEqual(self.verify(selected,raw,att),selected)
+    def test_stale_boot_namespace_binding_and_mount_flags_are_rejected(self):
+        for key,value in [('bootId','stale'),('mountNamespaceInode',0),('mountId',True),('selectionSha256','0'*64),('inventorySha256','d'*64)]:
+            selected,raw,att=self.fixture();att[key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):self.verify(selected,raw,att)
+        selected,raw,att=self.fixture()
+        with self.assertRaisesRegex(ValueError,'pipeline_mount_flags'):self.verify(selected,raw,att,flags='rw,nosuid,nodev')
+        with self.assertRaisesRegex(ValueError,'pipeline_nested_mount'):self.verify(selected,raw,att,extra='78 77 0:2 / /opt/aktau-sync/pipeline/nested ro - tmpfs tmpfs rw\n')
+    def test_missing_control_proof_is_not_optional(self):
+        with patch.object(m,'read_control',side_effect=FileNotFoundError):
+            with self.assertRaises(FileNotFoundError):m.verify_actor()
+    def test_custodian_does_not_inherit_actor_mount_requirement(self):
+        with patch.object(m.sys,'argv',['gate','c2']),patch.object(m,'acquire') as acquire,patch.object(m,'verify_actor',side_effect=AssertionError('actor-only')),patch.object(m.os,'execv') as execute:
+            m.main();acquire.assert_called_once_with('c2');execute.assert_called_once_with(m.COMMANDS['c2'][0],m.COMMANDS['c2'])
+
+
 if __name__ == '__main__': unittest.main()

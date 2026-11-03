@@ -25,14 +25,24 @@ try {
     '--mount', `type=bind,src=${goRoot},dst=/usr/local/go,readonly`, id,
     'python3', '-B', 'ops/c2/root_executor_pair_integration.py',
   ]));
+  console.log(run('Real Linux pipeline mount/custody/private namespace qualification (0 SKIP)', 'docker', [
+    'run', '--name', `${id}-pipeline`, '--rm', '--network', 'none', '--cap-drop', 'ALL',
+    ...['SYS_ADMIN','SETUID','SETGID','CHOWN','DAC_OVERRIDE','KILL'].flatMap(c => ['--cap-add', c]),
+    '--security-opt', 'no-new-privileges', '--read-only', '--tmpfs', '/tmp:rw,nosuid,nodev,size=1073741824',
+    '--memory', '2g', '--cpus', '2', '--pids-limit', '128',
+    '--mount', `type=bind,src=${root},dst=/src,readonly`, id,
+    'python3', '-B', 'ops/c2/pipeline_runtime_integration.py',
+  ]));
 } finally {
   // Only this invocation's random, owned resources; never prune/reuse host containers.
   // rm may report not-found after --rm; an inspection distinguishes absence from failure.
   const { spawnSync } = await import('node:child_process');
-  const removed = spawnSync('docker', ['rm', '-f', id], { encoding: 'utf8', timeout: 15_000 });
-  if (removed.status !== 0) {
-    const names = run('Root fixture cleanup inventory', 'docker', ['ps', '-aq', '--filter', `name=^/${id}$`]);
-    if (names) throw new Error('root fixture cleanup unverified');
+  for (const owned of [id, `${id}-pipeline`]) {
+    const removed = spawnSync('docker', ['rm', '-f', owned], { encoding: 'utf8', timeout: 15_000 });
+    if (removed.status !== 0) {
+      const names = run('Root fixture cleanup inventory', 'docker', ['ps', '-aq', '--filter', `name=^/${owned}$`]);
+      if (names) throw new Error('root fixture cleanup unverified');
+    }
   }
   if (built) run('Remove owned fixture image', 'docker', ['image', 'rm', id]);
 }
