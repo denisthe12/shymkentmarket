@@ -1,5 +1,7 @@
 """Synthetic release metadata and disposable filesystems only; no host writes."""
 import copy
+import errno
+import hashlib
 import importlib.util
 import io
 import json
@@ -14,7 +16,7 @@ import unittest
 import zipfile
 import base64
 import struct
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('promotion', pathlib.Path(__file__).with_name('publisher-promotion.py'))
@@ -555,3 +557,424 @@ class BundleDescriptorTests(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+
+class PipelineCapsuleV2Tests(unittest.TestCase):
+    def inventory(self, rows=None):
+        return m.canonical({'version': 1, 'entries': rows if rows is not None else [
+            {'path':'node_modules','type':'dir','mode':0o555},
+            {'path':'node_modules/a','type':'file','mode':0o444,'size':1,'sha256':m.digest(b'a')},
+            {'path':'node_modules/b','type':'symlink','target':'a'}]})
+
+    def test_pr86_exact_pairs_and_inventory_positive(self):
+        self.assertEqual(m.PIPELINE_NEW_TREE, '4f1294e3ec73fd477d85825588b8f382125fc1c6')
+        self.assertEqual(len(m.pipeline_inventory(self.inventory())),3)
+
+    def test_inventory_rejects_extra_keys_boolean_mode_traversal_and_links(self):
+        for rows in [
+            [{'path':'../escape','type':'dir','mode':0o555}],
+            [{'path':'/absolute','type':'dir','mode':0o555}],
+            [{'path':'a','type':'dir','mode':True}],
+            [{'path':'a','type':'file','mode':0o444,'size':1,'sha256':'a'*64,'extra':1}],
+            [{'path':'a','type':'symlink','target':'/etc/passwd'}],
+            [{'path':'a','type':'symlink','target':'../escape'}],
+            [{'path':'a','type':'symlink','target':'b'},{'path':'b','type':'symlink','target':'a'}],
+            [{'path':'a','type':'symlink','target':'missing'}],
+            [{'path':'a','type':'dir','mode':0o555},{'path':'a','type':'dir','mode':0o555}],
+            [{'path':'pipeline.env','type':'file','mode':0o444,'size':0,'sha256':m.digest(b'')}],
+        ]:
+            with self.subTest(rows=rows),self.assertRaises(m.Blocked):m.pipeline_inventory(self.inventory(rows))
+
+    def test_indexed_capsule_hash_types_and_no_archive_links(self):
+        raw=io.BytesIO();inv=self.inventory()
+        with tarfile.open(fileobj=raw,mode='w',format=tarfile.USTAR_FORMAT) as t:
+            for name,data in [('inventory.json',inv),('blob/1',b'a')]:
+                x=tarfile.TarInfo(name);x.mode=0o444;x.size=len(data);t.addfile(x,io.BytesIO(data))
+        parsed=m.pipeline_capsule(raw.getvalue())
+        self.assertEqual(parsed[0],m.parse(inv));self.assertEqual(parsed[1],{'node_modules/a':b'a'})
+        changed=raw.getvalue().replace(b'a',b'b',1)
+        with self.assertRaises(m.Blocked):m.pipeline_capsule(changed)
+
+    def test_exact_protected_lock_exception_has_no_prefix_bypass(self):
+        self.assertTrue(m.pipeline_contracts_delta(['contracts/pnpm-lock.yaml'],m.CONTRACTS_OLD_LOCK,m.CONTRACTS_NEW_LOCK))
+        for paths,old,new in [(['contracts/openapi.yaml'],m.CONTRACTS_OLD_LOCK,m.CONTRACTS_NEW_LOCK),
+                              (['contracts/pnpm-lock.yaml','backend/prisma/schema.prisma'],m.CONTRACTS_OLD_LOCK,m.CONTRACTS_NEW_LOCK),
+                              (['contracts/pnpm-lock.yaml'],'a'*40,m.CONTRACTS_NEW_LOCK),
+                              (['contracts/pnpm-lock.yaml'],m.CONTRACTS_OLD_LOCK,'b'*40)]:
+            with self.subTest(paths=paths),self.assertRaises(m.Blocked):m.pipeline_contracts_delta(paths,old,new)
+
+
+class PipelineStoreSafetyTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory(prefix='pipeline-store-safety-');self.addCleanup(self.temp.cleanup)
+        self.root=pathlib.Path(self.temp.name);self.root.chmod(0o700);self.fs=m.Filesystem(self.root)
+        self.fs.path(m.BASE+'/capsules').mkdir(parents=True,mode=0o700)
+        self.fs.path(m.BASE).chmod(0o700)
+        self.fs.path(m.BASE+'/state').mkdir(mode=0o700)
+        inv=PipelineCapsuleV2Tests().inventory();self.identity=m.digest(inv)
+        raw=io.BytesIO()
+        with tarfile.open(fileobj=raw,mode='w',format=tarfile.USTAR_FORMAT) as t:
+            for name,data in [('inventory.json',inv),('blob/1',b'a')]:
+                member=tarfile.TarInfo(name);member.mode=0o444;member.size=len(data);t.addfile(member,io.BytesIO(data))
+        self.raw=raw.getvalue();self.store=m.PipelineStore(self.fs);self.journal=[]
+    def register(self,event,path,identity):
+        self.journal.append({'event':event,'path':path,'identity':identity})
+        self.fs.write(m.BASE+'/state/test-intent.json',m.canonical(self.journal),replace=len(self.journal)>1)
+    def test_real_filesystem_seal_and_inventory_tampering(self):
+        self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(self.store.verify(self.identity)['inventorySha256'],self.identity)
+        f=self.fs.path(self.store.location(self.identity)+'/pipeline/node_modules/a');f.chmod(0o644);f.write_bytes(b'b');f.chmod(0o444)
+        with self.assertRaises(m.Blocked):self.store.verify(self.identity)
+    def test_sigkill_after_mkdir_retains_intent_and_orphan_blocks_reinstall(self):
+        pid=os.fork()
+        if pid==0:
+            def crash(event,path,identity):
+                self.register(event,path,identity)
+                if event=='generation_created':os.kill(os.getpid(),signal.SIGKILL)
+            self.store.install(self.raw,self.identity,'fixture',crash);os._exit(9)
+        _,status=os.waitpid(pid,0);self.assertEqual(os.WTERMSIG(status),signal.SIGKILL)
+        slot=self.fs.path(self.store.location(self.identity))
+        self.assertTrue(slot.is_dir());self.assertFalse((slot/'seal.json').exists())
+        self.assertTrue(self.fs.path(m.BASE+'/state/pipeline-fixture.intent.json').is_file())
+        before=m.stamp(os.lstat(slot))
+        with self.assertRaisesRegex(m.Blocked,'pipeline_generation_exists'):
+            self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(m.stamp(os.lstat(slot)),before)
+        self.assertFalse(self.fs.path(m.PIPELINE_SELECTION).exists())
+    def test_enospc_preserves_registered_partial_generation(self):
+        original=os.write;injected=[]
+        def full(fd,data):
+            if os.readlink('/proc/self/fd/'+str(fd)).endswith('/pipeline/node_modules/a'):
+                injected.append(True);raise OSError(errno.ENOSPC,'synthetic ENOSPC')
+            return original(fd,data)
+        with patch.object(os,'write',side_effect=full),self.assertRaises(OSError) as error:
+            self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(error.exception.errno,errno.ENOSPC);self.assertEqual(injected,[True])
+        slot=self.fs.path(self.store.location(self.identity))
+        self.assertTrue(slot.is_dir());self.assertFalse((slot/'seal.json').exists())
+        self.assertTrue(self.fs.path(m.BASE+'/state/pipeline-fixture.intent.json').is_file())
+        partial=slot/'pipeline/node_modules/a';self.assertEqual(partial.read_bytes(),b'')
+        before=m.stamp(os.lstat(partial))
+        with self.assertRaises(m.Blocked):self.store.verify(self.identity)
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'second',self.register)
+        self.assertEqual(m.stamp(os.lstat(partial)),before)
+        self.assertFalse(self.fs.path(m.PIPELINE_SELECTION).exists())
+    def test_historical_foreign_stage_cas_failure_remains_reproducible(self):
+        # Frozen full OLD module, not dict(vars(m)) plus one old class. The
+        # current file is merely a compression basis; a pinned pre-change full
+        # digest MUST match before any historical source is executed.
+        record=json.loads(pathlib.Path(__file__).with_name('fixtures').joinpath('pipeline-store-before.json').read_text())
+        def frozen_module(fixture):
+            pins={'store':'253a6f6cb839dffa41f6d39b6e0096bb7dff9f22ba6110d97056ca413420965e',
+                  'test':'00fb6557bdafed44120883570272190bbf4080b0fcd8787ada1080bb347a3d5b'}
+            for field,expected in pins.items():
+                self.assertEqual(fixture[field+'Sha256'],expected,'historical fixture pin')
+                self.assertEqual(hashlib.sha256(fixture[field+'Source'].encode()).hexdigest(),expected,
+                                 'historical fixture digest')
+            source=''.join(json.loads(pathlib.Path(__file__).with_name('fixtures').joinpath('pipeline-store-old-module.json').read_text()))
+            self.assertEqual(hashlib.sha256(source.encode()).hexdigest(),
+                             'ef30e25b620633895d8778654b860942afb02e65e3a54fa1e1865efacaffc026',
+                             'historical full-module digest')
+            old=ModuleType('frozen_pipeline_promotion_before');old.__file__='<frozen-old-publisher>'
+            exec(compile(source,old.__file__,'exec'),old.__dict__)
+            return old
+        # Malformed fixture (including self-consistently edited metadata) is
+        # rejected BEFORE exec; it cannot become historical negative evidence.
+        for field in ['store','test']:
+            changed=dict(record);changed[field+'Source']+='\n'
+            changed[field+'Sha256']=hashlib.sha256(changed[field+'Source'].encode()).hexdigest()
+            with self.subTest(corrupt=field),self.assertRaisesRegex(AssertionError,'historical fixture pin'):
+                frozen_module(changed)
+        old=frozen_module(record)
+        self.assertIsNot(old,m);self.assertIsNot(old.PipelineStore,m.PipelineStore)
+        self.assertIsNot(old.Filesystem,m.Filesystem);self.assertIsNot(old.Blocked,m.Blocked)
+        self.assertIs(old.PipelineStore.install.__globals__,old.__dict__)
+        self.assertIs(old.Filesystem.write.__globals__,old.__dict__)
+        historical=unittest.TestCase();historical.fs=old.Filesystem(self.root)
+        historical.store=old.PipelineStore(historical.fs);historical.raw=self.raw;historical.identity=self.identity
+        def register(event,path,identity):
+            self.journal.append({'event':event,'path':path,'identity':identity})
+            historical.fs.write(old.BASE+'/state/test-intent.json',old.canonical(self.journal),replace=len(self.journal)>1)
+        historical.register=register
+        def run_original(binding):
+            self.assertIs(binding,old,'historical binding must be the frozen OLD module')
+            namespace={'m':binding,'os':os}
+            exec(compile(record['testSource'],'<frozen-old-cas-assertion>','exec'),namespace)
+            namespace['test_foreign_stage_inode_is_never_renamed_into_registered_capsule'](historical)
+        with self.assertRaisesRegex(AssertionError,'historical binding must be the frozen OLD module'):
+            run_original(m)
+        with self.assertRaisesRegex(AssertionError,'foreign staging inode was moved before CAS rejection') as failure:
+            run_original(old)
+        self.assertEqual(str(failure.exception),
+                         'False is not true : foreign staging inode was moved before CAS rejection')
+        slot=historical.fs.path(historical.store.location(self.identity))
+        self.assertEqual((slot/'foreign-owner-marker').read_bytes(),b'FOREIGN: preserve at original location')
+        self.assertTrue(historical.fs.path(old.BASE+'/.pipeline-stage-fixture.retained-owned').is_dir())
+
+
+class PipelineGenerationSafetyTests(unittest.TestCase):
+    setUp = PipelineStoreSafetyTests.setUp
+    register = PipelineStoreSafetyTests.register
+
+    def slot(self): return self.fs.path(self.store.location(self.identity))
+    def snapshot(self, path):
+        return [(str(p.relative_to(path)),m.stamp(os.lstat(p)),p.read_bytes() if p.is_file() and not p.is_symlink() else None)
+                for p in [path,*sorted(path.rglob('*'))]]
+    def test_generation_is_created_at_final_name_never_renamed_or_selected(self):
+        calls=[]
+        with patch.object(os,'rename',side_effect=AssertionError('rename forbidden')),patch.object(os,'replace',side_effect=AssertionError('replace forbidden')):
+            # The callback journal uses replace, so only the store gets the inert observer.
+            def durable_observe(event,path,identity):
+                calls.append(event)
+                if event=='generation_created':
+                    self.assertTrue(self.slot().is_dir())
+                    with self.assertRaises(m.Blocked):self.store.verify(self.identity)
+            self.store.install(self.raw,self.identity,'fixture',durable_observe)
+        self.assertIn('generation_created',calls)
+        self.assertFalse(self.fs.path(m.PIPELINE_SELECTION).exists())
+        self.assertFalse(any(p.name.startswith('.pipeline-stage-') for p in self.fs.path(m.BASE).iterdir()))
+        self.assertEqual(self.store.verify(self.identity)['inventorySha256'],self.identity)
+    def test_existing_foreign_generation_is_untouched(self):
+        self.slot().mkdir(mode=0o700);(self.slot()/'foreign').write_bytes(b'leave me')
+        before=self.snapshot(self.slot())
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(self.snapshot(self.slot()),before)
+    def test_successful_generation_cannot_be_automatically_reused(self):
+        self.store.install(self.raw,self.identity,'fixture',self.register);before=self.snapshot(self.slot())
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'other',self.register)
+        self.assertEqual(self.snapshot(self.slot()),before)
+    def test_intent_is_durable_before_generation_mkdir(self):
+        original=os.mkdir;seen=[]
+        def checked(path,*args,**kwargs):
+            if path==self.identity:
+                state=self.fs.path(m.BASE+'/state/pipeline-fixture.intent.json')
+                inv=m.parse(state.read_bytes());self.assertIn(self.store.location(self.identity),inv['resources'])
+                self.assertIn(self.store.location(self.identity)+'/pipeline/node_modules/b',inv['resources']);seen.append(True)
+            return original(path,*args,**kwargs)
+        with patch.object(os,'mkdir',side_effect=checked):self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(seen,[True])
+    def test_sigkill_after_generation_mkdir_retains_intent_and_blocks_reuse(self):
+        pid=os.fork()
+        if pid==0:
+            def kill(event,path,identity):
+                if event=='generation_created':os.kill(os.getpid(),signal.SIGKILL)
+            self.store.install(self.raw,self.identity,'fixture',kill);os._exit(9)
+        _,status=os.waitpid(pid,0);self.assertEqual(os.WTERMSIG(status),signal.SIGKILL)
+        self.assertTrue(self.slot().is_dir());self.assertFalse((self.slot()/'seal.json').exists())
+        self.assertTrue(self.fs.path(m.BASE+'/state/pipeline-fixture.intent.json').is_file())
+        before=self.snapshot(self.slot())
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'second',self.register)
+        self.assertEqual(self.snapshot(self.slot()),before)
+        self.assertFalse(self.fs.path(m.PIPELINE_SELECTION).exists())
+    def test_parent_replacement_is_rejected_before_any_graph_write(self):
+        foreign=[]
+        def replace(event,path,identity):
+            self.register(event,path,identity)
+            if event=='generation_created':
+                parent=self.slot().parent;parent.rename(parent.with_name('retained-parent'));parent.mkdir(mode=0o700)
+                (parent/'foreign').write_bytes(b'preserve');foreign.append(self.snapshot(parent))
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'fixture',replace)
+        self.assertTrue(foreign);self.assertEqual(self.snapshot(self.slot().parent),foreign[0])
+        self.assertFalse((self.slot().parent.with_name('retained-parent')/self.identity/'pipeline').exists())
+    def test_generation_replacement_keeps_foreign_inode_untouched(self):
+        foreign=[]
+        def replace(event,path,identity):
+            self.register(event,path,identity)
+            if event=='generation_created':
+                self.slot().rename(str(self.slot())+'.retained');self.slot().mkdir(mode=0o700)
+                (self.slot()/'foreign').write_bytes(b'preserve');foreign.append(self.snapshot(self.slot()))
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'fixture',replace)
+        self.assertTrue(foreign);self.assertEqual(self.snapshot(self.slot()),foreign[0])
+    def test_unprivileged_graph_substitution_is_denied_without_mutation(self):
+        self.assertNotEqual(os.geteuid(),0,'requires actual unprivileged test process; never treat root as unprivileged')
+        # A fixture-only old selection is a sentinel, never installed by Store.
+        selected=self.fs.path(m.PIPELINE_SELECTION);selected.parent.mkdir(parents=True)
+        selected.write_bytes(b'old-selection-fixture\n');selected.chmod(0o644)
+        selection=(m.stamp(os.lstat(selected)),selected.read_bytes());denied=[]
+        def attempt(event,path,identity):
+            self.register(event,path,identity)
+            if event=='graph_ready':
+                graph=self.slot()/'pipeline';before=self.snapshot(graph)
+                directory=graph/'node_modules'
+                with self.assertRaises(PermissionError) as error:
+                    directory.rename(str(directory)+'.retained')
+                self.assertEqual(error.exception.errno,errno.EACCES);denied.append(True)
+                self.assertEqual(self.snapshot(graph),before)
+                self.assertFalse(directory.with_name('node_modules.retained').exists())
+                self.assertEqual((m.stamp(os.lstat(selected)),selected.read_bytes()),selection)
+        self.store.install(self.raw,self.identity,'fixture',attempt)
+        self.assertEqual(denied,[True])
+        self.assertEqual(self.store.verify(self.identity)['inventorySha256'],self.identity)
+        self.assertEqual((m.stamp(os.lstat(selected)),selected.read_bytes()),selection)
+
+    def test_controlled_privileged_symlink_injection_is_executed_and_rejected(self):
+        # Model privileged filesystem corruption with an explicit fixture-only
+        # owner permission transition. No sudo/root/host paths; Store unchanged.
+        target=self.root/'outside';target.mkdir();(target/'foreign').write_bytes(b'unchanged');before=self.snapshot(target)
+        injected=[];restored=[]
+        def substitute(event,path,identity):
+            self.register(event,path,identity)
+            if event=='graph_ready':
+                graph=self.slot()/'pipeline';original=os.lstat(graph)
+                self.assertEqual(original.st_mode & 0o777,0o555)
+                graph.chmod(0o700)
+                try:
+                    directory=graph/'node_modules';directory.rename(str(directory)+'.retained')
+                    directory.symlink_to(target,target_is_directory=True)
+                    # Prove injection happened before allowing Store to run.
+                    self.assertTrue(directory.is_symlink());self.assertEqual(os.readlink(directory),str(target))
+                    self.assertTrue(directory.with_name('node_modules.retained').is_dir());injected.append(True)
+                finally:
+                    graph.chmod(0o555)
+                    st=os.lstat(graph)
+                    self.assertEqual((st.st_dev,st.st_ino,st.st_uid,st.st_gid,st.st_mode),
+                                     (original.st_dev,original.st_ino,original.st_uid,original.st_gid,original.st_mode))
+                    self.assertEqual(os.listxattr(graph),[]);restored.append(True)
+        # Directory no-follow open returns ENOTDIR on Linux. Do not accept an
+        # injector PermissionError or arbitrary OSError as a successful test.
+        with self.assertRaises(OSError) as error:
+            self.store.install(self.raw,self.identity,'fixture',substitute)
+        self.assertEqual(error.exception.errno,errno.ENOTDIR)
+        self.assertEqual(injected,[True]);self.assertEqual(restored,[True])
+        self.assertEqual(self.snapshot(target),before);self.assertFalse((self.slot()/'seal.json').exists())
+        with self.assertRaises(m.Blocked):self.store.verify(self.identity)
+        preserved=self.snapshot(self.slot())
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'second',self.register)
+        self.assertEqual(self.snapshot(self.slot()),preserved)
+        self.assertFalse(self.fs.path(m.PIPELINE_SELECTION).exists())
+    def test_preseal_corruption_blocks_seal(self):
+        def corrupt(event,path,identity):
+            self.register(event,path,identity)
+            if event=='graph_ready':
+                p=self.slot()/'pipeline/node_modules/a';p.chmod(0o644);p.write_bytes(b'b');p.chmod(0o444)
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'fixture',corrupt)
+        self.assertFalse((self.slot()/'seal.json').exists())
+    def test_corrupted_seal_and_partial_graph_are_never_accepted(self):
+        self.store.install(self.raw,self.identity,'fixture',self.register)
+        seal=self.slot()/'seal.json';seal.chmod(0o600);seal.write_bytes(b'{}\n');seal.chmod(0o400)
+        with self.assertRaises(m.Blocked):self.store.verify(self.identity)
+        before=self.snapshot(self.slot())
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'second',self.register)
+        self.assertEqual(self.snapshot(self.slot()),before)
+    def test_untrusted_parent_permissions_rejected_before_mutation(self):
+        self.slot().parent.chmod(0o777)
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertFalse(self.slot().exists())
+    def test_capsule_parent_symlink_rejected_before_mutation(self):
+        parent=self.slot().parent;parent.rename(parent.with_name('real-capsules'));parent.symlink_to('real-capsules',target_is_directory=True)
+        with self.assertRaises((m.Blocked,OSError)):self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertFalse(self.slot().exists())
+
+    test_enospc_preserves_registered_partial_generation = PipelineStoreSafetyTests.test_enospc_preserves_registered_partial_generation
+
+    def large_capsule(self):
+        data=b'abcdefgh';inventory=m.canonical({'version':1,'entries':[
+            {'path':'node_modules','type':'dir','mode':0o555},
+            {'path':'node_modules/a','type':'file','mode':0o444,'size':len(data),'sha256':m.digest(data)},
+            {'path':'node_modules/b','type':'symlink','target':'a'}]})
+        raw=io.BytesIO()
+        with tarfile.open(fileobj=raw,mode='w',format=tarfile.USTAR_FORMAT) as tar:
+            for name,body in [('inventory.json',inventory),('blob/1',data)]:
+                member=tarfile.TarInfo(name);member.mode=0o444;member.size=len(body);tar.addfile(member,io.BytesIO(body))
+        self.raw=raw.getvalue();self.identity=m.digest(inventory)
+
+    def test_partial_write_then_enospc_preserves_exact_partial_bytes(self):
+        self.large_capsule();write=os.write;injected=[]
+        def partial(fd,data):
+            if os.readlink('/proc/self/fd/'+str(fd)).endswith('/pipeline/node_modules/a'):
+                injected.append(len(data))
+                if len(injected)==1:return write(fd,data[:2])
+                raise OSError(errno.ENOSPC,'fixture partial write ENOSPC')
+            return write(fd,data)
+        with patch.object(os,'write',side_effect=partial),self.assertRaises(OSError) as error:
+            self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(error.exception.errno,errno.ENOSPC);self.assertEqual(injected,[8,6])
+        self.assertEqual((self.slot()/'pipeline/node_modules/a').read_bytes(),b'ab')
+        before=self.snapshot(self.slot())
+        with self.assertRaises(m.Blocked):self.store.verify(self.identity)
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'second',self.register)
+        self.assertEqual(self.snapshot(self.slot()),before);self.assertFalse(self.fs.path(m.PIPELINE_SELECTION).exists())
+
+    def test_short_writes_complete_and_zero_write_blocks(self):
+        self.large_capsule();write=os.write;lengths=[]
+        def short(fd,data):
+            if os.readlink('/proc/self/fd/'+str(fd)).endswith('/pipeline/node_modules/a'):
+                lengths.append(len(data));return write(fd,data[:1])
+            return write(fd,data)
+        with patch.object(os,'write',side_effect=short):self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(lengths,[8,7,6,5,4,3,2,1]);self.store.verify(self.identity)
+        # A distinct owned fixture exercises the zero-progress path.
+        f=PipelineStoreSafetyTests('test_real_filesystem_seal_and_inventory_tampering');f.setUp()
+        try:
+            injected=[]
+            def zero(fd,data):
+                if os.readlink('/proc/self/fd/'+str(fd)).endswith('/pipeline/node_modules/a'):
+                    injected.append(True);return 0
+                return write(fd,data)
+            with patch.object(os,'write',side_effect=zero),self.assertRaisesRegex(m.Blocked,'pipeline_short_write'):
+                f.store.install(f.raw,f.identity,'fixture',f.register)
+            self.assertEqual(injected,[True]);slot=f.fs.path(f.store.location(f.identity))
+            self.assertTrue(slot.exists());self.assertFalse((slot/'seal.json').exists())
+            self.assertFalse(f.fs.path(m.PIPELINE_SELECTION).exists())
+        finally:f.doCleanups()
+
+    def test_fsync_failures_preserve_resources_and_never_select_or_reuse(self):
+        # Error injection is specific to the actual FD's fixed sandbox path.
+        # We claim failure propagation/no-selection, NOT durability after EIO.
+        for fault in ['intent','state','graph_file','seal','generation_after_seal']:
+            with self.subTest(fault=fault):
+                f=PipelineStoreSafetyTests('test_real_filesystem_seal_and_inventory_tampering');f.setUp()
+                try:
+                    original=os.fsync;injected=[];slot=f.fs.path(f.store.location(f.identity))
+                    intent=f.fs.path(m.BASE+'/state/pipeline-fixture.intent.json')
+                    paths={'intent':str(intent),'state':str(intent.parent),'graph_file':str(slot/'pipeline/node_modules/a'),
+                           'seal':str(slot/'seal.json'),'generation_after_seal':str(slot)}
+                    def fail(fd):
+                        path=os.readlink('/proc/self/fd/'+str(fd))
+                        if path==paths[fault] and (fault!='generation_after_seal' or (slot/'seal.json').exists()):
+                            injected.append(path);raise OSError(errno.EIO,'fixture fsync failure')
+                        return original(fd)
+                    with patch.object(os,'fsync',side_effect=fail),self.assertRaises(OSError) as error:
+                        f.store.install(f.raw,f.identity,'fixture',f.register)
+                    self.assertEqual(error.exception.errno,errno.EIO);self.assertEqual(len(injected),1)
+                    self.assertTrue(intent.is_file());intent_before=(m.stamp(os.lstat(intent)),intent.read_bytes())
+                    before=self.snapshot(slot) if slot.exists() else None
+                    self.assertFalse(f.fs.path(m.PIPELINE_SELECTION).exists())
+                    with self.assertRaises(m.Blocked):f.store.install(f.raw,f.identity,'fixture',f.register)
+                    self.assertEqual((m.stamp(os.lstat(intent)),intent.read_bytes()),intent_before)
+                    self.assertEqual(self.snapshot(slot) if slot.exists() else None,before)
+                finally:f.doCleanups()
+
+    def test_parent_and_intent_fsync_complete_before_mkdir(self):
+        fsync=os.fsync;mkdir=os.mkdir;events=[]
+        def sync(fd):
+            path=os.readlink('/proc/self/fd/'+str(fd));result=fsync(fd);events.append(path);return result
+        def create(name,*args,**kwargs):
+            if name==self.identity:
+                intent=str(self.fs.path(m.BASE+'/state/pipeline-fixture.intent.json'))
+                self.assertIn(intent,events);self.assertIn(str(self.fs.path(m.BASE+'/state')),events)
+                self.assertLess(events.index(intent),events.index(str(self.fs.path(m.BASE+'/state'))))
+                events.append('GENERATION_MKDIR')
+            return mkdir(name,*args,**kwargs)
+        with patch.object(os,'fsync',side_effect=sync),patch.object(os,'mkdir',side_effect=create):
+            self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(events.count('GENERATION_MKDIR'),1)
+
+    def test_partial_generation_without_seal_is_preserved_and_unusable(self):
+        self.slot().mkdir(mode=0o700);(self.slot()/'pipeline').mkdir(mode=0o700)
+        (self.slot()/'pipeline/partial').write_bytes(b'partial foreign fixture')
+        before=self.snapshot(self.slot())
+        with self.assertRaises(m.Blocked):self.store.verify(self.identity)
+        with self.assertRaises(m.Blocked):self.store.install(self.raw,self.identity,'fixture',self.register)
+        self.assertEqual(self.snapshot(self.slot()),before);self.assertFalse(self.fs.path(m.PIPELINE_SELECTION).exists())
+
+    def test_store_directory_lock_blocks_competing_writer_without_changes(self):
+        import fcntl
+        fd=os.open(self.slot().parent,os.O_RDONLY|os.O_DIRECTORY|os.O_CLOEXEC)
+        try:
+            fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            with self.assertRaisesRegex(m.Blocked,'pipeline_store_busy'):
+                self.store.install(self.raw,self.identity,'fixture',self.register)
+            self.assertFalse(self.slot().exists())
+            self.assertEqual(list(self.fs.path(m.BASE+'/state').iterdir()),[])
+        finally:os.close(fd)

@@ -839,3 +839,68 @@ inodes; receipts/source copy remain and prevent reinstall. It never invokes any
 helper mode or modifies executor/policy pins. Root-pair upgrade and publisher
 promotion remain separately authorized later operations. See the installation
 qualification report for exact commands, bootstrap pins and limitations.
+
+## PR86 offline pipeline contract v2 — source candidate (2026-11-03)
+
+This implementation is **not installed or authorized on the VPS**. It supports
+only the frozen PR86 OLD/NEW pipeline tree, package/lock identities and the exact
+contracts-lock pair in the Design Contract. V1 artifacts/receipts retain their
+original formats; after dependency enrollment, a v1-only rollback is rejected as
+`dependency_history_unbound`. Never replay the historical one-shot helpers or
+`--initial-reviewed` to provision v2.
+
+The non-root builder captures the complete Linux/amd64/glibc graph, including
+pinned pnpm10.32.1, tsx, esbuild, Zod4, undici and native Rollup. Its immutable v2
+artifact has exactly16 regular USTAR members and remains below the existing
+256MiB TAR/ZIP limits. Package preparation uses frozen lockfiles, ignored install
+hooks/pnpmfile and private preparation state. No package installer runs as root
+or on the VPS. Four inactive cross-OS files in the exact pinned official pnpm
+release are retained; they are not executed on Linux.
+
+Root admission still independently authenticates GitHub CI9, main, immutable ZIP
+digest and all producer pins. V2 additionally requires strict policy2, an
+independent baseline authorization and completed enrollment, and actual source
+bundle/tree/lock/closure checks. Uploaded manifests cannot contain the private
+root provenance record. Existing zero-argument SSH framing is unchanged.
+
+Unselected content-addressed generations are created directly, never renamed
+from staging or automatically reused. Only root may write the namespace.
+`BASE` remains root-owned0755 so the actor can read its existing public lock;
+`capsules/`, `state/` and generations are root0700. Full graph inode/content seals
+are verified before and after publication. A v2 journal couples Git source,
+read-only mount/selection and the original14 C2 targets. Both dependency graphs,
+all new payloads, original source.bundle, descriptor, provenance and14 rollback
+backups remain retained. Foreign resources, torn `.pending` writes, EBUSY,
+unknown children or unknown transaction state block without cleanup/retry.
+
+`pipeline-pnpm` is a non-root fixed shim for the existing six scheduled scripts
+and exact scope argv. It rejects installer/general exec commands and loader or
+pnpm configuration injection. Selected graphs run as `aktau-sync`, with caches
+disabled and no writable alias through the private capsule directory.
+
+The new `aktau-sync-dependencies.service` requires **systemd >=253**. PID1 opens
+only `/proc/1/ns/mnt:host-mount:read-only` through `OpenFile=`. The root boot mode
+validates the real namespace FD, PID/count/name, access mode and nsfs type, pins
+it CLOEXEC and closes it before actor exec. This avoids granting SYS_PTRACE.
+UID/GID ambient capabilities apply only to the fixed root service; real tests
+prove UID drop clears actor capabilities. Daily/weekly gain Requires+After;
+custodian isolation and timer schedules remain unchanged. A stale/missing
+namespace attestation cannot be synthesized by the actor. Root-only
+`--verify-source-runtime` uses a shared lock and reports source/runtime parity,
+**never** C2 convergence or DB-data parity. Its hidden-checkout inspection
+unmounts only inside a private child namespace and verifies parent isolation.
+
+Before production: independent source review and permitted publication →
+exact-new-main CI9 → bounded authorized OLD inventory → independent actual
+baseline approval → a **new** fixed-purpose root provisioning packet with exact
+new pins → offline enrollment/installation → one authenticated v2 artifact and
+promotion → independent parity/readback. The read-only `legacy_input_inventory`
+helper always returns NOT_AUTHORIZED; it cannot enroll current node_modules.
+Completed enrollment must bind the exact immutable v1 receipt/rollback hash and
+identity, preserving the historical identity-only v1 last pointer. Actual VPS
+baseline identities and a reviewed bootstrap cannot be invented in this task.
+
+See [Part B report](../../docs/production/reports/PIPELINE_DEPENDENCY_PROMOTION_PART_B_REPORT_20261102.md)
+and [Design Contract](../../docs/production/reports/PIPELINE_DEPENDENCY_PROMOTION_DESIGN_CONTRACT_20261102.md)
+for real commands, failures, qualification and external/reboot gates. Do not
+install this uncommitted candidate or treat local fixtures as production PASS.

@@ -30,7 +30,7 @@ NEW='d69c667212b2a6c8a25081ccdc90f798024e850784262976e06e45ce13f45118'
 def digest(b):return hashlib.sha256(b).hexdigest()
 def old_source():
     """Strict public reverse patch + fixed digest; no Git/network in root sandbox."""
-    original=(HERE/'publisher-promotion.py').read_text().splitlines(keepends=True)
+    original=json.loads((HERE/'fixtures/pair-upgrade/executor-after.json').read_text())
     lines=json.loads((HERE/'fixtures/pair-upgrade/executor-before.json').read_text())
     result=[];index=0;at=0
     while at<len(lines):
@@ -58,7 +58,7 @@ def module():
 class Fixture:
     def __init__(self):
         self.temp=tempfile.TemporaryDirectory(prefix='pair-upgrade-');self.root=Path(self.temp.name);self.root.chmod(0o700)
-        self.fs=promotion.Filesystem(self.root);self.new=(HERE/'publisher-promotion.py').read_bytes();assert digest(self.new)==NEW
+        self.fs=promotion.Filesystem(self.root);self.new=''.join(json.loads((HERE/'fixtures/pair-upgrade/executor-after.json').read_text())).encode();assert digest(self.new)==NEW
         self.old=old_source();self.policy=(HERE/'fixtures/pair-upgrade/policy-before.json').read_bytes()
         self.write(EXEC,self.old,0o755);self.write(POLICY,self.policy,0o644)
         self.m=module()
@@ -453,6 +453,24 @@ class PairTests(unittest.TestCase):
 
 
 class SourceTests(unittest.TestCase):
+    # Exact historical reviewed bytes. Do not serve mutable checkout files as
+    # contents?ref=SOURCE. Independent size/digest validation precedes metadata.
+    FROZEN = {
+        'ops/c2/publisher-promotion.py': ('executor-after.json',59455,
+            'd69c667212b2a6c8a25081ccdc90f798024e850784262976e06e45ce13f45118'),
+        '.github/workflows/sync-publisher-build.yml': ('workflow-reviewed.json',3929,
+            '1d7764798c1c78ac616e4615ef46ba7fd810b1f192692318cdf1a3aa66da6312'),
+        'scripts/ops/build-sync-promotion.py': ('builder-reviewed.json',5211,
+            '308504c27ee7ceed871b1044d88a20a1f45a9525c9e4f3cca9d9b8382240b9b4')}
+    def frozen(self,path):
+        name,size,expected=self.FROZEN[path]
+        lines=json.loads((HERE/'fixtures/pair-upgrade'/name).read_text())
+        self.assertIsInstance(lines,list,'historical fixture format')
+        self.assertTrue(all(type(line) is str for line in lines),'historical fixture lines')
+        raw=''.join(lines).encode()
+        self.assertEqual(len(raw),size,'historical fixture size')
+        self.assertEqual(digest(raw),expected,'historical fixture digest')
+        return raw
     def api(self):
         m=module();ci={'id':m.CI,'head_sha':m.SOURCE,'repository':{'full_name':'kiratonine/AdilBaga'},
             'head_repository':{'full_name':'kiratonine/AdilBaga'},'event':'push','head_branch':'main','path':'.github/workflows/ci.yml','status':'completed','conclusion':'success'}
@@ -460,12 +478,12 @@ class SourceTests(unittest.TestCase):
         replies={'actions/runs/'+str(m.CI):ci,'actions/runs/'+str(m.CI)+'/jobs?per_page=100':{'jobs':[{'name':n,'status':'completed','conclusion':'success'} for n in names]}}
         import base64
         for path in ['ops/c2/publisher-promotion.py','.github/workflows/sync-publisher-build.yml','scripts/ops/build-sync-promotion.py']:
-            raw=(HERE.parents[1]/path).read_bytes();replies['contents/'+path+'?ref='+m.SOURCE]={'path':path,'type':'file','size':len(raw),'encoding':'base64','content':base64.b64encode(raw).decode()}
+            raw=self.frozen(path);replies['contents/'+path+'?ref='+m.SOURCE]={'path':path,'type':'file','size':len(raw),'encoding':'base64','content':base64.b64encode(raw).decode()}
         return replies
     def test_real_reviewed_bytes_through_fixed_factory(self):
         m=module();responses=self.api();calls=[]
         def api(path):calls.append(path);return responses[path]
-        self.assertEqual(m.source_verified(api),(HERE/'publisher-promotion.py').read_bytes());self.assertEqual(len(calls),5)
+        self.assertEqual(m.source_verified(api),self.frozen('ops/c2/publisher-promotion.py'));self.assertEqual(len(calls),5)
     def test_ci_source_metadata_digest_encoding_and_unavailable_authority(self):
         m=module()
         for kind in ['sha','repo','head-repo','branch','event','workflow','ci-id','status','skipped','duplicate-jobs','bad-size','bad-content','bad-encoding','wrong-path','builder','workflow-source','unavailable']:
@@ -492,6 +510,32 @@ class SourceTests(unittest.TestCase):
                     if kind=='unavailable':raise TimeoutError('SECRET_SHOULD_NOT_BE_LOGGED')
                     return r[path]
                 with self.assertRaises((m.Blocked,TimeoutError)):m.source_verified(api)
+
+    def test_corrupted_frozen_fixture_cannot_supply_successful_metadata(self):
+        read=Path.read_text
+        for path,(filename,_,_) in self.FROZEN.items():
+            with self.subTest(path=path):
+                changed=[]
+                def corrupt(candidate,*args,**kwargs):
+                    raw=read(candidate,*args,**kwargs)
+                    if candidate==HERE/'fixtures/pair-upgrade'/filename:
+                        lines=json.loads(raw)
+                        for i,line in enumerate(lines):
+                            if line:
+                                lines[i]=('X' if line[0]!='X' else 'Y')+line[1:];break
+                        changed.append(path);return json.dumps(lines)
+                    return raw
+                with patch.object(Path,'read_text',corrupt),self.assertRaisesRegex(AssertionError,'historical fixture digest'):
+                    self.api()
+                self.assertEqual(changed,[path])
+    def test_current_publisher_is_rejected_as_historical_source_binding(self):
+        import base64
+        m=module();r=self.api();raw=(HERE/'publisher-promotion.py').read_bytes()
+        self.assertNotEqual(digest(raw),self.FROZEN['ops/c2/publisher-promotion.py'][2])
+        item=r['contents/ops/c2/publisher-promotion.py?ref='+m.SOURCE]
+        item['size']=len(raw);item['content']=base64.b64encode(raw).decode()
+        with self.assertRaisesRegex(m.Blocked,'reviewed_source_metadata'):
+            m.source_verified(lambda path:r[path])
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

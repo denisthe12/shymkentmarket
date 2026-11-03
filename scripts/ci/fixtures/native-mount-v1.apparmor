@@ -1,0 +1,66 @@
+# CI ONLY: SELF_REVIEWED_OWNER_AUTHORIZED under Nov03 fast-track TASK.
+# Load only on the validated single-use GitHub ubuntu-24.04 job, never VPS.
+# Complete standalone profile; no dangling additions to docker-default.
+abi <abi/3.0>,
+@{F} = /tmp/pipeline-v2-coupled-????????
+@{P} = /tmp/aktau-native-prereq-????????
+@{GEN} = [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]
+@{STAGE} = native native-baseline rollback-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]
+profile aktau-pr87-native-v1-ae76e1796bc4b08732e7f7caad15e3ac5b2914bc21caaaa6588e4a80bcecc60d flags=(attach_disconnected,mediate_deleted) {
+  # Retain Docker's file access baseline; read-only root/src plus explicit
+  # denies bound writes. Root/admin is trusted; VM is the outer kernel boundary.
+  file,
+  deny network,
+  capability chown,
+  capability dac_override,
+  capability kill,
+  capability setgid,
+  capability setuid,
+  capability sys_admin,
+  signal (send,receive) peer=aktau-pr87-native-v1-ae76e1796bc4b08732e7f7caad15e3ac5b2914bc21caaaa6588e4a80bcecc60d,
+  signal (receive) peer=unconfined,
+  signal (receive) peer=runc,
+  signal (receive) peer=crun,
+  ptrace (read,readby,trace,tracedby) peer=aktau-pr87-native-v1-ae76e1796bc4b08732e7f7caad15e3ac5b2914bc21caaaa6588e4a80bcecc60d,
+  deny /src{,/**} wkl,
+  deny /proc/** wklx,
+  deny /sys/** wklx,
+  deny /dev/mem rwklx,
+  deny /dev/kmem rwklx,
+  deny /dev/kmsg rwklx,
+  deny /dev/port rwklx,
+  # No device/proc/sys/source/foreign mount targets or sources.
+  deny mount /proc/** -> /**,
+  deny mount -> /proc{,/**},
+  deny mount /sys/** -> /**,
+  deny mount -> /sys{,/**},
+  deny mount /dev/** -> /**,
+  deny mount -> /dev{,/**},
+  deny mount /src/** -> /**,
+  deny mount -> /src{,/**},
+  # Prerequisite mounts; tmpfs data size/mode are additionally bounded in code
+  # and outer 1GiB /tmp/memory2GiB. AppArmor cannot enforce the data string size.
+  mount fstype=tmpfs options=(rw,nosuid,nodev) -> @{P}/,
+  mount options=(rw,bind) @{P}/source/ -> @{P}/bound/,
+  mount options=(ro,nosuid,nodev,remount,bind) -> @{P}/bound/,
+  mount options=(rw,move) @{P}/bound/ -> @{P}/moved/,
+  umount @{P}/,
+  umount @{P}/bound/,
+  umount @{P}/moved/,
+  # Propagation changes are private only, never shared/slave, on container /.
+  mount options=(rw,rprivate) -> /,
+  # Actual fixed capsule -> root-private mount stage -> publisher pipeline.
+  mount options=(rw,bind) @{F}/var/lib/aktau-sync-promotion/capsules/@{GEN}/pipeline/ -> @{F}/var/lib/aktau-sync-promotion/mounts/@{STAGE}/,
+  mount options=(ro,nosuid,nodev,remount,bind) -> @{F}/var/lib/aktau-sync-promotion/mounts/@{STAGE}/,
+  mount options=(rw,private) -> @{F}/var/lib/aktau-sync-promotion/mounts/@{STAGE}/,
+  mount options=(rw,move) @{F}/var/lib/aktau-sync-promotion/mounts/@{STAGE}/ -> @{F}/opt/aktau-sync/pipeline/,
+  umount @{F}/opt/aktau-sync/pipeline/,
+  umount @{F}/var/lib/aktau-sync-promotion/mounts/@{STAGE}/,
+  # Two native resource-admission fixtures, no other tmpfs targets.
+  mount fstype=tmpfs options=(rw,nosuid,nodev) -> @{F}/usr/local/libexec/aktau-c2/,
+  umount @{F}/usr/local/libexec/aktau-c2/,
+  mount fstype=tmpfs options=(rw,nosuid,nodev) -> @{F}/var/lib/aktau-sync-promotion/capsules/,
+  umount @{F}/var/lib/aktau-sync-promotion/capsules/,
+  # Everything else (other mounts/umounts/pivot_root/change_profile) is denied
+  # by default. No generic mount, umount, capability or profile transition rule.
+}

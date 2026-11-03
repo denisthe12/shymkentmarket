@@ -77,10 +77,15 @@ jobs:
           CI_ATTEMPT: ${{ needs.eligibility.outputs.ci_attempt }}
           RELEASE_KIND: ${{ needs.eligibility.outputs.kind }}
         run: |
+          test "$(id -u)" -ne 0
+          test "$(uname -s)-$(uname -m)" = "Linux-x86_64"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           test -z "$(git status --porcelain)"
           mkdir -m 700 "$RUNNER_TEMP/sync-release"
           python3 -B scripts/ops/build-sync-promotion.py "$SOURCE_SHA" "$RUNNER_TEMP/sync-release/promotion.tar" "$CI_RUN" "$CI_ATTEMPT" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$RELEASE_KIND"
+      - name: Check final artifact byte budget
+        run: |
+          python3 -c 'import os; from pathlib import Path; p=Path(os.environ["RUNNER_TEMP"])/"sync-release/promotion.tar"; assert 0 < p.stat().st_size <= 256 << 20'
       - name: Upload immutable sync + C2 artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
