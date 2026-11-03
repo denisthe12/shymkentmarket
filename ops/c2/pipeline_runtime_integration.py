@@ -15,6 +15,16 @@ spec = importlib.util.spec_from_file_location('local_release_fixture', ROOT/'ops
 t = importlib.util.module_from_spec(spec); spec.loader.exec_module(t)
 p = t.p
 
+def setUpModule():
+    # Test-only fixed probe: preserve all eleven native methods below unchanged.
+    spec = importlib.util.spec_from_file_location('native_mount_prerequisites', ROOT/'scripts/ci/native-mount-preflight.py')
+    helper = importlib.util.module_from_spec(spec); spec.loader.exec_module(helper)
+    result = helper.qualify()
+    print('NATIVE_MOUNT_PREFLIGHT '+json.dumps(result,sort_keys=True),flush=True)
+    if result['status'] != 'PASS':
+        raise RuntimeError('native_mount_prerequisite_failed:'+result['reason'])
+
+
 class NativeMountSafetyTests(unittest.TestCase):
     def setUp(self):
         if not Path('/.dockerenv').exists() or os.getuid() != 0:

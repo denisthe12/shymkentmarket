@@ -2,13 +2,16 @@
 import { realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { root, run } from './common.mjs';
+import { root, run, env } from './common.mjs';
+import { captureNative } from './native-mount-capture.mjs';
 
 if (process.platform !== 'linux') throw new Error('distinct-UID integration requires Linux + Docker');
 const goRoot = realpathSync(run('Go SDK root', 'go', ['env', 'GOROOT']));
 if (run('Go version', join(goRoot, 'bin/go'), ['version']) !== 'go version go1.27.3 linux/amd64') {
   throw new Error('root bundle qualification requires Go1.27.3 linux/amd64');
 }
+run('Native prerequisite metadata regressions (no host mounts)', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'scripts/ci', '-p', 'test_native_mount_preflight.py']);
+run('Bounded native capture regressions', process.execPath, ['--test', 'scripts/ci/native-mount-capture.test.mjs']);
 const id = `aktau-bundle-root-${randomUUID()}`;
 let built = false;
 try {
@@ -25,14 +28,15 @@ try {
     '--mount', `type=bind,src=${goRoot},dst=/usr/local/go,readonly`, id,
     'python3', '-B', 'ops/c2/root_executor_pair_integration.py',
   ]));
-  console.log(run('Real Linux pipeline mount/custody/private namespace qualification (0 SKIP)', 'docker', [
+  captureNative([
     'run', '--name', `${id}-pipeline`, '--rm', '--network', 'none', '--cap-drop', 'ALL',
     ...['SYS_ADMIN','SETUID','SETGID','CHOWN','DAC_OVERRIDE','KILL'].flatMap(c => ['--cap-add', c]),
     '--security-opt', 'no-new-privileges', '--read-only', '--tmpfs', '/tmp:rw,nosuid,nodev,size=1073741824',
     '--memory', '2g', '--cpus', '2', '--pids-limit', '128',
     '--mount', `type=bind,src=${root},dst=/src,readonly`, id,
     'python3', '-B', 'ops/c2/pipeline_runtime_integration.py',
-  ]));
+  ], { cwd: root, env });
+  console.log('Real Linux pipeline mount/custody/private namespace qualification (0 SKIP): PASS');
 } finally {
   // Only this invocation's random, owned resources; never prune/reuse host containers.
   // rm may report not-found after --rm; an inspection distinguishes absence from failure.

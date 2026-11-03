@@ -799,3 +799,161 @@ main/deployed/artifact comparison; natural C2 acceptance. No SSH, production
 writes, root upgrade, sync/HMAC, AUTO DEPLOY, Git publication or physical Siri
 retesting occurred. Root/admin remains trusted; admission checks do not defeat
 compromised root or reserve all resources against later external pressure.
+
+
+## 15. PR87 native mount qualification: diagnostics candidate, hosted environment blocker (2026-11-03)
+
+**Status: BLOCKED_WITH_EVIDENCE. Production remains NO-GO.** This uncommitted
+candidate improves prerequisite failure diagnostics and bounded failure capture;
+it does **not** establish that the mandatory hosted mount blocker is fixed.
+No new hosted run, commit, push, PR edit, SSH or production operation occurred.
+PR87 remains Draft at `fc50dc392fc5a70d87ce7c20cc512e0c6f83265d`, parent/main
+`49f6823768817b0390f215de42439cce523bf5d3`. Previous hosted run `41642315453`,
+attempt 1, still has Go Quality/CI Gate FAILURE and PostgreSQL/Staging SKIPPED;
+five other jobs succeeded. Skipped jobs are not qualified.
+
+### 15.1 Evidence and limits of the diagnosis
+
+Canonical prior source archive SHA256 remains
+`bec51754fa2aa4feae213df7d82c01799f8135d1da022637da3fa7d56a0487fa`.
+Original full available sanitized hosted failure transcript and prior CI matrix
+are retained in the new evidence directory. That run did not record first mount
+errno, effective LSM profile or capability metadata; its `pipeline_mount_syscall`
+exception alone cannot distinguish AppArmor, seccomp, capability, kernel or
+filesystem denial. Tail-only capture discarded useful early output.
+
+Local environment: UID1000 host, Node24.10.0, Go1.27.3, Linux/amd64 WSL2
+`6.18.54.1-microsoft-standard-WSL2`; owned Docker fixture runs UID0 with exact
+CapEff/Prm/Bnd `00000000002000e3`, seccomp mode2, cgroup2, no network,
+no-new-privileges, readonly root/source, /tmp bounded1GiB, memory2GiB,
+CPU2, pids128. Docker security options list built-in seccomp and cgroup namespace.
+AppArmor kernel parameter is N; current LSM label is the kernel label (a NUL
+terminator was accounted for). **LOCAL_LSM_PARITY_NOT_VERIFIED**: this is not an
+AppArmor-confined hosted runner. No unconfined/privileged flags, extra
+capabilities, host namespace, host mount or host security policy changes were used.
+
+Actual local tmpfs, bind, read-only remount, move, unmount and private namespace
+operations return errno0. Root/tmp propagation is private, source is readonly,
+manager/user namespace checks pass, and parent mount namespace is unchanged.
+These facts qualify the local fixture only, not hosted AppArmor compatibility.
+Docker documents that its default AppArmor profile denies mount; that supports
+an LSM hypothesis, not proof of the original runner's actual denial:
+https://docs.docker.com/engine/security/apparmor/ and
+https://github.com/moby/profiles/blob/main/apparmor/template.go .
+
+### 15.2 Minimal scoped candidate and preserved invariants
+
+Seven paths differ from published HEAD (including this append):
+
+- `ops/c2/pipeline_runtime_integration.py`: module prerequisite gate before the
+  existing native class. All existing classes/methods/assertions are AST-identical
+  to published HEAD, including 11 methods and the 23 SIGKILL phases.
+- `scripts/ci/run-root-bundle-integration.mjs`: invokes scoped prerequisite/capture
+  unit tests and uses bounded capture for only the native Docker command.
+  Existing Docker arguments, capabilities, deadlines and owned cleanup stay intact.
+- `scripts/ci/native-mount-preflight.py`: fixed test-only metadata and real syscall
+  prerequisite probe; no production authorization, public path override or policy
+  installation. Rejects absent SYS_ADMIN, extra capabilities, unknown LSM,
+  unconfined/unknown seccomp, writable source, bad namespace/propagation.
+  A forked child records first errno, creates only bounded owned scratch mounts,
+  unshares a private namespace and verifies readonly/move semantics. Child timeout,
+  cancellation and unverified cleanup fail closed; original parent namespace is checked.
+- `scripts/ci/test_native_mount_preflight.py`: 13 metadata/lifecycle tests,
+  including timeout, cancellation and child cleanup failure; these unit tests
+  are explicitly distinct from real kernel qualification.
+- `scripts/ci/native-mount-capture.mjs`: fixed Docker caller, 180s existing
+  deadline and 2MiB total bounded sanitized capture; reports truncation/timeout/
+  startup failure and never converts incomplete output to success.
+- `scripts/ci/native-mount-capture.test.mjs`: six bounded output, sanitization,
+  first-failure retention, timeout, overflow and startup regressions.
+- This cumulative Part B report: append-only section15; all earlier bytes retained.
+
+Production publisher/parser, generation store, capacity gates, runtime selection,
+rollback, authority, workflow, Design Contract, frozen historical fixtures,
+Go/pipeline/frontend and the executable shim bytes/mode are unchanged.
+No existing safety assertion, skip policy, mount fallback or CI gate is relaxed.
+Root/admin remains trusted; this candidate does not defend compromised root.
+
+### 15.3 Fail-first and negative qualification
+
+Inside an owned disposable Docker container, an additional restrictive seccomp
+filter denies the mount syscall with EPERM. It adds a denial; it does not relax
+Docker's existing filter or modify host policy. The exact frozen HEAD native
+fixture (SHA256 `958b3b8849eb66faef29efa0d95c3be37be7c5a79d2d507d79d0766d4c57f4a8`)
+then reproduces 1 failure/31 errors over11 methods, exit1. This is controlled
+failure-family reproduction, **not actual hosted RCA**. The first off-tree replay
+used a misleading Python linecache filename; both transcripts are retained.
+The corrected replay compiles the actual frozen path, retains ROOT resolution,
+and independently verifies frozen bytes against `git show HEAD`.
+
+With the same real syscall denial, the new prerequisite gate returns BLOCKED,
+`kernel_prerequisite_denied`, first operation `tmpfs_before_unshare`, errno1
+`EPERM`, cleanup KNOWN, parent namespace unchanged. Negative wrapper exit0 means
+expected rejection, not mount/native PASS. A separate real container without
+SYS_ADMIN rejects before probing (`missing_sys_admin`, empty operations).
+Latest negatives were repeated after final metadata changes; both wrappers exit0
+and owned containers are absent afterward. Unknown LSM, seccomp and namespace
+failures have unit coverage. Native ENOSPC/EBUSY/crash assertions remain active.
+Comparable hosted LSM successful qualification and actual hosted first errno are
+NOT_VERIFIED; no new CI run was authorized.
+
+### 15.4 Actual commands and results
+
+All commands use `rtk proxy`; project commands run non-root unless inside the
+owned Docker root fixture. Node executable is
+`/home/denis/.nvm/versions/node/v24.10.0/bin/node`; Go SDK is
+`/home/denis/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.3.linux-amd64/bin`
+with `GOTOOLCHAIN=local`. No dependency/project version was changed.
+
+| Command | Actual result / exit |
+| --- | --- |
+| `python3 -B -m unittest discover -s scripts/ci -p test_native_mount_preflight.py` | 13/13 PASS, 0 |
+| `node --test scripts/ci/native-mount-capture.test.mjs` | 6/6 PASS, 0 |
+| `python3 -B -m unittest discover -s ops/c2 -p test_pipeline_release.py -k CapacityAdmissionTests` | 12/12 PASS, 0 |
+| `python3 -B -m unittest discover -s ops/c2 -p test_pipeline_artifact.py` | 12/12 PASS, 0 |
+| `python3 -B -m unittest discover -s ops/c2 -p test_publisher_promotion.py` | 64/64 PASS locally, 0 |
+| `python3 -B -m unittest discover -s ops/c2 -p test_root_executor_pair_upgrade.py` | 33/33 PASS, 0 |
+| `node scripts/ci/run-checks.mjs ops` | 271 Python +186 Node PASS, 0 SKIP, exit0 |
+| `node scripts/ci/run-checks.mjs security` | PASS, 0 |
+| `node scripts/revalidation/verify-part16.mjs` | PASS, 0 |
+| C2 Node regression suite (full scripts/revalidation tests + CI guard tests) | 377/377 PASS, 0 SKIP, exit0; transcript retained |
+| In backend-go: `go test -count=1 ./...` | PASS, 0 |
+| In backend-go: `go test -race -count=1 ./...` | PASS, 0 |
+| In backend-go: `go vet ./...` | PASS, 0 |
+| `node scripts/ci/run-root-bundle-integration.mjs` | Final candidate: 71 real root/helper/installer +11 real native tests PASS locally, 0 SKIP, exit0; 13+6 prerequisite/capture units PASS |
+| `node --check` for three affected JS files; Python AST for three affected Python files | PASS, 0 |
+| Existing native class AST equality to HEAD; `git diff --check` | PASS, 0 |
+| Comparable hosted AppArmor/seccomp native qualification | NOT_VERIFIED |
+| New exact-head hosted CI9 / PG17 / ephemeral staging | NOT_RUN in this source-only task |
+
+The Python3.13 publisher63 PASS/1 ERROR timing risk remains historical evidence;
+local64 PASS does not resolve or hide that independent risk. No timing assertion
+was changed. Earlier failed hosted run and all local replay logs remain retained.
+
+### 15.5 Review packet and precise next gate
+
+Evidence directory:
+`/home/denis/tmp/aktau-pr87-native-mount-fix-20261103-ncesbh7j`.
+The off-tree clean archive includes full tracked source plus the four new CI
+files, this report, exact HEAD-relative diff including new files, source inventory,
+changed file SHA256/size/mode/status, original28-path freeze comparison, sanitized
+logs, failure reproduction inputs and executable `review/REPRODUCE.md`.
+External archive validation records safe regular members, uniqueness, byte-match,
+report prefix and original frozen/production source preservation; archive digest
+is external to avoid recursive hashing. Owner ZIP is unchanged and excluded.
+
+Remaining essential gate: independent review of this diagnostic candidate,
+followed by separately authorized Git publication/diagnostic CI on the real
+runner to obtain its first errno and LSM/capability/namespace metadata; or an
+approved comparable confined disposable host. Neither was available/authorized
+here. A proven solution requiring host LSM policy changes or broad privilege
+exceptions must STOP for security design review; it is not silently applied.
+Therefore this task cannot honestly claim the hosted blocker removed or CI9
+qualified. Existing PR source bytes were changed locally in disclosed paths and
+have no new commit SHA or hosted qualification. No Git publication or production
+mutation occurred. STOP pending independent review.
+
+Packet verification note: an initial off-tree verification command used the
+wrong shim path `ops/sync/pipeline-pnpm` and exited1 (FileNotFoundError).
+Repository discovery confirmed `ops/c2/pipeline-pnpm`; the verifier was corrected,
+without changing source, modes or assertions. This tooling failure is retained.
