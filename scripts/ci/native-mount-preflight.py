@@ -5,6 +5,7 @@ policy installation, capability addition, or unconfined/privileged fallback.
 """
 import ctypes
 import errno
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,64 @@ import tempfile
 import time
 
 CAPS = sum(1 << n for n in [0, 1, 5, 6, 7, 21])
+
+
+def _ci_record(path):
+    """Fixed manager-mounted metadata, never an actor/env/upload authority."""
+    fd = os.open('/', os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    try:
+        parts = path.strip('/').split('/')
+        for i, part in enumerate(parts):
+            nxt = os.open(part, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC |
+                          (os.O_DIRECTORY if i < len(parts)-1 else os.O_NONBLOCK), dir_fd=fd)
+            os.close(fd); fd = nxt; st = os.fstat(fd)
+            if st.st_uid or st.st_gid or st.st_mode & 0o022 or os.listxattr(fd):
+                raise ValueError('ci_record_custody')
+        import stat
+        if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1 or st.st_size > 16384 or not os.fstatvfs(fd).f_flag & os.ST_RDONLY:
+            raise ValueError('ci_record_identity')
+        raw = os.read(fd, 16385)
+        keys = ['st_dev','st_ino','st_mode','st_uid','st_gid','st_nlink','st_size','st_mtime_ns','st_ctime_ns']
+        if len(raw) != st.st_size or any(getattr(os.fstat(fd), k) != getattr(st, k) for k in keys):
+            raise ValueError('ci_record_changed')
+        def unique(rows):
+            out = {}
+            for key, value in rows:
+                if key in out: raise ValueError('duplicate_ci_record')
+                out[key] = value
+            return out
+        return raw, json.loads(raw, object_pairs_hook=unique)
+    finally:
+        os.close(fd)
+
+
+def _custom_identity(label):
+    # CI-only receipt created after exact profile load on the Owner-authorized
+    # standard GitHub VM. This is NOT production/root release authorization.
+    import re
+    try:
+        raw, binding = _ci_record('/ci/native-mount-v1.binding.json')
+        _, receipt = _ci_record('/run/aktau-ci-native-v1/authority.json')
+        expected = binding['profileName']
+        if not re.fullmatch(r'aktau-pr87-native-v1-[a-f0-9]{64}', expected): return False
+        if label != expected+' (enforce)' or binding['expectedProcLabel'] != label: return False
+        fields = {'version','contract','profileName','bindingSha256','profileSha256','compiledSha256',
+                  'repository','event','runner','imageOS','runId','attempt','headSha','checkoutSha'}
+        return (type(receipt) is dict and set(receipt) == fields and
+                type(receipt['version']) is int and receipt['version'] == 1 and
+                receipt['contract'] == 'aktau-ci-github-native-v1' and
+                receipt['repository'] == 'kiratonine/AdilBaga' and receipt['runner'] == 'github-hosted' and
+                receipt['imageOS'] == 'ubuntu24' and receipt['event'] in ['pull_request','push'] and
+                receipt['profileName'] == expected and
+                receipt['bindingSha256'] == hashlib.sha256(raw).hexdigest() and
+                receipt['profileSha256'] == binding['renderedSHA256'] and
+                type(receipt['compiledSha256']) is str and re.fullmatch(r'[a-f0-9]{64}',receipt['compiledSha256']) is not None and
+                all(type(receipt[k]) is str and re.fullmatch(r'[1-9][0-9]{0,15}',receipt[k])
+                    for k in ['runId','attempt']) and
+                all(type(receipt[k]) is str and re.fullmatch(r'[a-f0-9]{40}',receipt[k])
+                    for k in ['headSha','checkoutSha']))
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
 
 
 def snapshot():
@@ -41,6 +100,8 @@ def snapshot():
         label = Path('/proc/self/attr/current').read_bytes()[:256].decode('ascii').rstrip('\0\n')
         result['lsm'] = {'kernel': 'KERNEL', 'unconfined': 'NO_PROFILE',
                          'docker-default (enforce)': 'DOCKER_DEFAULT_ENFORCE'}.get(label, 'UNKNOWN')
+        if result['lsm'] == 'UNKNOWN' and _custom_identity(label):
+            result['lsm'] = 'HOSTED_NATIVE_V1'
     except (OSError, UnicodeError):
         result['lsm'] = 'UNKNOWN'
     try:
@@ -67,7 +128,7 @@ def reject_reason(meta):
     if any(meta.get(key) is not True for key in ['sourceReadOnly', 'sameManagerNamespace', 'rootPrivate', 'tmpPrivate', 'userNamespaceMatchesPID1']):
         return 'readonly_or_namespace_prerequisite'
     known = ((meta.get('apparmor') == 'N' and meta.get('lsm') in ['KERNEL', 'NO_PROFILE']) or
-             (meta.get('apparmor') == 'Y' and meta.get('lsm') == 'DOCKER_DEFAULT_ENFORCE'))
+             (meta.get('apparmor') == 'Y' and meta.get('lsm') in ['DOCKER_DEFAULT_ENFORCE', 'HOSTED_NATIVE_V1']))
     return None if known else 'lsm_unknown_or_unapproved'
 
 

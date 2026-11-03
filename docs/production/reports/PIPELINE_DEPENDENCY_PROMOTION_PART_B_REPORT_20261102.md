@@ -957,3 +957,461 @@ Packet verification note: an initial off-tree verification command used the
 wrong shim path `ops/sync/pipeline-pnpm` and exited1 (FileNotFoundError).
 Repository discovery confirmed `ops/c2/pipeline-pnpm`; the verifier was corrected,
 without changing source, modes or assertions. This tooling failure is retained.
+
+
+## 16. PR87 secure native sandbox design — 2026-11-03
+
+**SANDBOX_SECURITY_DESIGN_READY_FOR_INDEPENDENT_REVIEW (DESIGN ONLY).**
+**HOSTED_ENFORCED_POLICY_QUALIFICATION_NOT_RUN; CI9/MERGE/PRODUCTION NO-GO.**
+HEAD remains `1ce935205141ce7266ae268c5c82a5b0c3c4c893`, Draft PR87,
+main49f6823768817b0390f215de42439cce523bf5d3; fresh read-only refs/PR agree.
+The original28 paths and all763 current source bytes/modes were frozen before
+this append. Only this report is changed in Git; all committed diagnostic code,
+existing11 native methods/23 crash phases, historical fixtures, production
+publisher,14-target custody/rollback, Design Contract §19 and shim100755 remain
+unchanged. Owner untracked files were preserved. No commit/push/PR edit/CI rerun.
+
+Full consolidated design and qualification report (off-tree):
+`/home/denis/tmp/aktau-pr87-sandbox-design-20261103-vn88wq3k/HOSTED_NATIVE_MOUNT_SANDBOX_SECURITY_DESIGN.md`.
+It contains the syscall/path/flag table,14-file rollback boundary, threat model,
+complete standalone enforce-profile template/binding, VM/manager lifecycle,
+capability/LSM/seccomp design, rejected alternatives, required negative matrix,
+exact proposed implementation paths, commands/results and external gates.
+
+### 16.1 Proved blocker versus attribution
+
+Accepted hosted run41659473269/attempt1: first tmpfs mount EACCES13 with
+AppArmorY/docker-default enforce, expected capsets00000000002000e3 including
+SYS_ADMIN, seccomp2, readonlysrc, private propagation and unchanged parent.
+Root71 PASS; native0/11, not a mount qualification PASS. Hosted result stays
+fiveSUCCESS/twoFAILURE/twoSKIPPED. Original41642315453 had no recorded errno.
+Local deliberately injected EPERM1 is distinct. Exclusive AppArmor causality
+is not audit-proven; no host audit access or new profile comparison occurred.
+
+Public primary sources were read and exact upstream Moby source bytes frozen
+at commit4b8214fc4971e06172938a1f1554ccff6647ee80 (URLs/hash manifest retained).
+Docker's current default profile denies mount; adding a later allow cannot
+neutralize that deny. Upstream Docker seccomp conditionally permits more than
+legacy mount/unshare under SYS_ADMIN; actual hosted filter rules were not dumped.
+Official AppArmor manual documents exact-option versus subset rules and known
+mount mediation limitations. Therefore a per-container profile needs more than
+a bare allow rule or arbitrary-label acceptance.
+
+### 16.2 Selected bounded proposal; no active candidate
+
+Select a dedicated single-use Linux/amd64 VM with a trusted immutable image/root
+manager, no production routes/secrets or reusable disk, and an enforced exact
+per-container profile. Job user has no general sudo/docker-group privilege;
+manager is image-installed independently of PR upload. Root71 keeps default
+confinement without SYS_ADMIN. Native keeps exact existing six caps,
+networknone/read-only root+src/no-new-privileges/tmp1GiB/RAM2GiB/CPU2/PID128,
+owned resources/cleanup and all real assertions. Root/admin/kernel remain
+trusted; a container is not claimed to defeat compromised test kernel/admin.
+
+Complete profile draft permits only the audited owned scratch tmpfs, capsule→
+stage bind/read-only remount/private propagation, stage→publisher move, plain
+unmount, and child-private root propagation. It denies proc/sys/dev/src mounts,
+network and source/proc/sys writes; no generic mount/umount or arbitraryprocfd
+mount permission. Because production mount endpoints are pinned `/proc/self/fd/N`,
+actual canonical FD path mediation under AppArmor must be qualified. A proc alias
+failure is a STOP, never grounds for `/proc/**` mount permission or changing
+production descriptor pinning.
+
+Mandatory future defense: retain Docker seccomp and intersect it with a trusted
+pre-exec deny-only filter for measured flags, exact CLONE_NEWNS, no setns/unused
+modern mount APIs/bpf or alternate syscall ABI. The complete declarative spec is
+included, but executable filter/manager/image are NOT_IMPLEMENTED or authorized.
+No custom profile is admitted by current preflight: it intentionally rejects
+this unapproved label. A future exact label+hash+root-loader receipt/image proof
+and negative spoof tests are required. Label alone cannot prove loaded bytes.
+
+No workflow/harness/source policy activation was wired in: available evidence
+supports a reviewable design/prototype, not a verified active sandbox. New policy
+must not run until independent design/source approval and separate Owner
+permission for one disposable VM/profile/manager qualification window.
+
+### 16.3 Actual local checks
+
+- Node24.10.0, Go1.27.3, Python3.12.3, Docker29.1.3, WSL2kernel6.18.54.1;
+  local AppArmorN, hence no comparable confinement claim.
+- Current preflight13, capture6, capacity12, artifact12, publisher64,
+  historical root-helper33: all PASS/exit0. Ops271Python+186Node PASS/0SKIP/exit0;
+  security PASS/exit0. Exact argv, measured times and UID1000 are in REGRESSIONS.json.
+- `go test -count=1 ./...`, `go test -race -count=1 ./...`, `go vet ./...`
+  in backend-go all exit0. Package timings retained; total wrapper wall time
+  was not instrumented and is not invented.
+- Unchanged `node scripts/ci/run-root-bundle-integration.mjs` exit0:
+  real root71/71 in19.500s; native11/11 in4.870s,0SKIP including23 SIGKILL phases.
+- Additional transparent libc inventory: real native11/11 in4.902s/exit0,
+  mountflags6,4096,4135,8192,262144,278528; umountflags0; actualEBUSY16 preserved.
+  Trace forwards original libc and errno; no assertions or syscalls are mocked.
+  It records no paths/payload/authority. Off-tree C build succeeds with Werror;
+  local shared-object build output is excluded from review archive.
+- Complete draft profile: existing apparmor_parser4.0.1 compiles with
+  `--skip-kernel-load --skip-cache --stdout --jobs 1`, exit0. Kernel interface
+  warning retained; no profile/cache/host policy was installed. Syntax compile
+  is not enforcement proof. ABI3.0/compiler closure/hash are documented.
+- Eight new off-tree static/parser design tests PASS: template/binding/tamper,
+  closed caps/mount rules, malformed syntax rejection and current fail-closed
+  rejection of unapproved custom labels. They do not test kernel confinement.
+- `git diff --check`, code/mode/prefix preservation and safe archive byte-match
+  are final packet checks; hosted/new-profile/VM/reboot/production/C2 acceptance
+  NOT_RUN. Python3.13 missing-PID risk remains historical OPEN, not fixed by64PASS.
+
+### 16.4 Review and next gate
+
+Prototype template SHA256: 1bc32a70db0e32a476035579659ce42fb29e14039a156a6e62435ea6967dfc9a.
+Rendered profile SHA256: e33921947f86e3fb6e98891fcdb3c9ab378d172ce684c767c8a86e0b12041d1c.
+Offline compiled SHA256: 991fb94fedf80005bc7c51f95773fc02b418fdcdce55e8a539d13374f19386e7 (bytes not installed or shipped).
+Full exact binding and compiler result are separate evidence JSON.
+
+Independent review must assess policy/FD mediation, deny-only filter design,
+trusted manager bootstrap and ephemeral VM destruction. Then implement/review
+only the exact proposed test-only paths, authorize the isolated policy window,
+qualify real negative cases+71/11/23 and exact-head CI9. Existing standard hosted
+runner custom-policy feasibility is UNVERIFIED; no cloud/GitHub resources created.
+No --privileged/unconfined/host policy mutation/host namespace bypass is accepted.
+No current profile was loaded or executed, including in a VM. Existing hosted
+failure stays failure. No production source/DB/API/C2 authority/SLA, SSH/VPS,
+root upgrade, sync/HMAC, AUTO DEPLOY or Git publication occurred. STOP.
+
+
+## 17. Autonomous CI→production completion attempt — 2026-11-03
+
+**PART_B_BLOCKED_WITH_EVIDENCE.** Primary blocker:
+`MISSING_ISOLATED_RUNNER_AUTHORIZATION_OR_CAPABILITY`; coupled gate:
+`INDEPENDENT_PRIVILEGED_SOURCE_REVIEW_REQUIRED`. No production deployment,
+new privileged policy execution, Git publication or new CI run occurred.
+This section is append-only; §16 and every prior byte are preserved.
+
+### 17.1 Actual authority, source and progression
+
+Task `AKTAU_MARKET_PART_B_AUTONOMOUS_CI_TO_PRODUCTION_COMPLETION_TASK_20261103.md`
+was read fully, including §5's condition: publication follows independent
+privilege-bearing source review and successful isolated qualification. Owner's
+broad authorization does not remove that condition or authorize self-review.
+Expected/current feature HEAD remains
+`1ce935205141ce7266ae268c5c82a5b0c3c4c893`, existing Draft PR87, remote main
+`49f6823768817b0390f215de42439cce523bf5d3`; refs/PR checked read-only.
+No reset/rebase/stash/clean, branch/worktree replacement or force was used.
+Initial §16 append, all old source/fixtures/modes and Owner untracked files were
+preserved. Exactly the following source candidate is uncommitted:
+
+- `scripts/ci/native-mount-deny-only.c` (new): actual classic BPF program and fixed
+  native launcher. Compiles with Linux headers, no new library/package dependency.
+  Only `--emit-bpf` ran; it exports instructions and NEVER calls seccomp/prctl to
+  install a filter. Runtime path is fixed `/ci/native-mount-deny-only`, root0555,
+  no xattrs/link substitution; NNP and existing filter required; TSYNC must return0
+  and increment filter count; exec is only isolated Python/native fixture.
+- `scripts/ci/native-mount-manager.py` (new): fixed guest-side root manager
+  candidate, isolated Python entry, strict external one-job authorization,
+  root/no-follow/ACL/hash/mode/source graph checks, fixed OCI/image/policy/boot
+  identities, exclusive durable intent and root71/native11-only Docker argv.
+  Bounded capture retains unreaped direct-child PID until process-group cleanup,
+  including direct-exit/closed-stdout descendants. Foreign/unknown containers are
+  not removed; existing intent/unknown state blocks reuse. Output is only
+  tests-complete-awaiting-independent-VM-destroy-proof, never CI9 PASS.
+- `scripts/ci/fixtures/native-mount-v1.apparmor` and
+  `scripts/ci/fixtures/native-mount-v1.binding.json` (new): full prior standalone
+  enforce-profile prototype and descriptive hash binding, not authority.
+  Offline compiled digest is not VM/kernel enforcement qualification.
+- `scripts/ci/native-mount-preflight.py` (modified): exact custom enforced label
+  admitted only with manager-mounted, readonly root-owned binding/receipt,
+  strict digest/job/run/attempt/head/checkout/VM fields and custody. No env/path
+  override or arbitrary-label bypass. Existing known local/default diagnostics
+  and thirteen tests remain unchanged. New class is not a production C2 approval.
+- `scripts/ci/test_native_mount_sandbox.py` (new):23 unprivileged source tests,
+  interpreting actual compiled BPF bytes, strict metadata, real user child-group
+  cleanup/cancellation, no-clobber/partial writes and foreign-resource negatives.
+  Synthetic authorization objects are test fixtures only, not issued approvals.
+- `ops/ci/native-mount-runner/README.md` (new): fixed layout, external bootstrap/
+  provisioner/destroy assumptions, command and authority boundaries, known gaps.
+- This same Part B report (modified): §17 append. The existing §16 was already
+  dirty at task start. New review bytes do not inherit prior source approvals.
+
+Production publisher/parser, generation store, actual11 native methods/23 crash
+assertions,14-target rollback, Go/API/DB/parsers/Frontend/Siri, root one-shot
+helpers, frozen fixtures, Design Contract and shimGit100755 are unchanged.
+Existing CI workflow/root runner/capture are unchanged and not routed to the new
+manager. No partial permissive sandbox was made active just to get green CI.
+
+### 17.2 Source security evidence and unresolved qualification
+
+Actual exported BPF:119 instructions, SHA256
+`b9e50a99f87cb236c51aa7f2146ed75809e6ee84045516aab43c2c9521bf0b29`.
+Compiler: UbuntuGCC13.3.0, -std=c11 -O2 -Wall -Wextra -Werror.
+It rejects wrong ABI/x32, unmeasured/high mount flags, forced/lazy umount,
+non-CLONE_NEWNS unshare, other namespace clone bits including NEWTIME, setns,
+modern mount APIs, bpf/perf and unused sensitive calls; clone3 returnsENOSYS.
+Other calls defer to Docker's original filter by intersection, never overriding
+its denial. Actual kernel TSYNC/thread/fork inheritance is **NOT_RUN**: a userspace
+instruction interpreter is not kernel qualification. No new filter was installed.
+
+The full profile compiles with existing AppArmor4.0.1, `--skip-kernel-load
+--skip-cache --stdout --jobs 1`, exit0. Rendered policy SHA256
+`e33921947f86e3fb6e98891fcdb3c9ab378d172ce684c767c8a86e0b12041d1c`;
+offline compiled SHA256
+`991fb94fedf80005bc7c51f95773fc02b418fdcdce55e8a539d13374f19386e7`.
+Compiled bytes/ELF are not installed or shipped. Current kernel lacks the AppArmor
+interface; warning retained. FD path mediation, actual enforced negatives,
+policy loader/root manager under privilege and VM lifecycle are NOT_RUN.
+
+The manager does not install policy, create a VM, issue an approval or pretend
+to independently measure its own VM image. Its image-id/loaded receipt require
+an independent trusted image administrator/provisioner; a guest file or profile
+name alone is insufficient proof. A concrete immutable image, bootstrap/loader
+and independent destruction controller are **not available/implemented** for a
+specific authorized infrastructure. Those are real external integration gaps,
+not a functional full sandbox claim. The repository runners API returned403;
+this proves insufficient discovery permission, not that no runner exists.
+Local /dev/kvm is absent and VM tools were not found. No cloud account, paid
+resource, VM or reusable self-hosted production runner was created.
+
+All active policy execution stays behind independent security review of the
+whole exact privilege-bearing diff and a concrete one-use VM authorization.
+No --privileged, unconfined profile/filter, new host namespace/capability,
+AppArmor host/global change or generic root command interface was used.
+No fake root/job/OLD authorization, image identity or teardown proof was created.
+
+### 17.3 Actual local matrix, not hosted CI9
+
+All commands ran via rtk proxy, native WSL UID1000, Node24.10.0/Go1.27.3,
+Python3.12.3; Docker root only in existing unchanged owned fixtures. No new
+policy was used in those existing root71/native11 tests. First20/expanded22/
+final23 new tests all passed; intermediate evidence retained. Ordinary source
+preparation corrected valid Next.js `[lang]/(site)` path admission, atime-insensitive
+identity comparison, bounded IDs, unknown-state checks and child PID/group
+lifecycle before final qualification, without weakening security assertions.
+
+| Command | Actual result |
+| --- | --- |
+| `python3 -B -m unittest discover -s scripts/ci -p test_native_mount_sandbox.py -v` |23/23 PASS,0SKIP,exit0; compiled instruction CPU tests, NOT kernel policy |
+| `python3 -B -m unittest discover -s scripts/ci -p test_native_mount_preflight.py` |13/13 PASS,exit0 |
+| `node --test scripts/ci/native-mount-capture.test.mjs` |6/6 PASS,exit0 |
+| `python3 -B -m unittest discover -s ops/c2 -p test_pipeline_release.py -k CapacityAdmissionTests` |12/12 PASS,exit0 |
+| `python3 -B -m unittest discover -s ops/c2 -p test_pipeline_artifact.py` |12/12 PASS,exit0 |
+| `python3 -B -m unittest discover -s ops/c2 -p test_publisher_promotion.py` |64/64 localPASS,exit0; historical Python3.13 missing-PID risk stillOPEN |
+| `python3 -B -m unittest discover -s ops/c2 -p test_root_executor_pair_upgrade.py` |33/33 PASS,exit0 |
+| `node scripts/ci/run-checks.mjs ops` |271Python+186Node PASS,0SKIP,exit0 |
+| `node scripts/ci/run-checks.mjs go` |PASS,exit0,124.140s; mod/test/race/vet/staticcheck plus377 C2NodePASS/0SKIP |
+| `node scripts/ci/run-root-bundle-integration.mjs` |root71+native11/23crash PASS locally,0SKIP,exit0,34.767s; AA-disabled WSL only |
+| `node scripts/revalidation/verify-part16.mjs` |PASS,exit0 |
+| `node scripts/ci/run-checks.mjs contracts` |exit0,4.280s |
+| `node scripts/ci/run-checks.mjs nest` |exit0,8.539s |
+| `node scripts/ci/run-checks.mjs frontend` |exit0,73.999s |
+| `node scripts/ci/run-checks.mjs pipeline` |exit0,8.907s |
+| `node scripts/ci/run-checks.mjs security` |exit0, repeated after source, PASS |
+| `node scripts/ci/run-db-integration.mjs` |actual disposablePG17,exit0,66.297s; no SKIP found |
+| `node scripts/ci/run-ephemeral-staging.mjs` |exit0,60.392s; **partial test coverage**, details below |
+| JS/Python/C syntax, offline profile parser, diff/mode/history checks |PASS,exit0 |
+
+Staging's exit0 is **not a zero-SKIP claim**: live GET contracts18PASS+4VoiceSKIP
+for each of Go/Nest; Playwright14PASS+6device-conditionalSKIP. Skipped cases are
+NOT_EXECUTED, not passed; separate local GoVoice parity ran in staging but does
+not retroactively relabel contract skips. No production Voice/Siri retest occurred.
+Full command argv/exit/elapsed/logs are in FULL_PROFILE_RESULTS.json,
+AFFECTED_RESULTS.json, GO_ROOT_RESULTS.json and specific final-source result JSON.
+A report-only rg query initially omitted `--` for a pattern beginning `---`;
+read-only Python parsing corrected the evidence query. No test/source gate was
+changed. No local result substitutes for hosted nine required jobs.
+
+### 17.4 Fresh bounded production observations — no writes
+
+Two bounded read-only SSH sessions through existing `my-vps`, BatchMode,
+strict host-key verification, no forwarding/retries: metadata inventory and
+bounded OLD dependency observation. No secrets/reader.dsn/env/DB backup contents
+were read or printed. No HTTP/SQL/Redis, service/timer changes, root tool invocation,
+publish, sync/ingest/HMAC, package installation or production source switch occurred.
+
+Readback timestamp: 2026-11-03T16:38:56Z.
+Publisher SHA `b2012c5b8c05de8a7667bf942daf9d7232f3a7b6`; clean Git.
+Automatic/authorization source agrees; all12 actual installed closure SHA256
+match current authority. C2 remains enabled. API container reports healthy with
+image tag49f6823768817b0390f215de42439cce523bf5d3; this is tag/state metadata,
+not a new API deployed-SHA/HTTP smoke proof. Timers/services metadata retained.
+No promotion interlock observed; lock metadata captured but lock freedom was
+not independently proved by acquiring or altering locks. Reader metadata/hash
+of ledger captured; reader content never opened. Ledger34INCONCLUSIVE,0PASS,
+0FAIL; full policy/history validation and qualified acceptance not performed.
+No C2 PASS is claimed. Legitimate future ledger appends must remain preserved.
+
+Systemd255.4 meets the version threshold, but actual OpenFile namespace-FD
+admission has **NOT_VERIFIED** status. cgroupv2 visible; full ancestor/quota/
+namespace visibility and production capacity admission NOT_VERIFIED.
+Current pipeline is not mounted, v2 selection absent, installed root policyv1
+SHA2562bf672f1626252f107447552493ad982999d3d7f444f000394a7006d952ddb8b.
+No used root helper/installer was replayed or modified.
+
+Five retained release directories,14 backup files each (70total), four committed
+receipt paths and one rollback receipt path observed. No backup content/hash or
+complete receipt-chain verification performed: **ROLLBACK_READINESS_NOT_PROVEN**,
+not rollback PASS. No rollback attempted. v2 OLD enrollment/root authorization
+remain absent. Observed actual OLD graph is not automatically trusted:
+61,707,071logical bytes; bounded public dependency hash/inode/link/mode inventory,
+SHA25632d26532e6811734b594724fe59e6ff174cf3c97e11580c1899de9ec9e6de01d.
+Expected OLD Git identities match observed publisher:
+pipeline tree2ed1c1c6d6fef504b08829f4193a0b60681bd3a7;
+package3049257eb2898eb4c279a296f3bd56f1a52e883b;
+lockcfee18d88a435e550c0ed3f074fb8ccd4704cdfe.
+This read-only mutable-tree observation is not atomic enrollment, independent
+package provenance, a sealed capsule, script-execution authorization or signed
+root approval. Actual Node/pnpm executable-version and baseline authority still
+need independent admission; installed closure paths/hashes alone do not prove them.
+
+### 17.5 Hosted/release/prod status and ONE handoff
+
+Current hosted41659473269/attempt1 (head1ce9352):5SUCCESS/GoQuality+GateFAILURE/
+PG+StagingSKIPPED. It covers only the committed diagnostic source, **not** this
+uncommitted candidate. First hosted tmpfsEACCES13/defaultAppArmor remains accepted
+evidence; exclusive audit-proven LSM causality still unavailable. No new CI run,
+new commit, push, PR edit, merge or exact-main qualification occurred. Source
+publication is gated by TASK§5, not silently omitted despite broad authorization.
+
+New authenticated Artifact v2/buildRun/ZIP/TAR/source-main tuple: **NOT_RUN**.
+No old artifact or fake build identity was reused; unchanged256MiB caps and
+previous7,305,216-byte local margin remain constraints, not new size proof.
+Production promotion, PRODUCTION_SOURCE_RUNTIME_ALIGNED, fresh-main deployed
+parity, v2 rollback/reboot and genuine3/3 acceptance: **NOT_RUN/NOT_VERIFIED**.
+Observed production publisher differs from GitHubmain49f6823; no parity PASS.
+AUTO_DEPLOY_ENABLED remains false (read-only variable query).
+
+ONE next action is in off-tree EXTERNAL_GATES.md: independent review of this
+whole privilege-bearing source packet and provision of one concrete authorized
+single-use VM/image/provisioner with independent destruction authority. No
+secrets should be sent in chat. Then qualify actual policy/filter/FD mediation,
+root71/native11/crash23/negative lifecycle, review/wire CI and require9/9 before
+protected merge. New authenticated artifact and independently approved real OLD
+inventory/root bootstrap are subsequent dependent gates. No further Frontend or
+Backend2 confirmation requested; no production permission was invented.
+
+Off-tree consolidated report/evidence:
+`/home/denis/tmp/aktau-part-b-autonomous-20261103-9tj7hwyj`.
+Includes exact diff, per-file hashes/modes/status, original28/frozen preservation,
+SOURCE_FREEZE_SHA256.txt, CI9_MATRIX.json, sanitized PRODUCTION_READBACK.json,
+ROLLBACK_READINESS.json, OLD observation, full test outputs and ONE external handoff.
+New clean source/evidence archive is externally validated for safe regular members,
+uniqueness, byte-match and SHA256; no .git/TODO/env/secrets/node_modules/Owner ZIP,
+DB data or compiled binaries included. No production PASS is claimed. STOP at
+independent privileged review/isolated runner authority gate.
+
+
+### 17.6 Final source qualification update
+
+Final candidate additionally checks that the manager is outside Docker and in
+VM PID1's mount namespace, captures only a bounded mount-topology SHA256/inode
+before container creation and requires unchanged topology after each owned
+container cleanup. No raw host mount records are logged. This protocol is still
+unexecuted under privilege; independent VM topology/destroy proof is not invented.
+A new metadata-negative test covers container/wrong-parent rejection and synthetic
+topology hashing. Final new suite is **24/24 PASS,0SKIP,exit0** (sandbox-last.log),
+superseding earlier20/22/23 iteration counts as final source coverage. All previous
+results/logs are retained. The external blocker and all NOT_RUN gates are unchanged.
+
+
+## 18. Owner fast-track CI resolution — 2026-11-03/04, prepublication
+
+**SELF_REVIEWED_OWNER_AUTHORIZED — CI ONLY.** Owner explicitly superseded the
+previous optional dedicated-VM/second-reviewer model for this CI scope. Standard
+GitHub ubuntu-24.04 is a fresh disposable job VM; its managed lifecycle is the
+accepted boundary, not independently attested physical destruction. No source
+production/root-approval contract or branch rule is bypassed. No statement here
+is independent review or a production authorization record.
+
+### 18.1 Minimal selected scope / preservation
+
+The old manager/BPF/provisioner prototype was backed up off-tree with exact hashes
+before edits and is **NOT_PUBLISHED**. Its original four unused code/test/docs
+paths remain in the worktree; no Owner data was deleted. The new fast path does
+not install or invoke that manager or deny-only launcher. Additional BPF was a
+proposal in §16/17, not a frozen CI requirement in Design Contract §§18/19.
+Original Docker seccomp stays active. This change does not claim a narrower
+syscall allowlist than the existing Docker filter or defend compromised root.
+
+Publish only9 paths: same cumulative report; existing root CI runner; existing
+native preflight and its test; standalone AppArmor profile/binding; new
+`native-mount-hosted.mjs`, its Node test and `native-mount-policy-integration.py`.
+No production publisher/Go/DB/frontend/parser/14-target rollback/fixtures change.
+Shim remains Git100755. Existing native11 methods and23 phases are byte-identical.
+Current source head before publication is1ce935205141ce7266ae268c5c82a5b0c3c4c893;
+main49f6823768817b0390f215de42439cce523bf5d3; same Draft PR87, no automerge.
+
+### 18.2 Self-review and objective CI boundary
+
+`native-mount-hosted.mjs` executes as ordinary runner user. Its sudo calls are
+only fixed system tools/data operations: enabled/status read, unique root0700
+/run directory, tee/chmod/hash of fixed files, compile-without-load, exact binary
+profile add/remove, registered-file cleanup. No uploaded JavaScript/Python/root
+manager or shell snippet is executed under sudo. Root-copy bytes are hashed
+before load; the exact compiled policy digest is measured per job and logged.
+The profile/binding input is obtained from the actual checkout commit through
+verified Git commit/tree/blob hash chains, not mutable upload files or argv.
+No variable selects command, arbitrary root path or profile contents.
+
+Before sudo, require actual Linux/X64/GitHub-hosted/ubuntu24/CI/go context,
+known repository, current checkout==GITHUB_SHA, positive run/attempt, trusted
+same-repository PR/base or push-main, non-container24.04 and microsoft/kvm VM.
+No external fork, slim/self-hosted or workflow_dispatch exception. Existing
+workflow contents-read/persist-credentialsfalse/no production secrets remain.
+This is trusted GitHub job context plus Owner-reviewed repository code, not a
+hardware attestation against a malicious root/admin. GitHub job sudo access is
+an accepted property of this dedicated VM, never a production permission.
+
+The complete enforced profile permits only audited owned tmpfs, bind/remount/
+move/private/unmount paths. No generic mount/umount, proc-FD loophole, complain,
+unconfined, extra caps, host namespace/socket bind or docker-default edit.
+Root71 remains default-confined withoutSYS_ADMIN. Native keeps previous six caps,
+networknone/read-only root+src/tmp1GiB/RAM2GiB/CPU2/PID128/NNP and default seccomp.
+Receipt identifies actual kernel label/profile hashes/compiled bytes/run/source;
+preflight requires readonly root-owned files, exact schema/enforce label and
+known repository/image identity. This is CI test custody, not root release approval.
+
+Hosted execution will run an actual default-profile denial control, actual
+missing-SYS_ADMIN denial, owned dummy writable-source rejection (never expose the
+real source writable), enforced network/proc/sys/dev/src/path/flags/FD negatives,
+then all unchanged native11/crash23. Unexpected successful mounts abort that
+owned container; no guessed unmount or broad permission is added. Scoped kernel
+audit output is collected on failure, no unrelated raw host logs. Containers are
+verified absent before exact profile removal; root unknown setup state is left
+for the managed VM lifecycle, never silently retried on that host.
+
+### 18.3 Local checks / actual failure retained
+
+Node24.10.0, Python3.12, Go1.27.3. Preflight16, hosted Node7, capture6, capacity12,
+artifact12, publisher64, root-helper33 PASS. Go profile incl race/vet/staticcheck
+and377 C2Node tests PASS. Pipeline/security and disposablePG17 PASS. Staging exit0
+with its existing Voice/device-conditional SKIPs counted separately, not PASS.
+Local root71/native11/crash23 PASS under unchanged WSL environment, **not**
+new-policy enforcement. Profile compiles offline only; no local host policy loaded.
+
+First ops attempt failed: one60s per-case subprocess returned statusnull while
+Go/PG/staging ran concurrently. Original full output retained. The exact crash
+case then passed unchanged under the same60s limit in27.382s; full serialized
+ops passed271Python+186Node/0SKIP in177.497s. Resource contention is consistent
+with this failure, not a source RCA claimed beyond measured evidence. No timeout
+or assertion changed. Old Python3.13 publisher missing-PID remains a known P2.
+Unused prototype Python3.13 PID/stderr issue is preserved, NOT_PUBLISHED, not
+suppressed or represented as fixed. No failure was relabeled local CI9 success.
+
+### 18.4 Production diagnostics before any conditional release
+
+Fresh bounded read-only SSH: publisherb2012c5b8c05de8a7667bf942daf9d7232f3a7b6,
+Git clean, root policyv1 unchanged.12/12 installed closure hashes and6 runtime
+pins match. Five retained terminal receipts,70/70 backup content hashes match
+receipt oldHash; no backup values/reader/env secrets exported. This is measured
+retention, not independent OLD enrollment or a new rollback authorization.
+
+Daily last run Nov03 18:00+05 exited1; weekly Nov02 03:00+05 exited1. Both timers
+active/waiting, not currently executing. Locks snapshot runtime/controller free;
+ingress.lock absent (recorded, not created). Safe journal categories show Dana
+exit1, Dina/FixPrice exit0, stale-source and publish-step-failed; weekly has Dana
+scraper failure. No restart/sync was run to clear failed state. Further sanitized
+causality is being collected; no unsupported healthy-sync claim is made. API
+container still healthy; ledger/reader preserved. Production promotion remains
+conditional on containment, current authority and measured OLD/rollback gates.
+
+Next: one scoped commit/non-force push after local checks and this self-review;
+actual hosted enforcement/CI9, normal source fixes if needed, protected merge
+only on9SUCCESS and actual branch gates. Source/CI acceptance is not production
+approval. Follow-up results append here; final report is off-tree. Root production
+policyv1 does not automatically authorize v2 enrollment/provisioning, so no old
+helper/release/initial approval may be replayed. AUTO_DEPLOY stays false.

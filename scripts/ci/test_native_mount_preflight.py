@@ -4,6 +4,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 import contextlib
+import json
+import hashlib
 
 spec = importlib.util.spec_from_file_location('preflight_tests', Path(__file__).with_name('native-mount-preflight.py'))
 p = importlib.util.module_from_spec(spec)
@@ -89,6 +91,38 @@ class PrerequisiteTests(unittest.TestCase):
     def test_missing_kernel_metadata_fails_closed(self):
         with patch.object(p.Path, 'is_file', return_value=True), patch.object(p.os, 'getuid', return_value=0), patch.object(p.os, 'geteuid', return_value=0), patch.object(p, 'snapshot', side_effect=PermissionError()):
             self.assertEqual(p.qualify()['reason'], 'metadata_unavailable')
+
+    def hosted_records(self):
+        raw=(Path(__file__).parent/'fixtures/native-mount-v1.binding.json').read_bytes()
+        b=json.loads(raw)
+        receipt={'version':1,'contract':'aktau-ci-github-native-v1','profileName':b['profileName'],
+            'bindingSha256':hashlib.sha256(raw).hexdigest(),'profileSha256':b['renderedSHA256'],
+            'compiledSha256':'a'*64,'repository':'kiratonine/AdilBaga','event':'pull_request',
+            'runner':'github-hosted','imageOS':'ubuntu24','runId':'123','attempt':'1',
+            'headSha':'b'*40,'checkoutSha':'c'*40}
+        return raw,b,receipt
+
+    def test_exact_hosted_enforce_receipt_boundary(self):
+        raw,b,receipt=self.hosted_records()
+        def read(path):return (raw,b) if path.startswith('/ci/') else (b'',receipt)
+        with patch.object(p,'_ci_record',side_effect=read):
+            self.assertTrue(p._custom_identity(b['expectedProcLabel']))
+            for label in ['unconfined',b['profileName']+' (complain)',b['profileName']+'x (enforce)']:
+                self.assertFalse(p._custom_identity(label))
+
+    def test_spoofed_hosted_receipt_rejects(self):
+        raw,b,receipt=self.hosted_records()
+        for delta in [{'repository':'fork/repo'},{'runner':'self-hosted'},{'imageOS':'ubuntu-slim'},
+            {'compiledSha256':'invalid'},{'bindingSha256':'0'*64},{'profileSha256':'0'*64},
+            {'runId':True},{'headSha':'wrong'},{'extra':'authority'}]:
+            def read(path):return (raw,b) if path.startswith('/ci/') else (b'',{**receipt,**delta})
+            with patch.object(p,'_ci_record',side_effect=read):
+                self.assertFalse(p._custom_identity(b['expectedProcLabel']))
+
+    def test_missing_or_writable_receipt_has_no_fallback(self):
+        _,b,_=self.hosted_records()
+        with patch.object(p,'_ci_record',side_effect=PermissionError()):
+            self.assertFalse(p._custom_identity(b['expectedProcLabel']))
 
 
 if __name__ == '__main__':
