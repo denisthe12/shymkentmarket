@@ -804,13 +804,15 @@ SSH session opened personally by that administrator under the personal account
 - It is opened only for issuance and closed afterwards. Bootstrap and promotion
   run in a different session.
 - The host key is verified against the fingerprint the Owner supplied. Login uses
-  the administrator's own key. The sudo password and the key passphrase never
-  reach an agent, chat or repository.
+  the administrator's own key. The private key and its passphrase never reach an
+  agent, chat or repository, and the key is not left unlocked in an agent an AI
+  session can use.
 
 **Accepted risk.** The record and the deployment now travel over the same SSH path
-to the same host, so the separation is by person and session, not by channel. A
-compromise of the administrator's workstation or key reaches both. The Owner
-accepted this for this tuple only.
+to the same host, so the separation is by person and session, not by channel.
+`b2admin` has passwordless sudo, so the SSH key alone gives root. A compromise of
+the administrator's workstation or key reaches both. The Owner accepted the shared
+path for this tuple only and set up the passwordless sudo himself.
 
 **Unchanged.** Provenance, identity and rollback checks stay as they are: exact
 main, CI, artifact and root bundle hashes, old root pins, idle units, interactive
