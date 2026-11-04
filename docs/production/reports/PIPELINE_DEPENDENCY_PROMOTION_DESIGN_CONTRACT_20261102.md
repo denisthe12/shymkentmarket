@@ -723,6 +723,63 @@ parity verifier now supplies the validated journal's underlying target identity
 to the private verifier instead of omitting that bound. No public path/UID/env/
 approval override or new enrollment schema is introduced.
 
+
+### 20.3. 2026-11-04 — candidate: Dana parser NEW tree and post-release freshness acceptance
+
+Release contract amendment for one tuple. It is unapplied and is not a root
+approval, a deployment permission or a general rule for later releases.
+
+**Reason.** The scheduled Dana scrape on publisher `b2012c5` fails on all 13
+scoped sections with `no product cards on the page`: dana-market.kz moved to the
+Aspro template. The freshness gate then correctly stops publication. Installed
+policy v1 rejects any current main (`dependency_provisioning_required`), and the
+previous v2 tuple admits only tree `4f1294e3…` (`dependency_history_unbound` for
+anything else). The fix therefore cannot reach the publisher before bootstrap,
+while the previous issuance procedure required a successful scheduled run first.
+
+**NEW tree.** `PIPELINE_NEW_TREE` changes from
+`4f1294e3ec73fd477d85825588b8f382125fc1c6` to
+`cc2f3f1d32570ad7892abe433b37a7ca82ebefcd`. The delta is the Dana parser and its
+weight flag (`pipeline/src/scrapers/dana.ts`, `pipeline/src/mapping/weight.ts`)
+plus tests and fixtures. Package and lock blobs, Node, pnpm, OLD source, OLD
+inventories and the NEW dependency graph are unchanged. Any later change under
+`pipeline/` needs a new tree value and a new qualification.
+
+**Void tuple.** Source `95f9725…`, artifact `13315603450`, root manifest
+`6a57c79a…`, policy `2177d37d…`, executor `695ebca5…` and issuance procedure
+`0c31018f…` must not be used for this release. The exact main, CI, artifact, root
+bundle and procedure are qualified again, and no earlier approval carries over.
+
+**Issuance precondition.** For this tuple only, the procedure replaces the
+requirement of a successful last scheduled run with evidence of the known
+failure class: Dana scrape exit 1, Dina and Fix Price exit 0, then `DANA` stale
+source and failed publication. All other checks stay: idle units, old root pins,
+exact main, interactive manifest acknowledgement, one-use record, 30-minute TTL.
+Issuance also requires the disposable full rollback of §20.3 below to have passed
+on this exact tuple.
+
+**Acceptance.** Freshness is proven only by the first natural scheduled
+`aktau-sync.service` run after promotion: unit exit 0, `dana`, `dina` and
+`fixprice` each exit 0, a new Dana source file captured by that run, successful
+ingest and a new published snapshot. Exit 3 does not count, because it means a
+store came from a previous file. No manual sync, scrape or ingest stands in for
+this run.
+
+**Failure.** Any other outcome of that run triggers the existing coupled safe
+rollback of source, graphs and the 14 targets, with reader, ledger, histories and
+backups preserved. Unknown state stops without a repeated apply or a blind
+rollback. Rollback restores `b2012c5`, where Dana still fails, so public prices
+stay frozen at the last published snapshot and no data is lost.
+
+**Rollback qualification.** Before issuance, the disposable stand must pass the
+full OLD→NEW→OLD round trip and the crash, signal and rollback cases of the 28+2
+matrix on this tuple. A rebuilt stand image is reported as rebuilt, never as the
+historical image.
+
+**Unchanged.** The freshness gate, `SYNC_MAX_SOURCE_AGE_HOURS`, `capturedAt`,
+thresholds, HMAC, C2 policy, schedules and the root authority model. C2 PASS still
+needs genuine consecutive scheduled cycles. Anvar is out of scope for this tuple.
+
 Actual OLD custody capture and full source/fault/test results are recorded
 append-only in the same Part B Report. All new executable/policy hashes require
 fresh source/CI/bundle qualification and genuine Owner/admin authorization

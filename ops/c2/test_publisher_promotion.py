@@ -603,7 +603,7 @@ class PipelineCapsuleV2Tests(unittest.TestCase):
             {'path':'node_modules/b','type':'symlink','target':'a'}]})
 
     def test_pr86_exact_pairs_and_inventory_positive(self):
-        self.assertEqual(m.PIPELINE_NEW_TREE, '4f1294e3ec73fd477d85825588b8f382125fc1c6')
+        self.assertEqual(m.PIPELINE_NEW_TREE, 'cc2f3f1d32570ad7892abe433b37a7ca82ebefcd')
         self.assertEqual(len(m.pipeline_inventory(self.inventory())),3)
 
     def test_inventory_rejects_extra_keys_boolean_mode_traversal_and_links(self):
