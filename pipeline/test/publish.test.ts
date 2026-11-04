@@ -38,6 +38,10 @@ describe('isVariableWeight', () => {
     expect(isVariableWeight('DINA', cucumberKg.product)).toBe(true)
     expect(isVariableWeight('DINA', { name: 'Огурцы', rawPayload: { price_type: 'unit' } })).toBe(false)
   })
+  it('DANA by the per-kg price unit of the Aspro listing, even without a mark in the name', () => {
+    expect(isVariableWeight('DANA', { name: 'КАРТОФЕЛЬ МОЛОДОЙ', rawPayload: { priceUnit: 'kg' } })).toBe(true)
+    expect(isVariableWeight('DANA', { name: 'КАРТОФЕЛЬ МОЛОДОЙ', rawPayload: { priceUnit: null } })).toBe(false)
+  })
   it('DANA by the word ВЕС / ВЕСОВОЙ in the name, not by substrings', () => {
     expect(isVariableWeight('DANA', { name: "СЫР 'ЭМИР ФАСОВ' ВЕСОВОЙ  4039", rawPayload: {} })).toBe(true)
     expect(isVariableWeight('DANA', { name: 'ПЕЧЕНЬ ГОВЯЖЬЯ ВЕС 1188', rawPayload: {} })).toBe(true)

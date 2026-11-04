@@ -67,7 +67,61 @@ export function parseDanaPage(html: string, sectionPath: string[]): SourceProduc
       rawPayload: { rawId, name, price, oldPrice: old > price ? old : null, section: sectionPath.join(' / '), sections: [] as string[] },
     })
   })
+  // Сайт вернулся на шаблон Aspro: карточки `.catalog_item_wrapp`, цена в `.price_value`. Разметки не пересекаются
+  if (out.length === 0) out.push(...parseAsproCards($, sectionPath))
   return out
+}
+
+/** Карточки шаблона Aspro (dana-market.kz, листовые разделы каталога) */
+function parseAsproCards($: cheerio.CheerioAPI, sectionPath: string[]): SourceProduct[] {
+  const out: SourceProduct[] = []
+  $('.catalog_item_wrapp').each((_, el) => {
+    const card = $(el)
+    const title = card.find('.item-title a').first()
+    const href = title.attr('href')
+    // data-id стоит на карточке или её потомке; запасные — последний числовой сегмент ссылки и хвост id контейнера bx_<n>_<id>
+    const rawId = card.attr('data-id') || card.find('[data-id]').first().attr('data-id')
+      || /\/(\d+)\/?(?:[?#].*)?$/.exec(href ?? '')?.[1] || /_(\d+)$/.exec(card.attr('id') ?? '')?.[1]
+    const name = title.text().trim()
+    // data-value — точная цена (для весового товара это цена за кг, подпись «/кг»); без него — текст `.price_value`
+    const priceNode = card.find('.price_matrix_wrapper .price, .price').first()
+    const dataValue = parseFloat(priceNode.attr('data-value') ?? '')
+    const price = Number.isFinite(dataValue) && dataValue > 0 ? Math.round(dataValue) : priceText(card.find('.price_value').first().text())
+    if (!rawId || !name || price <= 0) return
+    const old = priceText(card.find('.price_old .price_value').first().text())
+    const measure = card.find('.price_measure').first().text().trim().toLowerCase()
+    const img = card.find('.thumb img, .image_wrapper_block img').first()
+    const src = img.attr('data-src') || img.attr('src')
+    out.push({
+      sourceProductId: `dana_${rawId}`,
+      name,
+      price,
+      oldPrice: old > price ? old : null,
+      imageUrl: src && !/noimage/.test(src) ? abs(src) : null,
+      sourceUrl: abs(href),
+      brand: null,
+      sourceCategoryPath: sectionPath,
+      // priceUnit 'kg': цена за килограмм (подпись «/кг»), по ней sync отличает весовой товар
+      rawPayload: { rawId, name, price, oldPrice: old > price ? old : null, priceUnit: measure === '/кг' ? 'kg' : null, section: sectionPath.join(' / '), sections: [] as string[] },
+    })
+  })
+  return out
+}
+
+/**
+ * Плитки подразделов на странице раздела (шаблон Aspro): пути /catalog/<id>/ в порядке страницы, без повторов.
+ * Пустой подраздел показан без счётчика «N товаров» — его пропускаем, иначе пустая страница сочтётся сбоем;
+ * если счётчиков нет ни у одной плитки (другой вариант шаблона), берём все.
+ */
+export function parseDanaTiles(html: string): string[] {
+  const $ = cheerio.load(html)
+  const tiles: { href: string; counted: boolean }[] = []
+  $('.catalog_section_list .section_item').each((_, el) => {
+    const href = $(el).find('a.thumb[href]').first().attr('href') ?? ''
+    if (DANA_SECTION_RE.test(href)) tiles.push({ href, counted: /[1-9]\d*/.test($(el).find('.element-count2').first().text()) })
+  })
+  const anyCounted = tiles.some(t => t.counted)
+  return [...new Set(tiles.filter(t => t.counted || !anyCounted).map(t => t.href))]
 }
 
 /** Число страниц раздела: максимум PAGEN_1 в ссылках блока пагинации; нет блока — одна страница */
@@ -101,7 +155,9 @@ export function parseDanaSections(html: string, rootPath: string): string[] {
 export type DanaMode = 'roots' | 'sections' | 'full'
 
 type Target = { path: string; rootName: string; sectionPath: string | null }
-type PageResult = { products: SourceProduct[]; count: number } | { end: true } | { error: string }
+// children: страница без карточек, но с плитками подразделов — обход спускается в них
+type PageResult = { products: SourceProduct[]; count: number } | { children: string[] } | { end: true } | { error: string }
+const MAX_TILE_DEPTH = 4
 
 export async function scrapeDana(opts: {
   fetchImpl?: typeof fetch; delayMs?: number; concurrency?: number
@@ -160,6 +216,10 @@ export async function scrapeDana(opts: {
       const reuse = page === 1 && t.path === menuRoot.path && menuHtml !== null
       const text = reuse ? menuHtml! : await fetchHtml(t.path, page)
       const products = parseDanaPage(text, [t.rootName])
+      if (products.length === 0 && page === 1) {
+        const children = parseDanaTiles(text)
+        if (children.length > 0) return { children }
+      }
       if (products.length === 0) {
         const error = 'no product cards on the page'
         console.warn(`[DANA] ${t.path} p${page}: ${error}`)
@@ -175,23 +235,47 @@ export async function scrapeDana(opts: {
     }
   }
 
-  // Фаза 1: стр. 1 каждой цели; фаза 2: стр. 2..N всех целей одной общей очередью
-  const first = await mapPool(targets, concurrency, t => fetchPage(t, 1))
-  const jobs: { ti: number; page: number }[] = []
-  first.forEach((r, ti) => {
-    if ('error' in r) { errorCount++; return }
-    if ('products' in r) for (let page = 2; page <= r.count; page++) jobs.push({ ti, page })
-  })
-  const rest = await mapPool(jobs, concurrency, j => fetchPage(targets[j.ti]!, j.page))
-  rest.forEach(r => { if ('error' in r) errorCount++ })
+  // Уровень за уровнем: стр. 1 каждой цели, затем стр. 2..N одной очередью; плитки подразделов дают следующий уровень.
+  // visited не даёт зациклиться на ссылках, которые ведут назад
+  const crawled: { t: Target; results: PageResult[] }[] = []
+  const visited = new Set(targets.map(t => t.path))
+  let frontier = targets
+  for (let depth = 0; frontier.length > 0 && depth <= MAX_TILE_DEPTH; depth++) {
+    const first = await mapPool(frontier, concurrency, t => fetchPage(t, 1))
+    const base = crawled.length
+    const jobs: { ci: number; page: number }[] = []
+    const next: Target[] = []
+    first.forEach((r, i) => {
+      const t = frontier[i]!
+      crawled.push({ t, results: [r] })
+      if ('error' in r) errorCount++
+      else if ('children' in r) {
+        const fresh = r.children.filter(path => !visited.has(path))
+        // Плитки ведут только на уже пройденные страницы: подраздел потерян, это ошибка, а не тихий успех
+        if (fresh.length === 0) {
+          errorCount++
+          console.warn(`[DANA] ${t.path}: subsection tiles lead only to visited pages`)
+        }
+        for (const path of fresh) { visited.add(path); next.push({ path, rootName: t.rootName, sectionPath: t.sectionPath }) }
+      } else if ('products' in r) for (let page = 2; page <= r.count; page++) jobs.push({ ci: base + i, page })
+    })
+    const rest = await mapPool(jobs, concurrency, j => fetchPage(crawled[j.ci]!.t, j.page))
+    rest.forEach((r, k) => {
+      if ('error' in r) errorCount++
+      crawled[jobs[k]!.ci]!.results.push(r)
+    })
+    frontier = next
+  }
+  if (frontier.length > 0) {
+    errorCount++
+    console.warn(`[DANA] subsection tiles nest deeper than ${MAX_TILE_DEPTH} levels, ${frontier.length} targets skipped`)
+  }
 
   // Слияние в детерминированном порядке: цель → страница → карточка; первая встреча побеждает
-  const perTarget: PageResult[][] = targets.map((_, ti) => [first[ti]!])
-  jobs.forEach((j, k) => perTarget[j.ti]!.push(rest[k]!))
   const products = new Map<string, SourceProduct>()
   const sectionsOf = new Map<string, Set<string>>()
-  targets.forEach((t, ti) => {
-    for (const r of perTarget[ti]!) {
+  crawled.forEach(({ t, results }) => {
+    for (const r of results) {
       if (!('products' in r)) continue
       for (const p of r.products) {
         if (!products.has(p.sourceProductId)) { products.set(p.sourceProductId, p); sectionsOf.set(p.sourceProductId, new Set()) }

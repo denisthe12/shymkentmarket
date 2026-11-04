@@ -1,10 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { parseDanaPage, parseDanaPageCount, parseDanaSections } from '../src/scrapers/dana.js'
+import { parseDanaPage, parseDanaPageCount, parseDanaSections, parseDanaTiles } from '../src/scrapers/dana.js'
 
 const html = readFileSync(new URL('./fixtures/dana-page.html', import.meta.url), 'utf8')
 const weightHtml = readFileSync(new URL('./fixtures/dana-weight.html', import.meta.url), 'utf8')
 const rootHtml = readFileSync(new URL('./fixtures/dana-root.html', import.meta.url), 'utf8')
+// Сайт вернулся на шаблон Aspro: карточки `.catalog_item_wrapp`, разделы показывают плитки подразделов
+const leafHtml = readFileSync(new URL('./fixtures/dana-leaf.html', import.meta.url), 'utf8')
+const tilesHtml = readFileSync(new URL('./fixtures/dana-section-tiles.html', import.meta.url), 'utf8')
 
 const card = (opts: { href?: string; id?: string; price?: string; old?: string; style?: string }) => `
 <div class="product-item-container" id="${opts.id ?? 'bx_1_555_abc'}" data-entity="item"><div class="product-item">
@@ -61,8 +64,24 @@ describe('dana', () => {
     expect(parseDanaPage(card({ style: '' }), [])[0]!.imageUrl).toBeNull()
   })
 
-  it('finds no cards in the old markup', () => {
-    expect(parseDanaPage('<div class="catalog_item_wrapp" data-id="1"><div class="item-title"><a href="/x/">T</a></div><span class="price_value">10</span></div>', [])).toEqual([])
+  it('parses cards of the Aspro template (catalog_item_wrapp)', () => {
+    const items = parseDanaPage(leafHtml, ['Продукты питания'])
+    expect(items.map(p => p.sourceProductId)).toEqual(['dana_16385', 'dana_17599', 'dana_16378', 'dana_29427'])
+    expect(items[0]).toMatchObject({ name: 'ХЛЕБ ОТРУБНОЙ "НУР"', price: 211, oldPrice: null, sourceUrl: 'https://dana-market.kz/catalog/485/16385/', sourceCategoryPath: ['Продукты питания'] })
+    expect(items[0]!.imageUrl).toBe('https://dana-market.kz/upload/iblock/611/hysex5yrg0ea182mayxgii0v1gh2cxwc.png')
+    expect(items[0]!.rawPayload.priceUnit).toBeNull()
+  })
+
+  it('reads a per-kg price with a thin-space thousands separator and marks it as kg', () => {
+    const kg = parseDanaPage(leafHtml, []).find(p => p.sourceProductId === 'dana_29427')!
+    expect(kg).toMatchObject({ price: 1432, name: "ПОМИДОР 'ЧЕРРИ' PLU:1855" })
+    expect(kg.rawPayload.priceUnit).toBe('kg')
+  })
+
+  it('reads an old price of the Aspro template only when it is above the price', () => {
+    const one = (old: string) => `<div class="catalog_item_wrapp" data-id="7"><div class="item-title"><a href="/catalog/1/7/"><span>T</span></a></div><div class="price"><span class="price_value">100</span></div><div class="price_old"><span class="price_value">${old}</span></div></div>`
+    expect(parseDanaPage(one('150'), [])[0]!.oldPrice).toBe(150)
+    expect(parseDanaPage(one('100'), [])[0]!.oldPrice).toBeNull()
   })
 })
 
@@ -83,6 +102,18 @@ describe('dana pagination and sections', () => {
     expect(sections).not.toContain('/catalog/589/')
     expect(sections).not.toContain(ROOT)
     expect(sections).toEqual([...sections].sort())
+  })
+  it('reads the subsection tiles of a section page, not the side menu', () => {
+    expect(parseDanaTiles(tilesHtml)).toEqual(['/catalog/485/', '/catalog/486/', '/catalog/487/'])
+    expect(parseDanaTiles(leafHtml)).toEqual([])
+  })
+  it('skips an empty subsection (tile without a product count) when the other tiles have counts', () => {
+    expect(parseDanaTiles(tilesHtml)).not.toContain('/catalog/570/')
+    // нет счётчиков вовсе (другой вариант шаблона) — берём все плитки
+    expect(parseDanaTiles(tilesHtml.replace(/<span class="element-count2[^>]*>[^<]*<\/span>/g, ''))).toContain('/catalog/570/')
+  })
+  it('reads the page count of an Aspro listing', () => {
+    expect(parseDanaPageCount(leafHtml)).toBe(3)
   })
   it('returns no sections for an unknown root', () => {
     expect(parseDanaSections(rootHtml, '/catalog/999999/')).toEqual([])
