@@ -72,6 +72,21 @@ class NativeMountSafetyTests(unittest.TestCase):
         self.mounts.attach(self.mounts.prepare(self.f.oldgen,'native-baseline'))
         return {'underlyingTargetIdentity':identity,'targetParentIdentity':parent}
 
+    def test_stage_moves_when_the_host_mount_above_it_is_shared(self):
+        # systemd makes / shared on a real host; MS_MOVE rejects a mount attached under a shared parent.
+        import subprocess
+        root=str(self.f.root)
+        subprocess.run(['/bin/mount','--bind',root,root],check=True)
+        subprocess.run(['/bin/mount','--make-shared',root],check=True)
+        self.baseline();e=self.f.engine();e.mounts=self.mounts
+        self.assertEqual(self.mounts.generation(),self.f.oldgen)
+        with patch.object(p,'pipeline_descriptor',side_effect=self.f.descriptor):
+            self.assertEqual(e.promote(self.f.contents,self.f.manifest,'native'),'PIPELINE_V2_COMMITTED')
+        self.assertEqual(self.mounts.generation(),self.f.newgen)
+        recovered=self.f.engine();recovered.mounts=self.mounts
+        self.assertEqual(recovered.recover(e.j,deliberate=True),'PIPELINE_V2_ROLLED_BACK')
+        self.assertEqual(self.mounts.generation(),self.f.oldgen)
+
     def test_real_mount_coupled_source_authority_roundtrip(self):
         self.baseline();e=self.f.engine();e.mounts=self.mounts
         with patch.object(p,'pipeline_descriptor',side_effect=self.f.descriptor):

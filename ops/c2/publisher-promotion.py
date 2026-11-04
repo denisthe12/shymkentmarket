@@ -2355,7 +2355,7 @@ class LinuxMounts:
         import contextlib
         with contextlib.ExitStack() as stack:
             def pinned(path):
-                allowed=(path==self.p.PUBLISHER+'/pipeline' or
+                allowed=(path==self.p.PUBLISHER+'/pipeline' or path==self.p.BASE+'/mounts' or
                     re.fullmatch(re.escape(self.p.BASE)+r'/mounts/[a-z0-9_-]{1,80}',path) or
                     re.fullmatch(re.escape(self.p.BASE)+r'/capsules/[a-f0-9]{64}/pipeline',path))
                 self.p.need(bool(allowed),'pipeline_mount_path')
@@ -2427,11 +2427,21 @@ class LinuxMounts:
         self.p.need(len(matches)==1,'pipeline_mount_generation')
         return {**record,'state':'mounted','generation':matches[0]}
     def generation(self):return self.inspect().get('generation')
+    def _private_stage_parent(self):
+        # MS_MOVE rejects a mount attached under a shared parent, and systemd makes / shared.
+        # The stage namespace becomes its own private mount, so a stage never sits directly under /.
+        from pathlib import Path
+        parent=self.p.BASE+'/mounts';exact=str(self.fs.path(parent))
+        points=[line.split()[4] for line in Path('/proc/self/mountinfo').read_text().splitlines()]
+        self.p.need(not any(point.startswith(exact+'/') for point in points) or exact in points,'pipeline_stage_parent_occupied')
+        if exact not in points:self._mount(parent,parent,4096)  # MS_BIND onto itself
+        self._mount(None,parent,1<<18)                          # MS_PRIVATE
     def prepare(self,g,identity,register=lambda _:None):
         self.p.need(re.fullmatch(r'[a-z0-9_-]{1,80}',identity),'pipeline_mount_identity')
         self.generations.add(g)
         path=self.p.BASE+'/mounts/'+identity
         self.p.need(not os.path.lexists(self.fs.path(path)),'pipeline_orphan_mount_stage')
+        self._private_stage_parent()
         self.fs.mkdir(path);self.stage=path
         register(list(self.p.stamp(os.lstat(self.fs.path(path))))[:6])
         self._mount(self._root(g),path,4096)                    # MS_BIND
