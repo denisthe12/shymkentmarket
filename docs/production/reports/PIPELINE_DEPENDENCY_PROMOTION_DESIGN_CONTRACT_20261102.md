@@ -755,8 +755,8 @@ requirement of a successful last scheduled run with evidence of the known
 failure class: Dana scrape exit 1, Dina and Fix Price exit 0, then `DANA` stale
 source and failed publication. All other checks stay: idle units, old root pins,
 exact main, interactive manifest acknowledgement, one-use record, 30-minute TTL.
-Issuance also requires the disposable full rollback of §20.3 below to have passed
-on this exact tuple.
+Issuance also requires the rollback qualification below to have passed on this
+exact tuple.
 
 **Acceptance.** Freshness is proven only by the first natural scheduled
 `aktau-sync.service` run after promotion: unit exit 0, `dana`, `dina` and
@@ -777,8 +777,58 @@ matrix on this tuple. A rebuilt stand image is reported as rebuilt, never as the
 historical image.
 
 **Unchanged.** The freshness gate, `SYNC_MAX_SOURCE_AGE_HOURS`, `capturedAt`,
-thresholds, HMAC, C2 policy, schedules and the root authority model. C2 PASS still
-needs genuine consecutive scheduled cycles. Anvar is out of scope for this tuple.
+thresholds, HMAC, C2 policy and schedules. The root authority model changes only
+as §20.4 states. C2 PASS still needs genuine consecutive scheduled cycles. Anvar
+is out of scope for this tuple.
+
+
+### 20.4. 2026-11-04 — candidate: delegated administrator and manual root terminal
+
+Release contract amendment for the Part B tuple of §20.3. It records a decision of
+the Owner; it is not itself a root approval and does not authorize a deployment.
+
+**Delegation.** The Owner delegated the administrator role for Part B to the
+Backend 2 engineer: root bootstrap, production deployment, rollback and issuing
+the one-use root record once the mandatory gates pass. This replaces the earlier
+statement that only the Owner issues the record.
+
+**Trusted console.** For this tuple the trusted console is a separate interactive
+SSH session opened personally by that administrator under the personal account
+`b2admin`, moving to root with `sudo -i`. It replaces the VNC/Web Console.
+
+**What the console must be.**
+
+- The administrator types every command personally.
+- No AI agent, script, scheduler or remote automation runs, reads or relays this
+  session, and it is not shared with any agent-controlled terminal.
+- It is opened only for issuance and closed afterwards. Bootstrap and promotion
+  run in a different session.
+- The host key is verified against the fingerprint the Owner supplied. Login uses
+  the administrator's own key. The private key and its passphrase never reach an
+  agent, chat or repository, and the key is not left unlocked in an agent an AI
+  session can use.
+
+**Accepted risk.** The record and the deployment now travel over the same SSH path
+to the same host, so the separation is by person and session, not by channel.
+`b2admin` has passwordless sudo, so the SSH key alone gives root. A compromise of
+the administrator's workstation or key reaches both. The Owner accepted the shared
+path for this tuple only and set up the passwordless sudo himself.
+
+**Unchanged.** Provenance, identity and rollback checks stay as they are: exact
+main, CI, artifact and root bundle hashes, old root pins, idle units, interactive
+manifest acknowledgement, `O_EXCL`/fsync/readback, 30-minute TTL and one use. The
+procedure file is verified by SHA256 in that session before it runs. An expired,
+existing or foreign record stops the release; nothing is overwritten or extended.
+
+**Scope.** One record for this tuple. Any drift of source, CI, artifact or root
+bundle voids it. No earlier approval carries over. After Part B the temporary
+access is reviewed as `ACCESS_HANDOFF.md` item 7 describes.
+
+**Agreement.** On 2026-11-04 the Owner confirmed in writing §20.3 and §20.4 as
+worded here, including the safe rollback on any outcome other than full success
+and the accepted risk above. A critical security violation, a rollback that cannot
+be guaranteed or an unknown production transaction state stops the release
+fail-closed, with evidence kept. Release gates are not bypassed.
 
 Actual OLD custody capture and full source/fault/test results are recorded
 append-only in the same Part B Report. All new executable/policy hashes require
