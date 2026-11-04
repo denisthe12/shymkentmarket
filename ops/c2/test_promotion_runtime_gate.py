@@ -98,7 +98,7 @@ class ActorSelectionTests(unittest.TestCase):
     def fixture(self):
         import json,hashlib
         selected={'version':1,'contract':'pr86-pipeline-v2','sourceSha':'a'*40,
-            'pipelineTreeSha1':'4f1294e3ec73fd477d85825588b8f382125fc1c6','inventorySha256':'b'*64,
+            'pipelineTreeSha1':'cc2f3f1d32570ad7892abe433b37a7ca82ebefcd','inventorySha256':'b'*64,
             'descriptorSha256':'c'*64,'releaseIdentity':'fixture','provenanceKind':'github-artifact'}
         raw=(json.dumps(selected,separators=(',',':'))+'\n').encode()
         att={'version':1,'bootId':pathlib.Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
