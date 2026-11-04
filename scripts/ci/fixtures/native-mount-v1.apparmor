@@ -56,6 +56,12 @@ profile aktau-pr87-native-v1-ae76e1796bc4b08732e7f7caad15e3ac5b2914bc21caaaa6588
   mount options=(rw,move) @{F}/var/lib/aktau-sync-promotion/mounts/@{STAGE}/ -> @{F}/opt/aktau-sync/pipeline/,
   umount @{F}/opt/aktau-sync/pipeline/,
   umount @{F}/var/lib/aktau-sync-promotion/mounts/@{STAGE}/,
+  # Stage namespace as its own private mount: MS_MOVE rejects a mount under a shared parent.
+  mount options=(rw,bind) @{F}/var/lib/aktau-sync-promotion/mounts/ -> @{F}/var/lib/aktau-sync-promotion/mounts/,
+  mount options=(rw,private) -> @{F}/var/lib/aktau-sync-promotion/mounts/,
+  # Fixture only: reproduces the shared host root above the publisher and the stage.
+  mount options=(rw,bind) @{F}/ -> @{F}/,
+  mount options=(rw,shared) -> @{F}/,
   # Two native resource-admission fixtures, no other tmpfs targets.
   mount fstype=tmpfs options=(rw,nosuid,nodev) -> @{F}/usr/local/libexec/aktau-c2/,
   umount @{F}/usr/local/libexec/aktau-c2/,

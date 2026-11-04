@@ -661,5 +661,6 @@ def main():
 if __name__=='__main__':
  try:main()
  except BaseException as e:
-  code=str(e) if isinstance(e,Blocked) and re.fullmatch('[a-z_]{1,80}',str(e)) else 'operation_failed'
+  # The executor module raises its own Blocked class: match by name, or its error code is lost.
+  code=str(e) if type(e).__name__=='Blocked' and re.fullmatch('[a-z0-9_]{1,80}',str(e)) else 'operation_failed'
   print(canonical({'status':'BLOCKED','errorClass':code}).decode(),end='');sys.exit(1)

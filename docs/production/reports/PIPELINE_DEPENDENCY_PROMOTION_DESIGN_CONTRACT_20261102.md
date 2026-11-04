@@ -830,6 +830,41 @@ and the accepted risk above. A critical security violation, a rollback that cann
 be guaranteed or an unknown production transaction state stops the release
 fail-closed, with evidence kept. Release gates are not bypassed.
 
+
+### 20.5. 2026-11-04 — failed bootstrap attempt and retry
+
+Record of a real production attempt. It is not a root approval.
+
+**What happened.** On tuple `891c970` the delegated administrator issued approval
+`57dfaade04dc4bdba5b83804fb571f6d`. `--apply` stopped at phase `mount_prepared`.
+`MS_MOVE` of the prepared stage returned `EINVAL`, because the kernel rejects a
+mount attached under a shared parent and the host root is `shared:1`. The disposable
+stands had no shared parent, so all their PASS results missed it. `--recover`
+returned `PR86_BOOTSTRAP_ROLLED_BACK_INACTIVE_RESOURCES_RETAINED`, and readback
+confirmed policy `2bf672f1…`, executor `d69c6672…`, the old runtime gate, no
+interlock, no selection, no mounts and publisher `b2012c5`. No data was touched.
+
+**Fix.** `LinuxMounts.prepare` makes `BASE/mounts` its own private mount before the
+stage, so the moved stage never sits directly under the shared root. This covers
+bootstrap, promotion, rollback and boot, which all use `prepare` and `attach`. The
+bootstrap also reports the executor's real error class instead of `operation_failed`.
+
+**Void.** Tuple `891c970`, artifact `13337061551`, root archive `57235e71…` and
+approval `57dfaade…` must not be used again.
+
+**Retry.** `--verify` refuses to start while the first attempt's resources sit in
+place, by design. The administrator moves, and does not delete, these items into
+`/var/lib/aktau-sync-promotion-archive/attempt-57dfaade`: the attempt directory
+`pr86-bootstrap-57dfaade…`, the capsule generation under `capsules/`, the empty
+stage `mounts/pr86-baseline`, and the used `pr86-baseline-approval.json`. The audit
+records in `state/` stay where they are. Everything stays on the host until the
+Part B review closes. The staged `pr86-bootstrap-input` and installed bootstrap are
+replaced by the new tuple's files.
+
+**Stand.** Before issuance the stand must run with a shared parent above the
+pipeline, the stage and the publisher, as on the host. A scenario set that cannot
+reproduce the `mount_prepared` failure on the old code does not qualify the fix.
+
 Actual OLD custody capture and full source/fault/test results are recorded
 append-only in the same Part B Report. All new executable/policy hashes require
 fresh source/CI/bundle qualification and genuine Owner/admin authorization
