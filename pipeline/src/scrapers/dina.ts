@@ -54,7 +54,7 @@ export function dinaPriceUnit(raw: number): 'g' | 'kg' {
 }
 
 /** Весовой товар: обычно цена за грамм; ≥ 100 — уже за кг (мандарины, яблоки) → приводим к цене за кг (или за вес из названия) */
-function weightMultiplier(name: string): number {
+export function weightMultiplier(name: string): number {
   const kg = name.match(/(\d+(?:[.,]\d+)?)\s*(?:кг|kg)/i)
   if (kg) return parseFloat(kg[1]!.replace(',', '.')) * 1000
   const g = name.match(/(\d+(?:[.,]\d+)?)\s*(?:г|гр|g)\b/i)

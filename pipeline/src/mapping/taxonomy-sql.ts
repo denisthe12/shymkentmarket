@@ -4,7 +4,7 @@ import { refineCategory } from './milk.js'
 import { DEFAULT_PUBLISH_CATEGORIES } from './scope.js'
 
 /** Путь от корня репозитория; применённую SCRUM-7 миграцию (20261006000000_catalog_taxonomy) не трогаем */
-export const TAXONOMY_MIGRATION = 'backend/prisma/migrations/20261021000000_scrum19_milk_taxonomy/migration.sql'
+export const TAXONOMY_MIGRATION = 'backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql'
 
 type Primitive = string | number
 type FilterDefinition = { key: string; label: string; type: 'multi-select'; options: Primitive[] }

@@ -8,6 +8,8 @@ import type { SourceFile } from './types.js'
  */
 function isFragileScrape(file: SourceFile): boolean {
   if (file.storeCode === 'DINA') return file.sourceStats.mode === 'batch'
+  // Anvar всегда scoped: упавшая страница теряет целую категорию scope
+  if (file.storeCode === 'ANVAR') return file.sourceStats.scoped === true
   if (file.storeCode === 'FIX_PRICE') return file.sourceStats.scoped === true
   // Dana по подразделам: упавший или исчезнувший подраздел — потеря целого куска scope
   if (file.storeCode === 'DANA') return file.sourceStats.mode === 'sections'
@@ -20,7 +22,7 @@ function isFragileScrape(file: SourceFile): boolean {
  * SCRAPE_ALL=1, прежний обход Dina по корням и обход корня Dana (roots) сохраняют терпимость к ошибкам.
  */
 export function assertCompleteScrape(file: SourceFile, opts: { all: boolean }): void {
-  if (opts.all || file.errorCount === 0 || !isFragileScrape(file)) return
+  if ((opts.all && file.storeCode !== 'ANVAR') || file.errorCount === 0 || !isFragileScrape(file)) return
   throw new Error(
     `${file.storeCode}: scoped scrape finished with ${file.errorCount} error(s) (${file.products.length} products collected) — refusing to write, keeping previous file`,
   )

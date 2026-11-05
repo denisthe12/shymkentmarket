@@ -79,14 +79,16 @@ describe('taxonomy', () => {
     expect(keys).not.toContain('fatPercent')
     expect(keys).toContain('brand')
   })
-  it('only milk and dairy rows differ from the applied SCRUM-7 migration', () => {
+  it('only milk and dairy rows differ in shape from the applied SCRUM-7 migration', () => {
+    // Значения опций (бренды, веса) растут вместе со словарём (в т.ч. товары Анвара), поэтому сравниваем форму фильтров без options
+    const shape = (schema: { filters: { options?: unknown }[] }) => schema.filters.map(({ options: _options, ...rest }) => rest)
     const old = parseRows(oldSql)
     for (const r of rows) {
       const prev = old.find((o) => o.slug === r.slug)!
       if (r.slug === 'milk' || r.slug === 'dairy') {
         expect([r.name, r.schema], r.slug).not.toEqual([prev.name, prev.schema])
       } else {
-        expect([r.name, r.schema], r.slug).toEqual([prev.name, prev.schema])
+        expect([r.name, shape(r.schema)], r.slug).toEqual([prev.name, shape(prev.schema)])
       }
     }
   })

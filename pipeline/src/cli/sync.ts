@@ -9,8 +9,8 @@ import { readSourceFile } from '../source-file.js'
 import { assertFresh, buildSyncBundle } from '../sync/sync.js'
 import { STORE_CODES, type StoreCode } from '../types.js'
 
-// Пока ANVAR не подключён (Phase B), обязательны три сети; список меняется через env без правки кода
-const required = (process.env.SYNC_STORES ?? 'DINA,DANA,FIX_PRICE').split(',').map((s) => s.trim()) as StoreCode[]
+// Обязательные сети; список меняется через env без правки кода
+const required = (process.env.SYNC_STORES ?? 'DINA,DANA,FIX_PRICE,ANVAR').split(',').map((s) => s.trim()) as StoreCode[]
 if (!required.every((s) => STORE_CODES.includes(s))) throw new Error(`SYNC_STORES invalid: ${required.join(',')}`)
 const maxAge = Number(process.env.SYNC_MAX_SOURCE_AGE_HOURS ?? 36)
 
