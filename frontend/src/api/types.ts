@@ -1,6 +1,6 @@
 // Frozen wire contract: contracts/openapi.yaml (Production Part 02).
 
-export type StoreCode = 'DINA' | 'DANA' | 'FIX_PRICE'
+export type StoreCode = 'DINA' | 'DANA' | 'FIX_PRICE' | 'ANVAR'
 
 export type CategoryDto = {
   id: string

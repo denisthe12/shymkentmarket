@@ -23,6 +23,13 @@ describe('assertCompleteScrape', () => {
     expect(() => assertCompleteScrape(fixScoped(0), { all: false })).not.toThrow()
   })
 
+  it('refuses a scoped ANVAR scrape with page errors', () => {
+    const anvar = file('ANVAR', 1, { scoped: true })
+    expect(() => assertCompleteScrape(anvar, { all: false })).toThrow(/refusing to write/)
+    expect(() => assertCompleteScrape(anvar, { all: true })).toThrow(/refusing to write/)
+    expect(() => assertCompleteScrape(file('ANVAR', 0, { scoped: true }), { all: false })).not.toThrow()
+  })
+
   it('refuses a Dana sections scrape with errors', () => {
     expect(() => assertCompleteScrape(file('DANA', 1, { mode: 'sections', pages: 100, sections: 7 }), { all: false })).toThrow(/DANA.*1 error.*keeping previous file/)
   })

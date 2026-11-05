@@ -36,6 +36,7 @@ const (
 	DINA     StoreCode = "DINA"
 	DANA     StoreCode = "DANA"
 	FixPrice StoreCode = "FIX_PRICE"
+	Anvar    StoreCode = "ANVAR"
 )
 
 type Offer struct {

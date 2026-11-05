@@ -21,7 +21,7 @@ export function Baskets({ baskets }: { baskets: BasketSummary[] }) {
       <p className="mt-1 text-sm text-muted">{t('dashboard.basketHint')}</p>
 
       {/* items-start: раскрытый состав растягивает только свою карточку, а не весь ряд */}
-      <ul className="mt-4 grid grid-cols-1 items-start gap-3 md:grid-cols-3 md:gap-4">
+      <ul className="mt-4 grid grid-cols-1 items-start gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
         {baskets.map((basket) => (
           <li
             key={basket.storeCode}

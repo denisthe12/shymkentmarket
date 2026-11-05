@@ -40,7 +40,7 @@ def fixture():
     for name,version in [('zod','4.6.7'),('undici','7.30.1'),('tsx','4.23.15'),('esbuild','0.28.2'),('.aktau-pnpm','10.32.1')]:
         files[('node_modules/.pnpm/'+name+'@'+version+'/node_modules/'+name if name in ['undici','esbuild'] else 'node_modules/'+name)+'/package.json']=json.dumps({'name':name,'version':version}).encode()
     raw,inv,rows=capsule(files)
-    d={'version':1,'contract':'pr86-pipeline-v2','sourceSha':SHA,'pipelineTreeSha1':p.PIPELINE_NEW_TREE,
+    d={'version':1,'contract':'pr86-pipeline-v2','sourceSha':SHA,'pipelineTreeSha1':p.PIPELINE_NEXT_TREE,
        'packageBlobSha1':p.PIPELINE_NEW_PACKAGE,'lockBlobSha1':p.PIPELINE_NEW_LOCK,'nodeVersion':'v24.18.0',
        'nodeSha256':p.digest(contents['node']),'pnpmVersion':'10.32.1','pnpmTarSha256':p.PIPELINE_PNPM,
        'platform':'linux/amd64/glibc','capsuleSha256':p.digest(raw),'inventorySha256':p.digest(inv),

@@ -5,6 +5,7 @@ import { writeSourceFile } from '../source-file.js'
 import { STORE_CODES, type SourceFile, type StoreCode } from '../types.js'
 import { DANA_SCOPE_ROOTS, scrapeDana } from '../scrapers/dana.js'
 import { FIXPRICE_SCOPE_ALIASES, loadFixPriceFromHar, scrapeFixPrice } from '../scrapers/fixprice.js'
+import { ANVAR_SCOPE, scrapeAnvar } from '../scrapers/anvar.js'
 import { DINA_SCOPE_ROOTS, scrapeDina } from '../scrapers/dina.js'
 import { defaultDinaScopePath, readDinaScope } from '../mapping/dina-scope.js'
 import { defaultDanaScopePath, readDanaScope } from '../mapping/dana-scope.js'
@@ -44,6 +45,11 @@ const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
     }
     console.log(`[DANA] mode: sections (${sections.length} sections from dana-scope-sections.json, concurrency ${concurrency})`)
     return scrapeDana({ sections, concurrency })
+  },
+  // Скрап Анвара всегда ограничен ANVAR_SCOPE: SCRAPE_ALL на него не влияет
+  ANVAR: () => {
+    console.log(`[ANVAR] mode: scope (${ANVAR_SCOPE.length} categories)`)
+    return scrapeAnvar()
   },
   FIX_PRICE: () => process.env.FIXPRICE_HAR ? Promise.resolve(loadFixPriceFromHar(process.env.FIXPRICE_HAR)) : scrapeFixPrice(all ? {} : { aliases: FIXPRICE_SCOPE_ALIASES }),
 }

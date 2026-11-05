@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 )
@@ -56,9 +57,9 @@ type Identity struct{ StoreCode, SourceProductID string }
 
 func (r RawProduct) Identity() Identity { return Identity{r.StoreCode, r.SourceProductID} }
 
-var stores = []string{"DINA", "DANA", "FIX_PRICE"}
+var stores = []string{"DINA", "DANA", "FIX_PRICE", "ANVAR"}
 
-func knownStore(v string) bool { return v == "DINA" || v == "DANA" || v == "FIX_PRICE" }
+func knownStore(v string) bool { return slices.Contains(stores, v) }
 func reject() error            { return errors.New("prepared bundle invalid") }
 
 // Prepared-file limit only, not a new public voice/search limit.
@@ -163,7 +164,7 @@ func (b Bundle) Validate() error {
 		}
 		sourceSeen[s.StoreCode] = true
 	}
-	if len(b.Sources) != 0 && len(sourceSeen) != 3 {
+	if len(b.Sources) != 0 && len(sourceSeen) != len(stores) {
 		return reject()
 	}
 	return nil

@@ -43,6 +43,20 @@
       "rawPayload": {
         "agentFlags": ""
       }
+    },
+    {
+      "storeCode": "ANVAR",
+      "sourceProductId": "anvar_1",
+      "sourceUrl": null,
+      "name": "Сахар 1 кг",
+      "brand": null,
+      "category": null,
+      "price": 500,
+      "oldPrice": null,
+      "imageUrl": null,
+      "rawPayload": {
+        "agentFlags": ""
+      }
     }
   ],
   "canonicalProducts": [
@@ -125,6 +139,36 @@
           "reviewStatus": "approved"
         }
       ]
+    },
+    {
+      "canonicalName": "Сахар 1 кг",
+      "brand": null,
+      "category": "sugar",
+      "imageUrl": null,
+      "attributes": {
+        "weightGrams": 1000
+      },
+      "members": [
+        {
+          "rawProduct": {
+            "storeCode": "ANVAR",
+            "sourceProductId": "anvar_1",
+            "sourceUrl": null,
+            "name": "Сахар 1 кг",
+            "brand": null,
+            "category": null,
+            "price": 500,
+            "oldPrice": null,
+            "imageUrl": null,
+            "rawPayload": {
+              "agentFlags": ""
+            }
+          },
+          "matchMethod": "deterministic",
+          "matchConfidence": 1,
+          "reviewStatus": "approved"
+        }
+      ]
     }
   ],
   "sourceRuns": [
@@ -142,6 +186,12 @@
     },
     {
       "storeCode": "FIX_PRICE",
+      "capturedAt": "2026-10-05T10:00:00.000Z",
+      "productCount": 1,
+      "errorCount": 0
+    },
+    {
+      "storeCode": "ANVAR",
       "capturedAt": "2026-10-05T10:00:00.000Z",
       "productCount": 1,
       "errorCount": 0

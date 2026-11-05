@@ -38,7 +38,7 @@ func readyBundle(day int) ingestion.Bundle {
 	n := 1
 	b := ingestion.Bundle{Version: "1.0", GeneratedAt: fmt.Sprintf("2026-10-%02dT10:00:00.000Z", day)}
 	g := ingestion.Group{Name: "Fixture milk", Brand: &brand, Category: "milk", Attributes: map[string]any{"volumeMl": 1000.0, "fatPercent": 3.2}}
-	for i, store := range []string{"DINA", "DANA", "FIX_PRICE"} {
+	for i, store := range []string{"DINA", "DANA", "FIX_PRICE", "ANVAR"} {
 		p := ingestion.RawProduct{StoreCode: store, SourceProductID: "fixture-" + store, Name: g.Name, Brand: &brand, Price: int64(100 + day + i*20), RawPayload: map[string]any{}}
 		b.RawProducts = append(b.RawProducts, p)
 		g.Members = append(g.Members, ingestion.Member{Raw: p, Method: "manual", Confidence: &confidence, Review: "approved"})
@@ -117,7 +117,7 @@ func TestLocalReadyPublication(t *testing.T) {
 			}
 			defer admin.Close(context.Background())
 			if _, e = admin.Exec(ctx, `TRUNCATE snapshots,stores,categories,canonical_products CASCADE;
-INSERT INTO stores(id,code,name) VALUES('dina','DINA','Dina'),('dana','DANA','Dana'),('fix','FIX_PRICE','Fix Price');
+INSERT INTO stores(id,code,name) VALUES('dina','DINA','Dina'),('dana','DANA','Dana'),('fix','FIX_PRICE','Fix Price'),('anvar','ANVAR','Anvar');
 INSERT INTO categories(id,slug,name) VALUES('milk','milk','Milk')`); e != nil {
 				t.Fatal("owned fixture setup")
 			}

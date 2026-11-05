@@ -277,6 +277,40 @@ func TestDeterministicCatalog(t *testing.T) {
 			t.Fatal("case-insensitive cyrillic name match (Молоко Альфа)")
 		}
 	})
+	t.Run("hides a store without data in the current snapshot", func(t *testing.T) {
+		// The API role cannot read source_runs, so a store is visible only when the snapshot has an offer for it.
+		// The ANVAR row and its three locations come from the migrations, as in production before the first publish.
+		// Extra rows are committed (the read-only pool is another session) and removed again below.
+		t.Cleanup(func() {
+			_, err := admin.Exec(context.Background(), `DELETE FROM offers WHERE id='o-anvar'; DELETE FROM raw_products WHERE id='r-anvar'`)
+			if err != nil {
+				t.Error("anvar fixture cleanup failed")
+			}
+		})
+		d, err := repo.GetDashboard(ctx)
+		if err != nil {
+			t.Fatal("dashboard failed")
+		}
+		for _, b := range d.Baskets {
+			if b.StoreCode == "ANVAR" {
+				t.Fatal("store without offers in the snapshot must not get a basket")
+			}
+		}
+		if len(d.Baskets) != 3 || d.Summary.Stores != 3 || len(d.Locations) != 2 {
+			t.Fatalf("hidden store leaked: %d baskets, %d stores, %d locations", len(d.Baskets), d.Summary.Stores, len(d.Locations))
+		}
+		if _, err = admin.Exec(ctx, `INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES ('r-anvar','66abe18e-c352-4127-8426-af58b3b408b1','1','Fixture',55,'fixture-internal-v1');
+INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId") VALUES ('o-anvar','p4','r-anvar','66abe18e-c352-4127-8426-af58b3b408b1',55,true,'2026-10-05 11:00:00','fixture-internal-v1')`); err != nil {
+			t.Fatal("anvar offer fixture insert failed")
+		}
+		d, err = repo.GetDashboard(ctx)
+		if err != nil {
+			t.Fatal("dashboard failed")
+		}
+		if len(d.Baskets) != 4 || d.Baskets[3].StoreCode != "ANVAR" || d.Summary.Stores != 4 || len(d.Locations) != 5 {
+			t.Fatalf("anvar must appear once the snapshot has its offers: %d baskets, %d stores, %d locations", len(d.Baskets), d.Summary.Stores, len(d.Locations))
+		}
+	})
 	t.Run("demo basket slot filters", func(t *testing.T) {
 		// Extra rows are committed (the read-only pool is another session) and removed again below.
 		ids := `'bk-bad','bk-pasta','bk-oats','bk-rice','bk-noodle','bk-doshirak','bk-doshirak90','bk-yogurt','bk-nemoloko'`

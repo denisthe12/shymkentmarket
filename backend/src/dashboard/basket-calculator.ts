@@ -3,7 +3,7 @@ import { BASKET_SLOTS, type BasketSlot } from './basket-config';
 
 type BasketStore = { code: OfferDto['storeCode']; name: string };
 
-const storeOrder: OfferDto['storeCode'][] = ['DINA', 'DANA', 'FIX_PRICE'];
+const storeOrder: OfferDto['storeCode'][] = ['DINA', 'DANA', 'FIX_PRICE', 'ANVAR'];
 
 const namePatterns = BASKET_SLOTS.map((slot) => new RegExp(slot.namePattern, 'i'));
 

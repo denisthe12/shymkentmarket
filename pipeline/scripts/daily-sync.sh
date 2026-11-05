@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ежедневное обновление цен: три скрапера параллельно → словарь → cmd/ingest. Без LLM.
+# Ежедневное обновление цен: четыре скрапера параллельно → словарь → cmd/ingest. Без LLM.
 # Нужные env: APP_ENV, INGEST_DATABASE_URL, INGEST_MAX_STORE_DROP_PERCENT (+ INGEST_PRODUCTION_APPLY_CONFIRM=1 в production).
 # Необязательные env:
 #   SOURCES_DIR  — каталог source-файлов сетей (по умолчанию data/sources);
@@ -10,8 +10,8 @@
 #     убивается и считается упавшим, чтобы медленная сеть не блокировала публикацию остальных.
 # Упавший скрапер не перезаписывает свой source-файл, поэтому sync берёт прошлый удачный (если он не старше лимита).
 # Коды выхода:
-#   0 — все три скрапера удачны, snapshot опубликован;
-#   1 — ошибка sync/ingest или упали все три скрапера (snapshot не опубликован);
+#   0 — все четыре скрапера удачны, snapshot опубликован;
+#   1 — ошибка sync/ingest или упали все четыре скрапера (snapshot не опубликован);
 #   3 — snapshot опубликован, но хотя бы одна сеть взята из прошлого удачного файла
 #       (в журнале строка "[sync] stale stores: <list>").
 
@@ -29,7 +29,7 @@ case "$SYNC_OUT" in
 esac
 BUNDLE="$SYNC_OUT/bundle.json"
 
-STORES=(dina dana fixprice)
+STORES=(dina dana fixprice anvar)
 started=$SECONDS
 
 # Лимит на один скрапер: TERM по истечении, через 30 с принудительный KILL (код выхода 124 / 137).

@@ -9,8 +9,13 @@ import (
 var _ dashboard.Repository = (*Repository)(nil)
 
 // One roundtrip, final aggregates only. No Product DTO hydration or N+1.
+// A store is visible only when the current snapshot has an offer for it: the API role cannot read source_runs,
+// and a store row without data (before the first publish, after a rollback) must not show an empty basket.
 const dashboardSQL = `WITH current_snapshot AS (
  SELECT id FROM public.snapshots WHERE status='published' AND "publishedAt" IS NOT NULL ORDER BY "publishedAt" DESC,id DESC LIMIT 1
+), visible_stores AS (
+ SELECT s.id,s.code,s.name FROM public.stores s WHERE EXISTS (
+ SELECT 1 FROM public.offers o WHERE o."snapshotId"=(SELECT id FROM current_snapshot) AND o."storeId"=s.id)
 ), usable AS MATERIALIZED (
  SELECT p.id,p.name,p."categoryId",p.attributes,o."storeId",o.price,o."snapshotAt"
  FROM public.canonical_products p JOIN public.offers o ON o."canonicalProductId"=p.id
@@ -41,13 +46,13 @@ const dashboardSQL = `WITH current_snapshot AS (
  SELECT s.code,s.name,sum(coalesce(best.price,0)) total,
  jsonb_agg(jsonb_build_object('categorySlug',slots.slug,'categoryName',slots.name,
  'productId',best.id,'name',best.name,'price',best.price) ORDER BY slots.ord) items
- FROM public.stores s CROSS JOIN slots
+ FROM visible_stores s CROSS JOIN slots
  LEFT JOIN candidates best ON best."storeId"=s.id AND best.ord=slots.ord AND best.choice=1
  GROUP BY s.id,s.code,s.name
 )
 SELECT jsonb_build_object(
  'summary',jsonb_build_object('canonicalProducts',(SELECT count(*) FROM aggregates),
- 'stores',(SELECT count(*) FROM public.stores),
+ 'stores',(SELECT count(*) FROM visible_stores),
  'matchedAcrossStores',(SELECT count(*) FROM spreads),
  'snapshotAt',coalesce((SELECT to_char(max(snapshot_at),'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') FROM aggregates),'')),
  'priceSpreads',coalesce((SELECT jsonb_agg(jsonb_build_object('productId',id,'name',name,
@@ -55,9 +60,9 @@ SELECT jsonb_build_object(
  ORDER BY difference DESC,id COLLATE "ru-x-icu") FROM spreads),'[]'::jsonb),
  'locations',coalesce((SELECT jsonb_agg(jsonb_build_object('storeCode',s.code,'storeName',s.name,
  'name',l.name,'address',l.address,'latitude',l.latitude,'longitude',l.longitude)
- ORDER BY s.code,l.name,l.id) FROM public.store_locations l JOIN public.stores s ON s.id=l."storeId"),'[]'::jsonb),
+ ORDER BY s.code,l.name,l.id) FROM public.store_locations l JOIN visible_stores s ON s.id=l."storeId"),'[]'::jsonb),
  'baskets',coalesce((SELECT jsonb_agg(jsonb_build_object('storeCode',code,'storeName',name,'total',total,'items',items)
- ORDER BY CASE code WHEN 'DINA' THEN 1 WHEN 'DANA' THEN 2 WHEN 'FIX_PRICE' THEN 3 END)
+ ORDER BY CASE code WHEN 'DINA' THEN 1 WHEN 'DANA' THEN 2 WHEN 'FIX_PRICE' THEN 3 WHEN 'ANVAR' THEN 4 END)
  FROM baskets),'[]'::jsonb)) FROM current_snapshot`
 
 func (r *Repository) GetDashboard(ctx context.Context) (dashboard.Dashboard, error) {

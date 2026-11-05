@@ -1,0 +1,127 @@
+import { describe, expect, it } from 'vitest'
+import type { CategorySlug } from '../src/agent/taxonomy.js'
+import { canonicalKey, DictionarySchema, storeCategoryKey, type Dictionary, type DictionaryCanonical } from '../src/mapping/dictionary.js'
+import { applyDecisions, buildCandidates, MatchDecisionSchema, validateDecisions, type MatchCandidate, type MatchDecision, type MatchItem } from '../src/mapping/store-match.js'
+
+const card = (name: string, category: CategorySlug, attributes: Record<string, number>): DictionaryCanonical =>
+  ({ name, brand: null, category, attributes, method: 'deterministic', confidence: 1, review: 'approved' })
+
+const base: Dictionary = DictionarySchema.parse({
+  version: 1, generatedAt: '2026-10-05T20:42:51.173Z',
+  canonicals: {
+    c_milk1: card('Молоко Лактель 2,5% 1 л', 'milk', { volumeMl: 1000, fatPercent: 2.5 }),
+    c_milk2: card('Молоко Лактель 2,5% 0,9 л', 'milk', { volumeMl: 900, fatPercent: 2.5 }),
+    c_soap: card('Мыло Лактель детское 90 г', 'household', { weightGrams: 90 }),
+    c_busy: card('Молоко Простоквашино 2,5% 1 л', 'milk', { volumeMl: 1000, fatPercent: 2.5 }),
+  },
+  products: { 'DINA:1': 'c_milk1', 'DANA:dana_2': 'c_milk2', 'DINA:5': 'c_busy', 'ANVAR:anvar_0': 'c_busy' },
+  storeCategories: { 'DINA|Молоко': 'milk', 'ANVAR|Старая категория': 'dairy' },
+})
+
+const cand = (key: string): MatchCandidate => {
+  const c = base.canonicals[key]!
+  return { key, name: c.name, brand: c.brand, category: c.category, attributes: c.attributes }
+}
+const item = (n: number, name: string, candidates: MatchCandidate[], path = ['Молочные продукты', 'Молоко']): MatchItem =>
+  ({ id: `ANVAR:anvar_${n}`, name, sourceCategoryPath: path, candidates })
+const dec = (n: number, match: string | null, confidence: number, category = 'milk'): MatchDecision =>
+  ({ id: `ANVAR:anvar_${n}`, category: category as CategorySlug, match, confidence })
+
+describe('buildCandidates', () => {
+  it('builds candidates only from scope categories and drops size conflicts', () => {
+    const c = buildCandidates(base, 'Молоко Lactel 2,5% 1л лактель', new Set<CategorySlug>(['milk']))
+    expect(c.map((x) => x.key)).toContain('c_milk1')
+    expect(c.map((x) => x.key)).not.toContain('c_milk2') // 900 мл против 1000 мл
+    expect(c.map((x) => x.key)).not.toContain('c_soap') // household вне scope
+  })
+  it('ranks by token overlap and caps at k', () => {
+    const c = buildCandidates(base, 'Молоко Лактель 2,5% 1 л', new Set<CategorySlug>(['milk']), 1)
+    expect(c.map((x) => x.key)).toEqual(['c_milk1'])
+  })
+})
+
+describe('applyDecisions', () => {
+  const i1 = item(1, 'Молоко Лактель 2,5% 1 л', [cand('c_milk1')])
+  const same = (r: ReturnType<typeof applyDecisions>) => {
+    for (const k of Object.keys(base.canonicals)) expect(r.dict.canonicals[k]).toEqual(base.canonicals[k])
+    for (const k of Object.keys(base.products)) expect(r.dict.products[k]).toBe(base.products[k])
+    for (const k of Object.keys(base.storeCategories)) expect(r.dict.storeCategories[k]).toBe(base.storeCategories[k])
+    expect(r.dict.generatedAt).toBe(base.generatedAt)
+  }
+
+  it('keeps every base mapping and card unchanged', () => {
+    const r = applyDecisions(base, 'ANVAR', [i1, item(3, 'Йогурт Х', [])], [dec(1, 'c_milk1', 0.99), dec(3, null, 0.2, 'dairy')])
+    same(r)
+  })
+  it('attaches a confident decision to the chosen candidate', () => {
+    const r = applyDecisions(base, 'ANVAR', [i1], [dec(1, 'c_milk1', 0.99)])
+    expect(r.dict.products['ANVAR:anvar_1']).toBe('c_milk1')
+    expect(r.stats.attached).toBe(1)
+    expect(r.stats.created).toBe(0)
+  })
+  it('creates a pending singleton for a 0.8–0.95 decision and an approved one for no match', () => {
+    const i2 = item(2, 'Молоко Лактель 2,5% 1 л', [cand('c_milk1')])
+    const i3 = item(3, 'Что-то новое 500 г', [])
+    const r = applyDecisions(base, 'ANVAR', [i2, i3], [dec(2, 'c_milk1', 0.88), dec(3, null, 0.1, 'dairy')])
+    const pending = r.dict.canonicals[canonicalKey(['ANVAR:anvar_2'])]!
+    expect(pending).toMatchObject({ review: 'pending', method: 'ai', confidence: 0.88, brand: null, category: 'milk' })
+    expect(r.dict.products['ANVAR:anvar_2']).toBe(canonicalKey(['ANVAR:anvar_2']))
+    expect(r.dict.canonicals[canonicalKey(['ANVAR:anvar_3'])]).toMatchObject({ review: 'approved', method: 'deterministic', confidence: 1, category: 'dairy', attributes: { weightGrams: 500 } })
+    expect(r.stats).toMatchObject({ attached: 0, created: 2, pendingSingletons: 1 })
+  })
+  it('rejects a match outside the item candidates', () => {
+    const r = applyDecisions(base, 'ANVAR', [i1], [dec(1, 'c_soap', 0.99)])
+    expect(r.dict.products['ANVAR:anvar_1']).toBe(canonicalKey(['ANVAR:anvar_1']))
+    expect(r.stats.rejectedOutsideCandidates).toBe(1)
+    expect(r.stats.created).toBe(1)
+  })
+  it('rejects a match with a different size', () => {
+    const small = item(1, 'Молоко Лактель 2,5% 0,9 л', [cand('c_milk1')])
+    const r = applyDecisions(base, 'ANVAR', [small], [dec(1, 'c_milk1', 0.99)])
+    expect(r.dict.products['ANVAR:anvar_1']).not.toBe('c_milk1')
+    expect(r.stats.rejectedSize).toBe(1)
+  })
+  it('never attaches two items of the same store to one canonical', () => {
+    const i4 = item(4, 'Молоко Лактель 2,5% 1 литр', [cand('c_milk1')])
+    const r = applyDecisions(base, 'ANVAR', [i1, i4], [dec(1, 'c_milk1', 0.99), dec(4, 'c_milk1', 0.97)])
+    expect(r.dict.products['ANVAR:anvar_1']).toBe('c_milk1')
+    expect(r.dict.products['ANVAR:anvar_4']).not.toBe('c_milk1')
+    expect(r.stats.sameStoreConflicts).toBe(1)
+  })
+  it('does not attach to a card that already holds a product of this store in the base', () => {
+    const i5 = item(5, 'Молоко Простоквашино 2,5% 1 л', [cand('c_busy')])
+    const r = applyDecisions(base, 'ANVAR', [i5], [dec(5, 'c_busy', 0.99)])
+    expect(r.dict.products['ANVAR:anvar_5']).not.toBe('c_busy')
+    expect(r.stats.sameStoreConflicts).toBe(1)
+  })
+  it('throws when a decision is missing', () => {
+    const i2 = item(2, 'Молоко Лактель 2,5% 1 л', [cand('c_milk1')])
+    expect(() => applyDecisions(base, 'ANVAR', [i1, i2], [dec(1, 'c_milk1', 0.99)])).toThrow(/ANVAR:anvar_2/)
+  })
+  it('throws on duplicate or unknown decisions', () => {
+    expect(() => applyDecisions(base, 'ANVAR', [i1], [dec(1, null, 0.1), dec(1, null, 0.1)])).toThrow(/ANVAR:anvar_1/)
+    expect(() => applyDecisions(base, 'ANVAR', [i1], [dec(1, null, 0.1), dec(9, null, 0.1)])).toThrow(/ANVAR:anvar_9/)
+  })
+  it('adds store categories by majority vote and never overwrites base keys', () => {
+    const path = ['Молочные продукты', 'Молоко']
+    const items = [item(1, 'Молоко А 1 л', [], path), item(2, 'Молоко Б 1 л', [], path), item(3, 'Молоко В 1 л', [], path), item(4, 'Что-то', [], ['Старая категория'])]
+    const r = applyDecisions(base, 'ANVAR', items, [dec(1, null, 0, 'milk'), dec(2, null, 0, 'milk'), dec(3, null, 0, 'dairy'), dec(4, null, 0, 'milk')])
+    expect(r.dict.storeCategories[storeCategoryKey('ANVAR', path)]).toBe('milk')
+    expect(r.dict.storeCategories['ANVAR|Старая категория']).toBe('dairy') // из base, голос milk проигнорирован
+  })
+})
+
+describe('MatchDecisionSchema / validateDecisions', () => {
+  it('accepts a valid decision and rejects a bad category or confidence', () => {
+    expect(MatchDecisionSchema.safeParse(dec(1, null, 0.5)).success).toBe(true)
+    expect(MatchDecisionSchema.safeParse(dec(1, null, 0.5, 'nonsense')).success).toBe(false)
+    expect(MatchDecisionSchema.safeParse(dec(1, null, 1.5)).success).toBe(false)
+  })
+  it('reports missing, extra and malformed decisions', () => {
+    const items = [item(1, 'a', []), item(2, 'b', [])]
+    expect(validateDecisions(items, [dec(1, null, 0.1), dec(2, null, 0.1)])).toBeNull()
+    expect(validateDecisions(items, [dec(1, null, 0.1)])).toMatch(/ANVAR:anvar_2/)
+    expect(validateDecisions(items, [dec(1, null, 0.1), dec(2, null, 0.1), dec(3, null, 0.1)])).toMatch(/ANVAR:anvar_3/)
+    expect(validateDecisions(items, 'oops')).toMatch(/array/)
+  })
+})

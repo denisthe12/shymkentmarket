@@ -313,3 +313,42 @@ test('SCRUM-19 exception is bound to active 6a4b4c7 only',()=>{
 test('the 438ecdfa tooling pair is not an exception for active 6a4b4c7',()=>withGit({old:active2},()=>{
   assert.throws(()=>transport.verifyCompatibility(active2,reviewed));
 }));
+
+// Anvar release, contract 20.6: exact protected delta from the active API release 49f6823.
+const anvarActive='49f6823768817b0390f215de42439cce523bf5d3',anvarCandidate='c'.repeat(40);
+const anvarBlobs={
+  'backend/prisma/migrations/20261102000000_store_anvar_enum/migration.sql':[null,'7c4b69f3d8873512fbd4a3f91d7b7ccd604bc51f'],
+  'backend/prisma/migrations/20261102000100_store_anvar_rows/migration.sql':[null,'22fa4002ab4a00cc8872b38e9d23bed5c6b5f33e'],
+  'backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql':[null,'c272af519556133988e9feea18edf10e111a4a7b'],
+  'backend/prisma/schema.prisma':['6ea0e340fec18ca93446cce2cdc909ea7f330344','2f270ddd9e1aa24683fc15766d67c1b88d1251fe'],
+  'contracts/openapi.yaml':['0339280f3065d7ad73d3f483335721751500e8c6','988a269b2fd0a0ef79550bc63dd7b44dfc73d6fc'],
+};
+function withAnvarGit({paths=Object.keys(anvarBlobs),blobs=anvarBlobs},run) {
+  const original=childProcess.spawnSync,ok=text=>({status:0,stdout:Buffer.from(text)});
+  childProcess.spawnSync=(_,args)=>{
+    const a=args.slice(args.indexOf('--no-replace-objects')+1);
+    if(a[0]==='rev-parse')return ok(a.at(-1).replace('^{commit}','')+'\n');
+    if(a[0]==='diff')return ok(paths.map(p=>p+'\0').join(''));
+    if(a[0]==='ls-tree'){
+      const path=a.at(-1),hash=blobs[path]?.[a[a.indexOf('--')-1]===anvarActive?0:1];
+      return ok(hash?'100644 blob '+hash+'\t'+path+'\0':'');
+    }
+    throw Error('unexpected synthetic Git operation');
+  };
+  syncBuiltinESMExports();
+  try{return run();}finally{childProcess.spawnSync=original;syncBuiltinESMExports();}
+}
+test('Anvar exception accepts exactly its five pinned paths',()=>withAnvarGit({},()=>{
+  transport.verifyCompatibility(anvarActive,anvarCandidate);
+}));
+test('Anvar exception rejects an extra protected path',()=>withAnvarGit({paths:[...Object.keys(anvarBlobs),'deploy/compose.production.yml']},()=>{
+  assert.throws(()=>transport.verifyCompatibility(anvarActive,anvarCandidate));
+}));
+test('Anvar exception rejects a missing path',()=>withAnvarGit({paths:Object.keys(anvarBlobs).slice(1)},()=>{
+  assert.throws(()=>transport.verifyCompatibility(anvarActive,anvarCandidate));
+}));
+for(const path of Object.keys(anvarBlobs))test(`Anvar exception rejects a changed blob for ${path}`,()=>{
+  withAnvarGit({blobs:{...anvarBlobs,[path]:[anvarBlobs[path][0],'0'.repeat(40)]}},()=>{
+    assert.throws(()=>transport.verifyCompatibility(anvarActive,anvarCandidate));
+  });
+});

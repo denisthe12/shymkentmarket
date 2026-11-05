@@ -27,18 +27,18 @@ func bundleOf(groups ...Group) Bundle {
 }
 
 func TestResolveStrictStillRejectsMerge(t *testing.T) {
-	a, d, f := raw("DINA", "1"), raw("DANA", "2"), raw("FIX_PRICE", "3")
+	a, d, f, n := raw("DINA", "1"), raw("DANA", "2"), raw("FIX_PRICE", "3"), raw("ANVAR", "5")
 	prev := map[Identity][]string{a.Identity(): {"X"}, d.Identity(): {"Y"}}
-	_, rep, err := resolve(bundleOf(group(a, d), group(f)), prev, nil, cats, 100, false)
+	_, rep, err := resolve(bundleOf(group(a, d), group(f), group(n)), prev, nil, cats, 100, false)
 	if err == nil || rep.FailureCode != "canonical_merge_conflict" {
 		t.Fatalf("want merge conflict, got %v %q", err, rep.FailureCode)
 	}
 }
 
 func TestResolveReclusterMergeKeepsLargestPrevious(t *testing.T) {
-	a, a2, d, f := raw("DINA", "1"), raw("DANA", "9"), raw("DANA", "2"), raw("FIX_PRICE", "3")
+	a, a2, d, f, n := raw("DINA", "1"), raw("DANA", "9"), raw("DANA", "2"), raw("FIX_PRICE", "3"), raw("ANVAR", "5")
 	prev := map[Identity][]string{a.Identity(): {"Y"}, a2.Identity(): {"Y"}, d.Identity(): {"X"}}
-	out, rep, err := resolve(bundleOf(group(a, a2, d), group(f)), prev, nil, cats, 100, true)
+	out, rep, err := resolve(bundleOf(group(a, a2, d), group(f), group(n)), prev, nil, cats, 100, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,9 +48,9 @@ func TestResolveReclusterMergeKeepsLargestPrevious(t *testing.T) {
 }
 
 func TestResolveReclusterSplitGivesNewIDToSmallerGroup(t *testing.T) {
-	a, d, d2, f := raw("DINA", "1"), raw("DANA", "2"), raw("DANA", "3"), raw("FIX_PRICE", "4")
+	a, d, d2, f, n := raw("DINA", "1"), raw("DANA", "2"), raw("DANA", "3"), raw("FIX_PRICE", "4"), raw("ANVAR", "5")
 	prev := map[Identity][]string{a.Identity(): {"X"}, d.Identity(): {"X"}, d2.Identity(): {"X"}}
-	out, rep, err := resolve(bundleOf(group(a, d), group(d2), group(f)), prev, nil, cats, 100, true)
+	out, rep, err := resolve(bundleOf(group(a, d), group(d2), group(f), group(n)), prev, nil, cats, 100, true)
 	if err != nil {
 		t.Fatal(err)
 	}

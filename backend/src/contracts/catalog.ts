@@ -14,7 +14,7 @@ export interface FilterSchemaDto {
 }
 
 export interface OfferDto {
-  storeCode: 'DINA' | 'DANA' | 'FIX_PRICE';
+  storeCode: 'DINA' | 'DANA' | 'FIX_PRICE' | 'ANVAR';
   storeName: string;
   price: number;
   oldPrice: number | null;
