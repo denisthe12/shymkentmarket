@@ -35,6 +35,9 @@ run $SEC/aktau_ingest_writer_role.sql     # после snapshot_history, до LO
 if [ "${SKIP_DUMP:-0}" != "1" ]; then run "$DUMP"; fi
 run $M/20261006000000_catalog_taxonomy/migration.sql
 run $M/20261021000000_scrum19_milk_taxonomy/migration.sql
+run $M/20261102000000_store_anvar_enum/migration.sql
+run $M/20261102000100_store_anvar_rows/migration.sql
+run $M/20261102000200_anvar_taxonomy/migration.sql
 docker exec "$NAME" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q \
   -c "CREATE ROLE ingest_local LOGIN PASSWORD '$PW'"   -c "GRANT aktau_ingest_writer TO ingest_local WITH INHERIT TRUE, SET FALSE" >/dev/null  # cmd/ingest отвергает логин с правом SET ROLE
 

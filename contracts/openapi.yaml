@@ -274,7 +274,7 @@ components:
   schemas:
     StoreCode:
       type: string
-      enum: [DINA, DANA, FIX_PRICE]
+      enum: [DINA, DANA, FIX_PRICE, ANVAR]
     Category:
       type: object
       required: [id, slug, name]

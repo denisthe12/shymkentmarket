@@ -12,6 +12,7 @@ enum StoreCode {
   DINA
   DANA
   FIX_PRICE
+  ANVAR
 }
 
 enum MatchMethod {
