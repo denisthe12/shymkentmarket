@@ -7,54 +7,6 @@
 
 Ingestion не входит в API-релиз (`deploy/`) и ставится отдельно.
 
-## Состояние sync-VPS — 2026-10-23
-
-Read-only readback `/opt/aktau-sync` под пользователем `aktau-sync` подтвердил:
-
-| Назначение | Ветка | Exact HEAD |
-|---|---|---|
-| Текущий publisher, clean | `deploy/dina-weight-sync-part32` (есть на origin) | `fd2b9a3eec417f739299e3d1ccc1d3d6b09860fd` |
-| Предыдущая локальная rollback-точка | `deploy/part32-site-bb1842bfc3ad` | `bb1842bfc3ad25e74840072482801a8656ec7679` |
-| Исторический SCRUM-19 checkout, не текущий | `deploy/scrum19-sync` | `28cc3fc2c25c434e166874e8f5b08e48d0e3b6df` |
-
-Это датированное evidence, не автоматический выбор ветки для будущего deploy.
-Перед любой операцией заново проверять branch, полный HEAD и status. Локальный
-`main` на VPS не является текущим publisher; слепой `pull` недопустим. Существующие
-deploy/rollback-ветки не удалять; новая deploy-ветка для этой сверки не нужна.
-
-VPS reflog фиксирует checkout с `deploy/part32-c2-auto-ff567dd` на
-`deploy/part32-site-bb1842bfc3ad` **2026-10-22 01:31:15 UTC**. Это соответствует
-Owner-authorized PR #63 rollout из operational appendix
-[Part32 report](../../docs/production/reports/PART_32_C2_BEFORE_STAGE_INTEGRATION_REPORT.md),
-а не свидетельствует о несанкционированном вмешательстве. Reflog сам по себе не
-доказывает личность физического оператора. Переход на текущую Dina-ветку записан
-**2026-10-23 10:48:46 UTC**.
-
-Current `fd2b9a3` — `bb1842b` плюс Dina weight-price fix. GitHub PR #69 merged;
-main на момент сверки — `3d85bf9b5a7c0dc784f4868d1bd04ebb958a6c2d`, CI
-[39938645374](https://github.com/kiratonine/AdilBaga/actions/runs/39938645374) —
-9/9 SUCCESS. Git blob обоих Dina-файлов совпадает между current publisher и main:
-`pipeline/src/scrapers/dina.ts` — `1daba18219e4841fd8c901182ee7edee5cc7dd05`,
-`pipeline/test/dina.test.ts` — `b5b1afd4d84826232f6fc3c0f3497947f6912cd0`.
-Другой commit SHA не означает потери исправления и не требует checkout main.
-Возврат к предыдущему коду потеряет Dina fix; наличие rollback-ref не разрешает
-его применение без отдельной оценки. Backend2-reported публикация snapshot
-`caedadfb-a455-46d4-9d38-4e92d6357ed8` 23 октября 10:53 UTC здесь не повторялась
-и независимо через БД не проверялась.
-
-**Отдельная эксплуатационная проблема — `C2_SOURCE_AUTHORITY_DRIFT`.**
-Read-only сравнение root-controlled `automatic.json.sourceSha` с реальным
-publisher HEAD вернуло **MISMATCH** (содержимое trust records не публиковалось).
-На момент проверки `aktau-c2-custodian.service`: failed, Result=exit-code,
-ExecMainStatus=1; оба sync oneshot: inactive, Result=success, ExecMainStatus=0,
-таймеры daily/weekly доступны. Последний найденный `c2_launch`:
-**2026-10-23 10:52:34 UTC, `not_armed`**. Это не C2 PASS; точная причина exit1
-этой сверкой не устанавливалась, и ledger/convergence acceptance не проверялись.
-Owner/Backend1 должны отдельно выполнить reviewed exact-source C2 authority
-reconciliation для действующего Dina publisher, не откатывая исправление Dina
-и не подменяя root trust records. Эта документационная сверка не выполняет такую
-операцию и не запускает повторную публикацию.
-
 ## Коды выхода ежедневного прогона
 
 | Код | Значение | Статус юнита |
@@ -90,36 +42,18 @@ sudo systemctl enable --now aktau-sync.timer aktau-sync-full.timer
 
 ## Обновление кода на VPS
 
-Новый протокол согласованного promotion описан в
-[Backend2 handoff](../../docs/production/BACKEND2_SYNC_C2_AUTOMATED_PROMOTION_HANDOFF.md).
-Датированная сверка выше сохраняется как история; актуальный результат установки
-следует брать из handoff и [Owner report](../../docs/production/reports/SYNC_C2_PROMOTION_OWNER_REPORT.md).
-Source-кандидат добавляет отдельные build/promotion workflows, root executor и
-shared/exclusive runtime gate. Готовность source не означает готовность установки.
-`AUTO_DEPLOY_ENABLED` не используется и остаётся `false`.
-Publisher automation управляется только `SYNC_C2_PROMOTION_ENABLED`.
-Frontend/docs/API-only push не должен переключать publisher.
-Source/kit alignment не является C2 convergence PASS.
-
-Сначала только readback (без fetch/pull/checkout и без запуска sync):
+Обновлять только на SHA из `main` с зелёным CI. Не запускать во время sync: прогоны идут в 01:00 и 13:00 UTC, полный скрап в воскресенье в 22:00 UTC.
 
 ```bash
-sudo -n -u aktau-sync -H git --no-optional-locks -C /opt/aktau-sync rev-parse --abbrev-ref HEAD
-sudo -n -u aktau-sync -H git --no-optional-locks -C /opt/aktau-sync rev-parse HEAD
-sudo -n -u aktau-sync -H git --no-optional-locks -C /opt/aktau-sync status --porcelain=v1
+systemctl is-active aktau-sync aktau-sync-full        # оба inactive
+sudo -n -u aktau-sync -H git -C /opt/aktau-sync rev-parse HEAD   # записать для отката
+sudo -n -u aktau-sync -H git -C /opt/aktau-sync status --porcelain=v1   # пусто
+sudo -n -u aktau-sync -H git -C /opt/aktau-sync fetch --no-tags https://github.com/kiratonine/AdilBaga.git main
+sudo -n -u aktau-sync -H git -C /opt/aktau-sync checkout --detach <полный SHA>
+cd /opt/aktau-sync/pipeline && sudo -n -u aktau-sync -H env PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin pnpm install --frozen-lockfile
 ```
 
-Сопоставить фактический HEAD с отдельно утверждённым целевым полным commit SHA
-и GitHub ref; проверить clean checkout и отсутствие активного daily/weekly sync.
-До возможного переключения сохранить и проверить существующую rollback-точку
-и совместимость SCRUM-19/C2. При неожиданной ветке, dirty tree или authority drift
-остановиться: не делать автоматический checkout/merge/pull main, reset или clean.
-Само переключение выполняется только по отдельному exact-source rollout plan;
-этот раздел не является готовым автоматическим переключателем.
-
-`pnpm install --frozen-lockfile` в `pipeline/` под `aktau-sync` нужен после
-одобренного обновления зависимостей, не для read-only сверки. Обновление юнитов и
-`daemon-reload` также требуют отдельного разрешения; текущая сверка их не меняет.
+PATH должен совпадать с PATH юнита. Откат: те же две последние команды с записанным SHA. Миграции БД и API выкатываются отдельно до обновления sync.
 
 ## Эксплуатация
 
@@ -153,8 +87,7 @@ git diff data/mapping/dina-scope-categories.json          # просмотрет
 git add data/mapping/dina-scope-categories.json && git commit -m "data(mapping): refresh dina scope categories"
 git push -u origin HEAD                                    # дальше — PR и мерж в main
 
-# 2. После мержа — выполнить readback и exact-source admission из раздела
-# «Обновление кода на VPS», не переключать publisher автоматически.
+# 2. После мержа — выполнить раздел «Обновление кода на VPS» ниже.
 ```
 
 Кандидат Dana обновляется так же: `scp <vps>:/opt/aktau-sync/data/sources-full/dana-scope-sections.candidate.json data/mapping/dana-scope-sections.json`, ветка `data/refresh-dana-scope`, коммит `data(mapping): refresh dana scope sections`, PR и мерж в `main`, затем отдельный exact-source rollout после readback, не слепой pull на VPS.
@@ -165,34 +98,3 @@ git push -u origin HEAD                                    # дальше — PR
 
 Разбор ошибок — `docs/data/SYNC_RUNBOOK.md §4`, еженедельный прогон — `§5`.
 
-## Part32: установленный launcher и отдельная C2 authority
-
-`daily-sync.sh` delegates its unchanged dry-run then apply pair to
-`pipeline/scripts/c2-ingest-launch.py`. Ordinary unarmed execution still uses
-`go run ./cmd/ingest`; all inherited `C2_*` variables are stripped. Stale-source
-exit3, all-source failure, quality/dry-run/apply failures and publication behavior
-are preserved. No retry, additional publication, timer or scraper is introduced.
-The explicit `GOTOOLCHAIN=local` means a future checkout update requires an
-already installed Go1.27.3; it must not silently fetch a new toolchain on the VPS.
-
-C2 selection is opt-in through the existing independently installed root records,
-not through user env values. It uses only the approved fixed immutable ingest
-ELF and the existing private BEFORE/READY protocol; see
-[C2 custody and prerequisites](../c2/README.md#scheduled-immutable-ingest-candidate-review-required-not-activation).
-The launcher was deployed during the Owner-authorized Part32 rollout; the dated
-publisher readback is above. This does not imply that every later source SHA is
-approved for immutable C2. Ordinary `not_armed` publication is fail-open ingestion,
-**not C2_PASS**, and does not qualify any convergence acceptance measurement.
-Every future source switch must reconcile the publisher HEAD with the separately
-approved C2 source authority, immutable artifacts and process-bound READY.
-Never edit the root source pin, authorization, hashes, installed ELF or READY merely
-to make a new checkout appear trusted. Preserve SCRUM-19/Dina and the known rollback;
-checkout/toolchain/namespace/systemd changes require their own approval.
-
-On C2 authority loss after an immutable dry-run, the launcher repeats the
-**complete ordinary read-only dry-run/apply pair**, never ordinary apply alone.
-Only a proven pre-exec failure can also select that fallback. Once any apply
-program starts, no fallback or second apply is allowed, including nonzero,
-uncertain wait or cancellation. SIGTERM/SIGINT preserve143/130 CLI status;
-the existing scheduled script still maps publish-step failure to1. SCRUM-19,
-source-stale exit3, bundle arguments and the root trust/Go1.27.3 gates are unchanged.

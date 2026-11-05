@@ -1,9 +1,6 @@
 # Snapshot publication → frontend revalidation
 
-Source-review candidate only; bounded convergence acceptance described below.
-Vercel Production branch stays **main**;
-**integrate/full-stack** is integration/review, not the deployment shortcut.
-Part15 runtime remains unchanged. No Part17 work.
+> Приёмка C2 (сходимость за 5 секунд, наблюдатель и ledger) отменена решением команды 2026-11-05. Webhook инвалидации остаётся. Страховка при сбое уведомления: TTL кэша 3600 секунд.
 
 ## Wire and configuration
 
@@ -40,38 +37,6 @@ No unnecessary dynamic-route path invalidation.
 Already open browser query caches are not pushed/refreshed by a webhook; new
 server requests are the freshness boundary.
 
-### Approved bounded consistency and historical evidence
-
-Real Next16.3.8 production-mode LOCAL smoke with synthetic mutable HTTP data
-accepted the signed webhook but returned old product ISR HTML with STALE on its
-first request; first sitemap response also retained the old snapshot. Subsequent
-bounded diagnostic observation saw fresh product HIT after232ms, not after an
-hour. The original test failed strict first-response freshness rather than
-claiming eventual regeneration as that stronger PASS. Per-run unique fetch namespace/product
-IDs exclude previous-run cache contamination. Correct route-group pattern and
-expire0 did not eliminate this result. No Next internals/dependency/timeout or
-whole-app caching hacks applied. This historical failure is retained, not rewritten
-as first-response success.
-
-The owner subsequently approved **bounded cache convergence within 5 seconds**
-after accepted signed204, with a healthy data source. First-response STALE inside
-that window is allowed. The LOCAL cache smoke warms all required paths against a
-synthetic mutable HTTP API, changes the synthetic revision, accepts signed204 and
-probes real Next production responses with one shared5000ms monotonic deadline.
-It checks RU/KK product, all sitemap lastmod values, catalog, dashboard and category;
-records first response/cache status, stale count, time until fresh and detail API
-fetch count. Polling is conditional on a stale response, requests are bounded by
-the remaining deadline, and any required path exceeding it FAILS. No unconditional
-sleep conceals an old response. This is LOCAL evidence, not a Vercel convergence
-SLA; first legitimate production publication must record deployment-level evidence.
-Already open client caches are outside this new-server-request boundary. Failed
-notification is degraded and retains the separate3600s TTL safety fallback; it is
-not claimed to satisfy the accepted-event5s gate.
-
-Current LOCAL result: all six paths PASS within142–324ms; RU/KK product first
-responses were STALE, sitemap/category first responses were old, catalog/dashboard
-first responses were fresh. See PART_16_REPORT.md for per-path counts/timings.
-
 ## Commit ordering and degraded outcome
 
 One-shot cmd/ingest validates notifier config **before connecting/staging** for
@@ -91,55 +56,3 @@ resent separately after network/Vercel recovery; never rerun --apply solely to
 invalidate frontend cache. No endpoint/provider response body or URL/secret is
 included in notification errors/logging.
 
-## Release (NOT executed in source review)
-
-After external source PASS: commit/push integration → exact-SHA CI → recheck main
-divergence → reviewed combined integration-to-main PR/CI → owner merge → Vercel
-Production deploy from main. Review full accumulated diff/root directory/frontend
-build and environment; do not change Production Branch. Configure the shared
-Production secret privately before the release becomes active; env changes need
-a deployment. Bounded production smoke: unauthenticated rejection, bad-signature
-rejection, correctly signed204, public catalog/dashboard/category/product/sitemap.
-Do not publish a production snapshot just to test. First legitimate publish later
-records post-commit notification/freshness evidence. Part16 DONE only after those
-release/deployment gates, not this source-review candidate.
-
-## Part32 unattended observation: explicit frontend configuration evidence
-
-Owner later authorized automatic coordination through the existing daily sync
-schedule, without repeated human/Vercel API approval. The root-custodian's new
-version2 deployment record uses `identityEvidence:owner-pinned-configuration`,
-the hash of the protected Owner-confirmed frontend pin, its **historical**
-`ownerConfirmedAt`, and a separate actual per-attempt `checkedAt`. This is a
-fresh custody/configuration check, **not a fresh external Vercel attestation**.
-Manual version1 fresh-attestation behavior is unchanged. Exact schema, root
-process verification, lifecycle and limitations are in
-[ops/c2](../../ops/c2/README.md#part32--owner-authorized-unattended-custodian).
-
-The policy permits unattended configuration-bound convergence observations; it
-does not independently detect an out-of-band alias/deployment change or certify
-live Vercel identity. Record this evidence basis alongside results; never present
-an old Owner message as newly observed metadata. Actual frontend pin changes
-require an authorized root configuration update outside a live attempt.
-The unchanged actual204/FIFO clock, six representations,5s acceptance,20s
-diagnostics,21 GET/2 sitemap and three qualified PASS remain mandatory. Ordinary
-sync stays fail-open; uncertain C2 evidence never becomes PASS. No new
-publication, webhook retry, frontend cache setting or public API is introduced.
-
-## Part32 automatic site-content verification v2
-
-The later Owner decision supersedes **only the automatic frontend identity
-policy** above. New `site-content-verification` attempts prove that actual public
-HTML/XML representation markers match canonical S1 within the existing5s window.
-They do **not** attest a Vercel deployment ID or frontend commit. No Vercel token,
-settings change or repinning is required when frontend deploys. Legacy/manual
-evidence retains its original meaning and is not counted in this new series.
-
-The protected root site policy fixes `https://aktau.market`, version2 and the six
-existing representations. Its exact SHA256 binds BEFORE, process-bound READY-v2,
-COMMIT/204 FIFO custody, AFTER and FINALIZE. No fake frontend identity is used.
-See [the versioned private contract](../../ops/c2/README.md#part32--site-content-verification-policy-v2).
-This leaves HMAC, SQL, public API, frontend runtime/cache settings and all request,
-clock and5s/20s/35-minute limits unchanged. Missing/changed marker formats cannot
-PASS. Source tests do not prove production convergence; three genuine qualified
-PASS must be recorded under this policy after legitimate publications.

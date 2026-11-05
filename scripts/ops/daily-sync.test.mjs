@@ -7,7 +7,7 @@ import path from 'node:path';
 test('actual scheduled shell preserves success/stale/all-failed/dry-run/apply failure business outcomes',()=>{
   const script=fs.readFileSync('pipeline/scripts/daily-sync.sh','utf8');
   assert.doesNotMatch(script,/c2-ingest-launch/);
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aktau-c2-scheduled-'));
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aktau-daily-scheduled-'));
   try{
     fs.writeFileSync(path.join(dir,'pnpm'),'#!/bin/sh\nprintf "%s\\n" "$1" >> "$TEST_PNPM_LOG"\ncase ",$TEST_FAILED," in *",$1,"*) exit 1;; esac\n',{mode:0o700});
     fs.writeFileSync(path.join(dir,'go'),'#!/bin/sh\nprintf "%s|%s\\n" "$*" "${GOTOOLCHAIN-unset}" >> "$TEST_GO_LOG"\ncase " $* " in *" -apply "*) exit "$TEST_APPLY_EXIT";; *) exit "$TEST_DRY_EXIT";; esac\n',{mode:0o700});
