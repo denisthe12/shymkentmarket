@@ -11,7 +11,7 @@ NODE='/usr/local/lib/nodejs/node-v24.18.0-linux-x64/bin/node'
 NODE_SHA='41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c'
 CLI='/opt/aktau-sync/pipeline/node_modules/.aktau-pnpm/bin/pnpm.cjs'
 ROOT='/usr/local/libexec/aktau-sync-promotion'
-ALLOWED={s:[] for s in ['scrape:dina','scrape:dana','scrape:fixprice','sync']}
+ALLOWED={s:[] for s in ['scrape:dina','scrape:dana','scrape:fixprice','scrape:anvar','sync']}
 ALLOWED.update({'scope:dina':['--in','../data/sources-full/dina.json','--out','../data/sources-full/dina-scope-categories.candidate.json'],
                 'scope:dana':['--in','../data/sources-full/dana.json','--out','../data/sources-full/dana-scope-sections.candidate.json']})
 def main():

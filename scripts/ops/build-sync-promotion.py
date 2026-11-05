@@ -132,7 +132,7 @@ def prepare_pipeline(sha, work, node, env):
     p.need(os.getuid() == os.geteuid() != 0 and sys.platform == 'linux'
            and platform.machine() == 'x86_64' and platform.libc_ver()[0] == 'glibc', 'build_unprivileged_linux')
     p.need(p.digest(node.read_bytes()) == p.PIPELINE_NODE, 'build_node_digest')
-    for path,expected in [('pipeline',p.PIPELINE_NEW_TREE),('pipeline/package.json',p.PIPELINE_NEW_PACKAGE),
+    for path,expected in [('pipeline',p.PIPELINE_NEXT_TREE),('pipeline/package.json',p.PIPELINE_NEW_PACKAGE),
                           ('pipeline/pnpm-lock.yaml',p.PIPELINE_NEW_LOCK)]:
         p.need(call(['git','--no-replace-objects','rev-parse',sha+':'+path]).decode().strip() == expected,'build_pipeline_identity')
     stage('source_archive')
@@ -171,7 +171,7 @@ def prepare_pipeline(sha, work, node, env):
     stage('capsule_pack')
     capsule, inventory, rows = pack_pipeline(root)
     stage('descriptor')
-    descriptor = {'version':1,'contract':p.PIPELINE_CONTRACT,'sourceSha':sha,'pipelineTreeSha1':p.PIPELINE_NEW_TREE,
+    descriptor = {'version':1,'contract':p.PIPELINE_CONTRACT,'sourceSha':sha,'pipelineTreeSha1':p.PIPELINE_NEXT_TREE,
         'packageBlobSha1':p.PIPELINE_NEW_PACKAGE,'lockBlobSha1':p.PIPELINE_NEW_LOCK,'nodeVersion':'v24.18.0',
         'nodeSha256':p.PIPELINE_NODE,'pnpmVersion':'10.32.1','pnpmTarSha256':p.PIPELINE_PNPM,
         'platform':'linux/amd64/glibc','capsuleSha256':p.digest(capsule),'inventorySha256':p.digest(inventory),
@@ -227,7 +227,7 @@ def build(sha, output, producer, kind):
                     **producer, 'files': {n: p.digest(contents[n]) for n in p.FILES},
                     'sourceBundleSha256': p.digest(contents['source.bundle'])}
         tree = call(['git','rev-parse',sha+':pipeline']).decode().strip()
-        if tree == p.PIPELINE_NEW_TREE:
+        if tree == p.PIPELINE_NEXT_TREE:
             capsule, descriptor, d = prepare_pipeline(sha,work,node,env)
             contents.update({'pipeline-runtime.tar':capsule,'pipeline-runtime.json':descriptor})
             manifest.update(version=2,pipelineRuntime={'descriptorSha256':p.digest(descriptor),

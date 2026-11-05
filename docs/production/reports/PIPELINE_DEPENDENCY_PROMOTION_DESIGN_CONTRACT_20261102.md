@@ -869,3 +869,83 @@ Actual OLD custody capture and full source/fault/test results are recorded
 append-only in the same Part B Report. All new executable/policy hashes require
 fresh source/CI/bundle qualification and genuine Owner/admin authorization
 before production use. Historical helpers/approvals are not reused.
+
+### 20.6. 2026-11-05 — next transition for the Anvar store
+
+Design approved by the delegated administrator on 2026-11-05. This is a design
+decision, not a root approval: it authorizes nothing on the host. Anvar and its publication are the delegated administrator's
+responsibility (decision of 2026-11-05), so no separate owner decision is needed.
+
+**Scope.** One fixed next transition, not a general mechanism.
+
+| | Base (installed) | Target |
+| --- | --- | --- |
+| Publisher | `ea3cf04e7653bf6310f631fa8a6533122f128567` | final main of the Anvar release |
+| Pipeline tree | `cc2f3f1d32570ad7892abe433b37a7ca82ebefcd` | `PIPELINE_NEXT_TREE`, fixed after `pipeline/` is frozen |
+| Inventory | `0671b096d799ac17d54ae7c1579f1d9d1af6b54888c5fc1b2812bb610703b6cc` | from the final artifact |
+| Package / lock blob | `b4d13a33…` / `bd94f3bb…` | unchanged |
+
+**Why policy.json has to change.** `runtimeFiles` pins the executor, the runtime gate
+and `bin/pnpm`, and `producerFiles` pins the executor and the builder. All of them
+change, so the policy hash changes. `require_enrollment` compares the current policy
+hash with the consumed enrollment record, and it runs on status, promotion, both
+rollback entries and the boot-time mount. Without the succession record below, the
+root step would block all of these, including `--rollback-last`.
+
+**Policy succession.** `pipelineContract` stays byte-identical. Only `runtimeFiles` and
+`producerFiles` change. The enrollment approval and receipt are not rewritten. The
+root tool writes one succession record that binds the enrolled policy hash to the new
+policy hash and to the manual approval. `require_enrollment` accepts exactly two
+states: the enrolled policy, or the policy named by a valid succession record. A
+second succession is not supported.
+
+**Files replaced by the root step (4).** `publisher-promotion.py`,
+`promotion-runtime-gate.py`, `bin/pnpm`, `policy.json`. Drop-ins, units and the
+custodian do not change; `PIPELINE_CUSTODIAN` stays pinned.
+
+**Executor changes.**
+
+1. `verify_baseline` accepts the fixed base above. Publisher, selection, tree and
+   inventory must all match, provenance must be `github-artifact`, and `tuple_record`
+   must confirm the retained receipt. The mount check compares with the selected
+   inventory, not the enrolled generation.
+2. The tree lists in `selection`, in the old-data read and in the gate hold three
+   values. Old values stay: history and rollback depend on them.
+3. `pipeline_descriptor`, `source_admission_v2` and the builder pin the target tree.
+   Admission compares against the base above.
+4. Protected delta from the base must equal exactly these paths with pinned blobs:
+   three `20261102*` migrations, `backend/prisma/schema.prisma`,
+   `contracts/openapi.yaml`. Anything else is `protected_delta`.
+5. `pipeline-pnpm` gains `scrape:anvar` with no arguments. Nothing else is added.
+
+**Root tool.** One-shot, modelled on `root-executor-pair-upgrade.py`: fixed old and
+new hashes for all four files, journal, backup, manual approval with a 30-minute TTL,
+`--verify`, `--apply`, `--recover`, `--rollback`. Source: `ops/c2/anvar-root-step.py`.
+New bytes come from a root-staged input directory and must match fixed hashes. A kill
+between creating a pinned file and journalling it is adopted on recovery only for the
+exact pinned path and hash; anything else stops as unknown state. One attempt only:
+after any `--apply` a new attempt needs a new tool. The approval is issued only by the delegated
+administrator in the separate manual `b2admin` + `sudo -i` session of section 20.4.
+That procedure applies to the new tuple unchanged. No AI agent runs or sees it.
+
+**Rollback.** Two independent levels.
+
+- Release: `--rollback-last` returns publisher, selection, mount and the 14 targets to
+  `ea3cf04` and its retained capsule. The new root files stay; they accept the base
+  tuple. `tuple_record` already reads the old side of a rolled-back receipt generically.
+- Root step: `--recover` finishes an interrupted step and `--rollback` undoes a verified
+  one. Both restore all four files and work only while the protected state, including
+  the selection, is still the base tuple. The succession record stays on the host; it is
+  inert once the policy hash no longer matches it.
+
+**Must be proven on the stand, with a shared parent.** The full path
+`ea3cf04 → Anvar → ea3cf04`; a repeat promotion after that rollback, including the
+reuse of `mounts/rollback-<generation>`; boot-time mount under the succession record;
+scheduled runs between the root step and the promotion; the fault and signal matrix
+for the root tool and the promotion; SIGKILL during rollback; old code failing where
+it should. Anything else is reported as `NOT_RUN`.
+
+**Out of scope.** A general tree-pinning mechanism through policy, which would widen
+the trust model and is a separate task. Freshness gate, `SYNC_MAX_SOURCE_AGE_HOURS`,
+`assertFresh`, `capturedAt`, ingest thresholds, HMAC, limits and the C2 SLA do not
+change.

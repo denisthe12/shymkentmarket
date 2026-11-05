@@ -1294,6 +1294,18 @@ PIPELINE_OLD_PACKAGE = '3049257eb2898eb4c279a296f3bd56f1a52e883b'
 PIPELINE_NEW_PACKAGE = 'b4d13a331beb967c63c32c480fcccfc31dc545e1'
 PIPELINE_OLD_LOCK = 'cfee18d88a435e550c0ed3f074fb8ccd4704cdfe'
 PIPELINE_NEW_LOCK = 'bd94f3bb67624e36cc89b94585bae22065ec14c1'
+# Fixed next transition, contract 20.6. NEW stays pinned: policy and history depend on it.
+PIPELINE_BASE_SOURCE = 'ea3cf04e7653bf6310f631fa8a6533122f128567'
+PIPELINE_BASE_INVENTORY = '0671b096d799ac17d54ae7c1579f1d9d1af6b54888c5fc1b2812bb610703b6cc'
+PIPELINE_NEXT_TREE = '6d94c430be0d12cdd65476a1533e67a488e766c6'
+PIPELINE_NEXT_PROTECTED = {
+    'backend/prisma/migrations/20261102000000_store_anvar_enum/migration.sql': (None, '7c4b69f3d8873512fbd4a3f91d7b7ccd604bc51f'),
+    'backend/prisma/migrations/20261102000100_store_anvar_rows/migration.sql': (None, '22fa4002ab4a00cc8872b38e9d23bed5c6b5f33e'),
+    'backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql': (None, 'c272af519556133988e9feea18edf10e111a4a7b'),
+    'backend/prisma/schema.prisma': ('6ea0e340fec18ca93446cce2cdc909ea7f330344', '2f270ddd9e1aa24683fc15766d67c1b88d1251fe'),
+    'contracts/openapi.yaml': ('0339280f3065d7ad73d3f483335721751500e8c6', '988a269b2fd0a0ef79550bc63dd7b44dfc73d6fc'),
+}
+POLICY_SUCCESSION = '/etc/aktau-sync-promotion/policy-succession.json'
 CONTRACTS_OLD_LOCK = '4a631ef27450ce85b818e4fe02705b9bcd224c13'
 CONTRACTS_NEW_LOCK = '504f5a4544438da6ea2e994b73932eae4eec5497'
 PIPELINE_NODE = '41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c'
@@ -1308,6 +1320,13 @@ PIPELINE_CUSTODIAN = '14111fdd9ffb93cf25edb3a7f724198f14b4cd83d13f0a89ba6069aa46
 def pipeline_contracts_delta(paths, old, new):
     need(paths == ['contracts/pnpm-lock.yaml'] and old == CONTRACTS_OLD_LOCK
          and new == CONTRACTS_NEW_LOCK, 'protected_delta')
+    return True
+
+
+def pipeline_protected_delta(paths, sha, blob):
+    need(sorted(paths) == sorted(PIPELINE_NEXT_PROTECTED), 'protected_delta')
+    for path, (old, new) in PIPELINE_NEXT_PROTECTED.items():
+        need(blob(PIPELINE_BASE_SOURCE, path) == old and blob(sha, path) == new, 'protected_delta')
     return True
 
 
@@ -1448,7 +1467,7 @@ def pipeline_blob(path, rows, blobs):
 def pipeline_descriptor(raw, capsule, sha):
     need(type(raw) is bytes and 0 < len(raw) <= 16384, 'pipeline_descriptor_capacity')
     d = parse(raw)
-    fixed = {'version':1,'contract':PIPELINE_CONTRACT,'sourceSha':sha,'pipelineTreeSha1':PIPELINE_NEW_TREE,
+    fixed = {'version':1,'contract':PIPELINE_CONTRACT,'sourceSha':sha,'pipelineTreeSha1':PIPELINE_NEXT_TREE,
              'packageBlobSha1':PIPELINE_NEW_PACKAGE,'lockBlobSha1':PIPELINE_NEW_LOCK,
              'nodeVersion':'v24.18.0','nodeSha256':PIPELINE_NODE,'pnpmVersion':'10.32.1',
              'pnpmTarSha256':PIPELINE_PNPM,'platform':'linux/amd64/glibc'}
@@ -1500,22 +1519,20 @@ def source_admission_v2(contents, manifest):
         sha = manifest['sourceSha']
         git(['fetch','--no-tags',str(bundle),sha])
         need(git(['rev-parse',sha+'^{tree}']).decode().strip() == manifest['sourceTree'], 'source_tree')
-        git(['merge-base','--is-ancestor','49f6823768817b0390f215de42439cce523bf5d3',sha])
-        for ref,tree,pkg,lock in [(sha,PIPELINE_NEW_TREE,PIPELINE_NEW_PACKAGE,PIPELINE_NEW_LOCK),
-                                  (PIPELINE_OLD_SOURCE,PIPELINE_OLD_TREE,PIPELINE_OLD_PACKAGE,PIPELINE_OLD_LOCK)]:
+        git(['merge-base','--is-ancestor',PIPELINE_BASE_SOURCE,sha])
+        for ref,tree,pkg,lock in [(sha,PIPELINE_NEXT_TREE,PIPELINE_NEW_PACKAGE,PIPELINE_NEW_LOCK),
+                                  (PIPELINE_BASE_SOURCE,PIPELINE_NEW_TREE,PIPELINE_NEW_PACKAGE,PIPELINE_NEW_LOCK)]:
             for path,expected in [('pipeline',tree),('pipeline/package.json',pkg),('pipeline/pnpm-lock.yaml',lock)]:
                 need(git(['rev-parse',ref+':'+path]).decode().strip() == expected, 'pipeline_source_identity')
-        protected = git(['diff','--name-only','--no-renames',PIPELINE_OLD_SOURCE,sha,'--',
+        protected = git(['diff','--name-only','--no-renames',PIPELINE_BASE_SOURCE,sha,'--',
                          'backend/prisma','contracts','deploy/compose.production.yml']).decode().splitlines()
-        if protected:
-            need(protected == ['contracts/pnpm-lock.yaml'], 'protected_delta')
-            blobs = []
-            for ref in [PIPELINE_OLD_SOURCE,sha]:
-                row = git(['ls-tree',ref,'--','contracts/pnpm-lock.yaml']).decode().split()
-                need(len(row) == 4 and row[:2] == ['100644','blob'] and row[3] == 'contracts/pnpm-lock.yaml','protected_delta')
-                blobs.append(row[2])
-            pipeline_contracts_delta(protected,*blobs)
-        for ref in [sha,PIPELINE_OLD_SOURCE]:
+        def blob(ref,path):
+            row = git(['ls-tree',ref,'--',path]).decode().split()
+            if not row: return None
+            need(len(row) == 4 and row[:2] == ['100644','blob'] and row[3] == path,'protected_delta')
+            return row[2]
+        pipeline_protected_delta(protected,sha,blob)
+        for ref in [sha,PIPELINE_BASE_SOURCE]:
             source_rows=git(['ls-tree','-rlz',ref]).split(b'\0');sizes=[];directories=set()
             for row in source_rows:
                 if not row:continue
@@ -1540,7 +1557,7 @@ def source_admission_v2(contents, manifest):
         for name,path in source_paths().items():
             need(digest(git(['show',sha+':'+path], cap=16 << 20)) == manifest['files'][name], 'source_blob_mismatch')
     return {'status':'ARTIFACT_V2_SOURCE_VALIDATED_NOT_AUTHORIZATION','sourceSha':sha,
-            'pipelineTreeSha1':PIPELINE_NEW_TREE,'protectedPaths':protected}
+            'pipelineTreeSha1':PIPELINE_NEXT_TREE,'protectedPaths':protected}
 
 
 class PipelineStore:
@@ -1801,7 +1818,7 @@ def selection(p,raw):
     p.need(type(v) is dict and set(v)=={'version','contract','sourceSha','pipelineTreeSha1','inventorySha256',
         'descriptorSha256','releaseIdentity','provenanceKind'} and type(v['version']) is int and v['version']==1
         and v['contract']==CONTRACT and all(type(v[k]) is str for k in ['sourceSha','pipelineTreeSha1','inventorySha256','descriptorSha256','releaseIdentity','provenanceKind']) and p.SHA.fullmatch(v['sourceSha'])
-        and v['pipelineTreeSha1'] in [p.PIPELINE_OLD_TREE,p.PIPELINE_NEW_TREE]
+        and v['pipelineTreeSha1'] in [p.PIPELINE_OLD_TREE,p.PIPELINE_NEW_TREE,p.PIPELINE_NEXT_TREE]
         and p.HEX.fullmatch(v['inventorySha256']) and p.HEX.fullmatch(v['descriptorSha256'])
         and re.fullmatch(r'[a-z0-9_-]{1,80}',v['releaseIdentity'])
         and v['provenanceKind'] in ['github-artifact','legacy-installed-attested'],'pipeline_selection')
@@ -1934,7 +1951,7 @@ class TransactionV2:
         p.need(oldsel['sourceSha']==old['sha'],'pipeline_old_source')
         oldseal=p.PipelineStore(self.fs).verify(oldsel['inventorySha256'])
         d=p.pipeline_descriptor(contents['pipeline-runtime.json'],contents['pipeline-runtime.tar'],m['sourceSha'])
-        newsel={'version':1,'contract':CONTRACT,'sourceSha':m['sourceSha'],'pipelineTreeSha1':p.PIPELINE_NEW_TREE,
+        newsel={'version':1,'contract':CONTRACT,'sourceSha':m['sourceSha'],'pipelineTreeSha1':p.PIPELINE_NEXT_TREE,
             'inventorySha256':d['inventorySha256'],'descriptorSha256':p.digest(contents['pipeline-runtime.json']),
             'releaseIdentity':identity,'provenanceKind':'github-artifact'}
         newraw=p.canonical(newsel);directory=p.BASE+'/releases/'+identity
@@ -2129,14 +2146,15 @@ class TrackedHost:
         return self.p.parse(self.p.canonical(self.base.invariants()))
     def verify_baseline(self):
         p=self.p;policy=p.parse(self.fs.read(p.POLICY));p.validate_policy(policy)
-        p.need(policy['version']==2,'pipeline_policy_required');enrolled=require_enrollment(p,self.fs,policy)
+        p.need(policy['version']==2,'pipeline_policy_required');p.require_enrollment(p,self.fs,policy)
         selected=selection(p,self.fs.read(p.PIPELINE_SELECTION,16384))
-        p.need(self.publisher()['sha']==p.PIPELINE_OLD_SOURCE and selected['sourceSha']==p.PIPELINE_OLD_SOURCE
-            and selected['pipelineTreeSha1']==p.PIPELINE_OLD_TREE and selected['inventorySha256']==enrolled['generation'],
-            'pipeline_exact_old_baseline')
+        p.need(self.publisher()['sha']==p.PIPELINE_BASE_SOURCE and selected['sourceSha']==p.PIPELINE_BASE_SOURCE
+            and selected['pipelineTreeSha1']==p.PIPELINE_NEW_TREE and selected['inventorySha256']==p.PIPELINE_BASE_INVENTORY
+            and selected['provenanceKind']=='github-artifact','pipeline_exact_old_baseline')
+        tuple_record(p,self.fs)
         p.Host.verify_old_closure(self,policy)
         backend=self.engine.mounts if self.engine is not None else LinuxMounts(p,self.fs)
-        p.need(backend.generation()==enrolled['generation']
+        p.need(backend.generation()==selected['inventorySha256']
             and p.parse(self.fs.read(p.PIPELINE_MOUNT_RECORD,16384))==attestation(p,self.fs,backend,self.fs.read(p.PIPELINE_SELECTION,16384)),
             'pipeline_old_mount_not_attested')
         # PR86 is a dependency-only transition. Freeze the ledger codec so a
@@ -2285,7 +2303,7 @@ def _enrolled_underlying_inputs(p,fs,sel,expected_root):
     record is root-private, independently digest-approved, and inode-specific.
     """
     try:
-        if (type(sel.get('sourceSha'))is not str or not p.SHA.fullmatch(sel['sourceSha']) or sel.get('pipelineTreeSha1') not in [p.PIPELINE_OLD_TREE,p.PIPELINE_NEW_TREE] or expected_root is None):return {}
+        if (type(sel.get('sourceSha'))is not str or not p.SHA.fullmatch(sel['sourceSha']) or sel.get('pipelineTreeSha1') not in [p.PIPELINE_OLD_TREE,p.PIPELINE_NEW_TREE,p.PIPELINE_NEXT_TREE] or expected_root is None):return {}
         policy=p.parse(fs.read(p.POLICY));p.validate_policy(policy)
         if policy['version']!=2:return {}
         receipt=p.require_enrollment(p,fs,policy)
@@ -2492,6 +2510,16 @@ class LinuxMounts:
         g=record['oldGeneration'];prepared=self.prepare(g,'rollback-'+g[:16],register);self.attach(prepared)
 
 
+def policy_succession(p,fs,enrolled,current):
+    """Contract 20.6: exactly one root-written step from the enrolled policy."""
+    try:v=p.parse(fs.read(p.POLICY_SUCCESSION,16384))
+    except FileNotFoundError:raise p.Blocked('pipeline_policy_succession') from None
+    p.need(type(v) is dict and set(v)=={'version','purpose','enrolledPolicySha256','policySha256','approvalSha256'}
+        and type(v['version']) is int and v['version']==1 and v['purpose']=='anvar-next-transition'
+        and v['enrolledPolicySha256']==enrolled and v['policySha256']==current
+        and type(v['approvalSha256']) is str and p.HEX.fullmatch(v['approvalSha256']),'pipeline_policy_succession')
+
+
 def require_enrollment(p,fs,policy):
     """Read independent admin authorization + completed bootstrap; never mint it."""
     import datetime
@@ -2502,12 +2530,14 @@ def require_enrollment(p,fs,policy):
         'legacyInputInventorySha256':c['baselineInputInventorySha256'],'oldRuntimeInventorySha256':c['baselineRuntimeInventorySha256'],
         'nodeSha256':p.PIPELINE_NODE,'pnpmTarSha256':p.PIPELINE_PNPM,
         'oldExecutorSha256':'d69c667212b2a6c8a25081ccdc90f798024e850784262976e06e45ce13f45118',
-        'oldPolicySha256':'2bf672f1626252f107447552493ad982999d3d7f444f000394a7006d952ddb8b',
-        'newPolicySha256':p.digest(p.canonical(policy))}
-    p.need(type(a) is dict and set(a)==set(fixed)|{'approvalId','reviewedRootBundleSha256','notBefore','expiresAt'}
+        'oldPolicySha256':'2bf672f1626252f107447552493ad982999d3d7f444f000394a7006d952ddb8b'}
+    p.need(type(a) is dict and set(a)==set(fixed)|{'newPolicySha256','approvalId','reviewedRootBundleSha256','notBefore','expiresAt'}
         and type(a['version']) is int and all(a[k]==v for k,v in fixed.items())
         and type(a['approvalId']) is str and re.fullmatch(r'[a-f0-9]{32}',a['approvalId'])
-        and p.HEX.fullmatch(a['reviewedRootBundleSha256']),'pipeline_baseline_authority')
+        and p.HEX.fullmatch(a['reviewedRootBundleSha256']) and type(a['newPolicySha256']) is str
+        and p.HEX.fullmatch(a['newPolicySha256']),'pipeline_baseline_authority')
+    enrolled_policy=a['newPolicySha256'];current_policy=p.digest(p.canonical(policy))
+    if current_policy!=enrolled_policy:policy_succession(p,fs,enrolled_policy,current_policy)
     times=[]
     for key in ['notBefore','expiresAt']:
         p.need(type(a[key]) is str and re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z',a[key]),'pipeline_baseline_time')
@@ -2520,7 +2550,7 @@ def require_enrollment(p,fs,policy):
     receipt=p.parse(fs.read(prefix+'enrolled-'+a['approvalId']+'.json',16384))
     p.need(type(receipt) is dict and set(receipt)=={'version','approvalSha256','policySha256','outcome','generation',
         'targetParentIdentity','underlyingTargetIdentity','legacyReleaseIdentity','legacyReceiptName','legacyReceiptSha256'} and type(receipt['version']) is int and receipt['version']==1
-        and receipt['approvalSha256']==p.digest(raw) and receipt['policySha256']==fixed['newPolicySha256']
+        and receipt['approvalSha256']==p.digest(raw) and receipt['policySha256']==enrolled_policy
         and receipt['outcome']=='BASELINE_ENROLLED' and receipt['generation']==c['baselineRuntimeInventorySha256']
         and all(type(receipt[k]) is list and len(receipt[k])==6 and all(type(n) is int and n>=0 for n in receipt[k])
             for k in ['targetParentIdentity','underlyingTargetIdentity']),'pipeline_baseline_receipt')

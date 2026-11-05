@@ -186,7 +186,7 @@ class CoupledReleaseTests(unittest.TestCase):
         # are qualified separately; this is never production parity evidence.
         tree=self.f.git(['rev-parse',self.f.commits[1]+':pipeline']).strip()
         self.assertEqual(p.verify_parity(p,self.f.fs,self.f.engine().host,self.f.engine().mounts)['status'],'NOT_VERIFIED')
-        with patch.object(p,'PIPELINE_NEW_TREE',tree):
+        with patch.object(p,'PIPELINE_NEXT_TREE',tree):
             e=self.f.engine();e.promote(self.f.contents,self.f.manifest,'fixture')
             node=p.digest(self.f.fs.read(p.NODE))
             def snapshot():return {str(f.relative_to(self.f.root)):p.digest(f.read_bytes()) for f in self.f.root.rglob('*') if f.is_file() and not f.is_symlink()}

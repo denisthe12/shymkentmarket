@@ -873,7 +873,7 @@ all new payloads, original source.bundle, descriptor, provenance and14 rollback
 backups remain retained. Foreign resources, torn `.pending` writes, EBUSY,
 unknown children or unknown transaction state block without cleanup/retry.
 
-`pipeline-pnpm` is a non-root fixed shim for the existing six scheduled scripts
+`pipeline-pnpm` is a non-root fixed shim for the seven scheduled scripts
 and exact scope argv. It rejects installer/general exec commands and loader or
 pnpm configuration injection. Selected graphs run as `aktau-sync`, with caches
 disabled and no writable alias through the private capsule directory.
