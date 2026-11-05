@@ -21,8 +21,9 @@ describe('stores', () => {
   })
 
   it('gives each known chain its own color and unknown ones a neutral gray', () => {
-    const colors = new Set(['DINA', 'DANA', 'FIX_PRICE'].map(storeColor))
-    expect(colors.size).toBe(3)
+    const colors = new Set(['DINA', 'DANA', 'FIX_PRICE', 'ANVAR'].map(storeColor))
+    expect(colors.size).toBe(4)
+    expect(storeColor('ANVAR')).toBe('#b8860b')
     expect(storeColor('SMALL')).toBe('#697178')
   })
 
