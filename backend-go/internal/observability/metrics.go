@@ -109,7 +109,7 @@ func (r *Registry) Age(store string, now, captured time.Time) {
 	}
 	key := "snapshot_age_seconds"
 	if store != "" {
-		if oneOf(store, "DINA", "DANA", "FIX_PRICE") == "other" {
+		if oneOf(store, "DINA", "DANA", "FIX_PRICE", "ANVAR") == "other" {
 			return
 		}
 		key = "source_age_seconds|" + store

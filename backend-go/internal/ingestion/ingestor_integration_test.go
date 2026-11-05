@@ -116,6 +116,7 @@ func TestLocalSnapshotPublication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	b = withAnvar(b) // the dataset predates ANVAR; the part08 clone must carry the ANVAR store row
 	engine, err := New(conn, 0, false)
 	if err != nil {
 		t.Fatal(err)

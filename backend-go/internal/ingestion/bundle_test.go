@@ -18,6 +18,15 @@ func sample() Bundle {
 	return b
 }
 
+// The prepared dataset predates ANVAR: one synthetic product satisfies the fourth required source.
+func withAnvar(b Bundle) Bundle {
+	one := 1.0
+	an := RawProduct{StoreCode: "ANVAR", SourceProductID: "anvar_1", Name: "Anvar", Price: 100}
+	b.RawProducts = append(b.RawProducts, an)
+	b.Groups = append(b.Groups, Group{Name: "Anvar", Category: "milk", Members: []Member{{Raw: an, Method: "deterministic", Confidence: &one, Review: "approved"}}})
+	return b
+}
+
 func TestPreparedDataset(t *testing.T) {
 	f, err := os.Open("../../../data/snapshots/final_dataset.json")
 	if err != nil {
@@ -31,11 +40,12 @@ func TestPreparedDataset(t *testing.T) {
 	if len(b.RawProducts) != 863 || len(b.Groups) != 849 {
 		t.Fatal("prepared dataset counts")
 	}
+	b = withAnvar(b)
 	_, report, err := resolve(b, nil, nil, map[string]string{"milk": "milk", "sugar": "sugar", "oil": "oil", "eggs": "eggs", "bread": "bread", "other": "other"}, 0, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.MatchedAcrossStores != 14 || report.NewCanonical != 849 {
+	if report.MatchedAcrossStores != 14 || report.NewCanonical != 850 {
 		t.Fatal("prepared dataset identity metrics")
 	}
 }
@@ -75,7 +85,7 @@ func TestCanonicalIdentityAndQuality(t *testing.T) {
 	b := sample()
 	old := map[Identity][]string{b.RawProducts[0].Identity(): {"stable-1"}, b.RawProducts[1].Identity(): {"stable-2"}}
 	result, report, err := resolve(b, old, nil, cats, 0, false)
-	if err != nil || result[0].ID != "stable-1" || result[1].ID != "stable-2" || report.ReusedCanonical != 2 || report.NewCanonical != 1 {
+	if err != nil || result[0].ID != "stable-1" || result[1].ID != "stable-2" || report.ReusedCanonical != 2 || report.NewCanonical != 2 {
 		t.Fatal("stable identity")
 	}
 	cases := []struct {
@@ -119,7 +129,22 @@ func TestDecodeAcceptsPipelineBundle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pipeline bundle rejected: %v", err)
 	}
-	if len(b.RawProducts) != 3 || len(b.Groups) != 2 || len(b.Sources) != 3 {
+	if len(b.RawProducts) != 4 || len(b.Groups) != 3 || len(b.Sources) != 4 {
 		t.Fatalf("unexpected shape: %d raw, %d groups, %d sources", len(b.RawProducts), len(b.Groups), len(b.Sources))
+	}
+}
+
+func TestValidateRequiresAnvarSourceRun(t *testing.T) {
+	count := 1
+	b := sample()
+	for _, store := range []string{"DINA", "DANA", "FIX_PRICE"} {
+		b.Sources = append(b.Sources, SourceInput{StoreCode: store, CapturedAt: "2026-10-05T11:00:00Z", ProductCount: &count})
+	}
+	if b.Validate() == nil {
+		t.Fatal("bundle without an ANVAR source run accepted")
+	}
+	b.Sources = append(b.Sources, SourceInput{StoreCode: "ANVAR", CapturedAt: "2026-10-05T11:00:00Z", ProductCount: &count})
+	if err := b.Validate(); err != nil {
+		t.Fatalf("bundle with four source runs rejected: %v", err)
 	}
 }
