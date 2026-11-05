@@ -21,7 +21,7 @@ test('actual scheduled shell preserves success/stale/all-failed/dry-run/apply fa
     for(const [name,failed,dry,apply,expected,count] of [
       ['success','',0,0,0,2],['stale','scrape:dana',0,0,3,2],
       ['two-stale','scrape:dina,scrape:dana',0,0,3,2],
-      ['all-failed','scrape:dina,scrape:dana,scrape:fixprice',0,0,1,0],
+      ['all-failed','scrape:dina,scrape:dana,scrape:fixprice,scrape:anvar',0,0,1,0],
       ['sync-failed','sync',0,0,1,0],['dry-failed','',23,0,1,1],['apply-failed','',0,17,1,2],
     ]){
       const log=path.join(dir,name),pnpmLog=log+'.pnpm';
