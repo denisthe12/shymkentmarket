@@ -52,6 +52,7 @@ if (group === 'contracts') {
     'scripts/ops/prepare-recovery-operator.test.mjs', 'scripts/ops/daily-sync.test.mjs',
     ]));
 } else if (group === 'security') {
+  console.log(run('disposable CI database guards', 'node', ['--test', 'scripts/ci/guard.test.mjs']));
   run('tracked secrets / workflow policy', 'node', ['scripts/ci/check-source.mjs']);
   console.log(run('backup synthetic guards', 'node', ['--test', 'ops/postgres/backup.test.mjs']).split('\n').slice(-10).join('\n'));
 } else throw new Error('unknown CI group');
