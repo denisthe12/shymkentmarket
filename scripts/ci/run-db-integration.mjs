@@ -12,9 +12,6 @@ await postgres(async ({ url, sql, login, load, go }) => {
     PART10_ADMIN_DATABASE_URL: url('part10_security'), PART10_DISPOSABLE_CONFIRM: '1',
   });
   login('aktau_api_runtime', 'aktau_api_reader');
-  go(['test', '-count=1', '-race', '-tags=integration', './cmd/c2projection', '-run', '^TestLocalC2Projection$', '-v'], {
-    C2_ADMIN_DATABASE_URL: url('part16_c2'), C2_READER_DATABASE_URL: url('part16_c2', 'aktau_api_runtime'), C2_DISPOSABLE_CONFIRM: '1',
-  });
   for (const db of ['part04_security', 'part08', 'part11_recovery']) load(db);
   go(['test', '-count=1', '-race', '-tags=integration', './internal/ingestion', '-run', '^TestLocalTxBatchAtomicity$', '-v'], {
     TEST_INGEST_ADMIN_DATABASE_URL: url('part08'),
@@ -37,14 +34,3 @@ await postgres(async ({ url, sql, login, load, go }) => {
   });
 });
 
-// The immutable writer bootstrap requires no existing group members. Do not
-// weaken it or interfere with the part08 role tests: use a NEW owned cluster.
-await postgres(async ({url,sql,login,go})=>{
-  login('aktau_api_runtime','aktau_api_reader');
-  sql('part16_c2',readFileSync(join(root,'backend/prisma/security/aktau_ingest_writer_role.sql')));
-  login('part32_writer','aktau_ingest_writer');
-  go(['test','-count=1','-race','-tags=integration','./internal/revalidation','-run','^(TestReadyPreparedBundleShape|TestLocalReadyPublication)$','-v'],{
-    PART32_ADMIN_DATABASE_URL:url('part16_c2'),PART32_WRITER_DATABASE_URL:url('part16_c2','part32_writer'),
-    PART32_READER_DATABASE_URL:url('part16_c2','aktau_api_runtime'),
-  });
-});

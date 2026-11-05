@@ -158,8 +158,7 @@ IDs, approval files, copy/load/transport or upgrade of a local result to release
 Current healthy438 and historical absent wrapper are dated Part19 observations,
 not read again here. Future release requires exact hosted artifact/Owner approval,
 appropriate approved release route, compatible preserved rollback, private config
-and application Voice gates. Keep AUTO_DEPLOY_ENABLED disabled. C2 provisioning
-and3 qualified legitimate-publication≤5s measurements remain separate OPEN work.
+and application Voice gates. Keep AUTO_DEPLOY_ENABLED disabled. 
 
 The mandatory existing Security job runs `node scripts/ci/run-checks.mjs ops`
 with Node24: all92 Part20 cases plus the Part21 lifecycle/unit-kit tests. The
@@ -278,7 +277,7 @@ loop. Service70s includes verifier50s + notifier5s + storage margin; stop5s kill
 the whole group. Never delete crash locks/pending state automatically; follow
 the reconciliation section above. Source rollback needs a separately reviewed
 previous immutable source and rerender; no Go image rollback is implied. Go,
-Cloudflare, sync/C2 timers and AUTO_DEPLOY_ENABLED remain unchanged.
+Cloudflare, sync timers and AUTO_DEPLOY_ENABLED remain unchanged.
 
 ## Part22 — direct Telegram (inactive source candidate)
 
@@ -403,5 +402,5 @@ sudo systemctl stop aktau-go-monitor.service
 
 A same-VPS monitor cannot send an alert if the whole VPS/network fails. External
 watchdog redundancy remains a later operational improvement, not covered by a
-working Telegram adapter. Real smoke NOT_RUN, monitor INACTIVE, C2 OPEN and Go
+working Telegram adapter. Real smoke NOT_RUN, monitor INACTIVE, Go
 API unchanged until separately authorized operations and evidence say otherwise.

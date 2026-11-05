@@ -76,7 +76,9 @@ trap 'echo "[sync] publish step failed" >&2; exit 1' ERR
 
 pnpm sync
 cd "$REPO_ROOT/backend-go"
-python3 -B "$REPO_ROOT/pipeline/scripts/c2-ingest-launch.py" "$BUNDLE"
+export GOTOOLCHAIN=local
+go run ./cmd/ingest -bundle "$BUNDLE"
+go run ./cmd/ingest -bundle "$BUNDLE" -apply
 
 trap - ERR
 echo "[sync] done in $((SECONDS - started))s"

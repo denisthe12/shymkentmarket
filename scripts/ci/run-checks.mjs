@@ -22,26 +22,7 @@ if (group === 'contracts') {
   for (const args of [['mod', 'verify'], ['test', '-count=1', './...'], ['test', '-count=1', '-race', './...'],
     ['vet', './...'], ['tool', 'staticcheck', './...'], ['tool', 'staticcheck', '-tags=integration', './...'],
     ['tool', 'govulncheck', './...']]) console.log(go(args));
-  // Explicit full-size READY qualification, with two actual allowed CPUs for
-  // the Go client AND its helper/Node descendants. No production authority.
-  const allowed = readFileSync('/proc/self/status','utf8').match(/^Cpus_allowed_list:\s*([0-9,-]+)$/m)?.[1];
-  if (!allowed) throw new Error('READY qualification CPU affinity unavailable');
-  const cpus=[];
-  for(const part of allowed.split(',')) {
-    const [first,last=first]=part.split('-').map(Number);
-    for(let id=first;id<=Math.min(last,first+1)&&cpus.length<2;id++)cpus.push(id);
-    if(cpus.length===2)break;
-  }
-  if(cpus.length!==2)throw new Error('READY qualification requires two CPUs');
-  console.log(run('READY full-size2CPU qualification (fixtures only)', 'taskset', ['-c',cpus.join(','),'go','test','-count=1',
-    '-tags=readyqualification','-run','^TestReadyLargeELF','-v','./internal/revalidation'],
-    {cwd:cwd('backend-go'),env:{...env,GOMAXPROCS:'2'}}));
   for (const name of ['api', 'ingest']) go(['build', '-o', join(temporary, name), `./cmd/${name}`]);
-  const relay = join(temporary, 'relayprobe');
-  go(['build', '-o', relay, './internal/revalidation/testdata/relayprobe']);
-  console.log(run('C2 Node regressions (real local relay, no production)', 'node', ['--test',
-    ...run('C2 test inventory', 'git', ['ls-files', '--cached', '--others', '--exclude-standard', 'scripts/revalidation/*.test.mjs']).split('\n').filter(Boolean),
-    'scripts/ci/guard.test.mjs'], { env: { ...env, C2_LOCAL_PROBE: relay } }));
 } else if (group === 'nest') {
   install('backend'); pnpm('backend', ['db:generate']); pnpm('backend', ['build']);
   console.log(pnpm('backend', ['test']).split('\n').slice(-10).join('\n'));
@@ -64,14 +45,14 @@ if (group === 'contracts') {
 } else if (group === 'ops') {
   if (process.versions.node.split('.')[0] !== '24') throw new Error('ops requires Node24');
   run('local TLS prerequisite (no installation)', 'openssl', ['version']);
-  console.log(run('C2 installer and automatic custodian regressions', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'ops/c2', '-p', 'test_*.py']));
   console.log(run('ops regressions and local HTTPS lifecycle', process.execPath, ['--test',
     'scripts/ops/verify-go-production.test.mjs', 'scripts/ops/monitor-go-production.test.mjs',
     'scripts/ops/check-go-release.test.mjs', 'scripts/ops/monitor-lifecycle.test.mjs',
     'scripts/ops/telegram-notifier.test.mjs', 'scripts/ops/telegram-lifecycle.test.mjs',
-    'scripts/ops/prepare-recovery-operator.test.mjs', 'scripts/ops/c2-provisioning-plan.test.mjs',
-    'scripts/ops/c2-ingest-launch.test.mjs', 'scripts/ops/sync-promotion.test.mjs']));
+    'scripts/ops/prepare-recovery-operator.test.mjs', 'scripts/ops/daily-sync.test.mjs',
+    ]));
 } else if (group === 'security') {
+  console.log(run('disposable CI database guards', 'node', ['--test', 'scripts/ci/guard.test.mjs']));
   run('tracked secrets / workflow policy', 'node', ['scripts/ci/check-source.mjs']);
   console.log(run('backup synthetic guards', 'node', ['--test', 'ops/postgres/backup.test.mjs']).split('\n').slice(-10).join('\n'));
 } else throw new Error('unknown CI group');

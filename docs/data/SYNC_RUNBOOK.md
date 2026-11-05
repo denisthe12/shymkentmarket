@@ -86,13 +86,9 @@ git diff data/mapping/dina-scope-categories.json          # просмотрет
 git add data/mapping/dina-scope-categories.json && git commit -m "data(mapping): refresh dina scope categories"
 git push -u origin HEAD                                    # дальше — PR и мерж в main
 
-# 2. После мержа — exact-main CI и согласованный publisher/C2 promotion.
-# Не выполнять git pull или менять root sourceSha вручную.
-# См. docs/production/BACKEND2_SYNC_C2_AUTOMATED_PROMOTION_HANDOFF.md.
-```
+[Обновление sync checkout](../../ops/sync/README.md#обновление-кода-на-vps): только exact main с успешным CI и сохранённым rollback.
 
-Не коммитьте прямо в `/opt/aktau-sync`: локальный коммит создаёт source authority drift.
-Publisher и весь immutable C2 kit обновляются одной проверяемой транзакцией.
+[Обновление sync checkout](../../ops/sync/README.md#обновление-кода-на-vps): только exact main с успешным CI и сохранённым rollback.
 
 Новые категории в диффе значат, что в магазине появились товары в категориях вне старого набора: до коммита ежедневный прогон их не видит. Разрастание набора в разы тоже повод разобраться, прежде чем коммитить.
 

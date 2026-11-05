@@ -74,7 +74,7 @@ function localBundle(dir, sha) {
   return { sha, expectedTag: 'adilbaga-api:' + sha };
 }
 const unverified = ['hosted_ci','saved_image_contents','build_base_and_toolchain','independent_authorization','runtime_config_db_voice',
-  'rollback_compatibility','post_cutover_smoke','c2_production_acceptance'];
+  'rollback_compatibility','post_cutover_smoke'];
 export function checkRelease(directory, sha, rollback) {
   try {
     const candidate = localBundle(directory, sha);
