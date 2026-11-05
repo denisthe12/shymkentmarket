@@ -22,6 +22,9 @@ test('actual scheduled shell preserves success/stale/all-failed/dry-run/apply fa
         env:{...process.env,PATH:dir+':'+process.env.PATH,TEST_PNPM_LOG:pnpmLog,TEST_GO_LOG:log,TEST_FAILED:failed,
           TEST_DRY_EXIT:String(dry),TEST_APPLY_EXIT:String(apply)}});
       assert.equal(r.status,expected,name);
+      const steps=fs.readFileSync(pnpmLog,'utf8').trim().split('\n');
+      for(const store of ['dina','dana','fixprice','anvar']) assert.equal(steps.filter(x=>x==='scrape:'+store).length,1,name);
+      assert.equal(steps.filter(x=>x==='sync').length,name==='all-failed'?0:1,name);
       const lines=fs.existsSync(log)?fs.readFileSync(log,'utf8').trim().split('\n'):[];
       assert.equal(lines.length,count,name);assert.ok(lines.every(v=>v.endsWith('|local')),name);
       const bundle=path.resolve('data/sync/bundle.json');
