@@ -49,7 +49,7 @@ if (group === 'contracts') {
     'scripts/ops/verify-go-production.test.mjs', 'scripts/ops/monitor-go-production.test.mjs',
     'scripts/ops/check-go-release.test.mjs', 'scripts/ops/monitor-lifecycle.test.mjs',
     'scripts/ops/telegram-notifier.test.mjs', 'scripts/ops/telegram-lifecycle.test.mjs',
-    'scripts/ops/prepare-recovery-operator.test.mjs',
+    'scripts/ops/prepare-recovery-operator.test.mjs', 'scripts/ops/daily-sync.test.mjs',
     ]));
 } else if (group === 'security') {
   run('tracked secrets / workflow policy', 'node', ['scripts/ci/check-source.mjs']);

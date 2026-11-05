@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"log/slog"
 	"math"
 	"os"
 	"os/signal"
@@ -20,10 +19,6 @@ import (
 	"adilbaga/backend-go/internal/revalidation"
 	"github.com/jackc/pgx/v5"
 )
-
-func logReadyAdmission(logger *slog.Logger, d revalidation.ReadyDiagnostic) {
-	logger.Info("c2_ready_admission", "phase", d.Phase(), "reason", d.Reason(), "outcome", d.Outcome(), "elapsed_ms", d.ElapsedMS(), "deadline_or_cancelled", d.DeadlineOrCancelled())
-}
 
 func run() (resultErr error) {
 	start := time.Now()
@@ -124,35 +119,11 @@ func run() (resultErr error) {
 	}
 	if *apply {
 		phase = "staging"
-		fifo := os.Getenv("C2_EVENT_FIFO")
-		requestedAttempt := c2AttemptID()
-		readyTicket, readyDiagnostic := revalidation.RequestReadyDetailed(ctx, fifo, requestedAttempt)
-		readyClass := readyDiagnostic.Outcome()
-		if fifo != "" {
-			logReadyAdmission(logger, readyDiagnostic)
-		}
 		staged, err := engine.Stage(ctx, bundle)
 		if err != nil {
 			return err
 		}
 		defer staged.Close()
-		baselineID, baselineAt := staged.Baseline()
-		bound := readyTicket.BindBaseline(baselineID, baselineAt)
-		if readyTicket != nil && !bound {
-			readyClass = "baseline_mismatch"
-		}
-		if fifo != "" {
-			logger.Info("c2_ready", "outcome_class", readyClass)
-		}
-		// Optional diagnostic receipt only; no FIFO I/O in the notification budget.
-		var receipt revalidation.Attempt
-		attemptID := ""
-		if fifo != "" && bound {
-			attemptID = requestedAttempt
-			if attemptID != "" {
-				notifier.WithTrace(func(a revalidation.Attempt) { receipt = a })
-			}
-		}
 		phase = "publication"
 		outcome, publishErr := revalidation.PublishThenNotify(ctx, true, staged.Publish, notifier.Notify)
 		if publishErr != nil {
@@ -160,13 +131,6 @@ func run() (resultErr error) {
 		}
 		report = staged.Report
 		logger.Info("frontend_revalidation", "outcome_class", outcome)
-		if fifo != "" {
-			class := "skipped"
-			if attemptID != "" {
-				class = revalidation.Relay(fifo, revalidation.Event(staged.SnapshotID(), attemptID, receipt))
-			}
-			logger.Info("c2_trace", "outcome_class", class)
-		}
 	} else {
 		phase = "validation"
 		report, err = engine.DryRun(ctx, bundle)
@@ -186,13 +150,6 @@ func run() (resultErr error) {
 		return errors.New("summary unavailable")
 	}
 	return nil
-}
-func c2AttemptID() string {
-	id := os.Getenv("C2_EVENT_ATTEMPT_ID")
-	if !revalidation.ValidAttemptID(id) {
-		return ""
-	}
-	return id
 }
 func main() {
 	if err := run(); err != nil {
