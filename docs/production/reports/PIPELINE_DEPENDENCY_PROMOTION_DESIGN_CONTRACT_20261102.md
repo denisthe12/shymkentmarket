@@ -896,8 +896,12 @@ root step would block all of these, including `--rollback-last`.
 `producerFiles` change. The enrollment approval and receipt are not rewritten. The
 root tool writes one succession record that binds the enrolled policy hash to the new
 policy hash and to the manual approval. `require_enrollment` accepts exactly two
-states: the enrolled policy, or the policy named by a valid succession record. A
-second succession is not supported.
+states: the enrolled policy, or the policy named by a valid succession record. The
+executor checks the digest of the retained approval file and a fixed shape constant:
+the policy with its two executor pins blanked, because the executor cannot embed its
+own hash. So the gate, `bin/pnpm` and builder values are fixed, and a third policy is
+refused. `anvar-root-approval.json` must stay on the host. A second succession is not
+supported.
 
 **Files replaced by the root step (4).** `publisher-promotion.py`,
 `promotion-runtime-gate.py`, `bin/pnpm`, `policy.json`. Drop-ins, units and the
@@ -938,9 +942,39 @@ That procedure applies to the new tuple unchanged. No AI agent runs or sees it.
   the selection, is still the base tuple. The succession record stays on the host; it is
   inert once the policy hash no longer matches it.
 
+- Floor: `--rollback-last` refuses a release whose new publisher is the base. Below
+  `ea3cf04` the Dana fix is gone and no forward path exists.
+- The environment is part of release rollback: `SYNC_STORES` returns to the three
+  stores first, otherwise `ea3cf04` waits for a source file it no longer writes.
+- Root `--rollback` is refused after any promotion attempt, even once the tuple is
+  back at base, because release records and stamps changed. This is deliberate.
+- After a root rollback the retained succession record is inert, but it sits at the
+  fixed path. A replacement tool has to account for it.
+
+**Independent review, 2026-11-05.** Fixed before the stand:
+
+- A kill inside a journal or file write no longer blocks recovery. Files appear under
+  their final name only after a full write, the journal temporary does not end in
+  `.pending`, and temporaries are discarded under the locks.
+- Failure before `backed_up` ends in `PIPELINE_V2_ABORTED_UNSTAGED`: the tool proves
+  publisher, selection, mount and all targets are unchanged, writes `aborted.json`,
+  keeps every resource and clears the interlock.
+- `check_release` runs before the stage mount, and a stage left inside `prepare` is
+  recognised when it holds the new generation.
+- A repeat of a sealed generation, or a retained rollback stage, is refused before
+  the interlock exists, as `pipeline_generation_exists` or
+  `pipeline_rollback_stage_exists`. Reuse is not implemented: production stays
+  healthy, but a real repeat needs a reviewed follow-up.
+- Git children run with umask 022. New steps refuse the 30 minutes before a timer.
+
+**Accepted risk, delegated administrator, 2026-11-05.** SIGKILL inside `restore()`
+during release rollback stops with an interlock, in the same class as the three points
+accepted for Part B. The window is narrow and needs a kill, not a network failure.
+Whether the three Part B points remain is reported by the stand.
+
 **Must be proven on the stand, with a shared parent.** The full path
-`ea3cf04 → Anvar → ea3cf04`; a repeat promotion after that rollback, including the
-reuse of `mounts/rollback-<generation>`; boot-time mount under the succession record;
+`ea3cf04 → Anvar → ea3cf04`; a repeat promotion after that rollback refusing cleanly
+without an interlock; `ProductionChecks.snapshot` on a real host; boot-time mount under the succession record;
 scheduled runs between the root step and the promotion; the fault and signal matrix
 for the root tool and the promotion; SIGKILL during rollback; old code failing where
 it should. Anything else is reported as `NOT_RUN`.

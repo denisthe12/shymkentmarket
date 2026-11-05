@@ -33,6 +33,9 @@ class Checks:
     def validate_policy(self, value):
         pass
 
+    def preflight(self):
+        pass
+
     def snapshot(self, policy):
         return json.loads(json.dumps(self.value))
 
@@ -99,10 +102,12 @@ class StepTests(unittest.TestCase):
         self.assertEqual(self.f.step().run('verify'), 'ANVAR_ROOT_STEP_VERIFIED')
         self.assertEqual(self.f.step().run('recover'), 'ANVAR_ROOT_STEP_VERIFIED')
 
-    def test_staged_names_never_trip_the_pending_guard(self):
+    def test_no_name_of_this_step_trips_the_pending_guard(self):
         step = self.f.step()
         step.j = {'approvalSha256': 'a' * 64}
-        self.assertFalse(any(step.resource(k)[0].endswith('.pending') for k in step.keys()))
+        names = [step.resource(k)[0] for k in step.keys()] + [m.PENDING, m.JOURNAL]
+        names += [n + '.part' for n in names]
+        self.assertFalse(any(n.endswith('.pending') for n in names))
 
     def test_no_second_apply(self):
         self.f.step().run('apply')
@@ -132,6 +137,78 @@ class StepTests(unittest.TestCase):
                     self.assertEqual(f.contents(), f.OLD)
                     self.assertEqual(f.step().run('recover'), 'ANVAR_ROOT_STEP_ROLLED_BACK')
 
+    def test_kill_inside_a_write_leaves_a_recoverable_step(self):
+        """The fault fires between events; these leftovers model a kill inside the next write."""
+        events = []
+        self.f.step(events.append).run('apply')
+        for event in events:
+            if event == 'verified':
+                continue
+            for leftover in [m.PENDING, m.PENDING + '.part', m.SUCCESSION + '.part', m.ROOT + '/.promotion-runtime-gate.py.anvar-root-step.staged.part']:
+                with self.subTest(event=event, leftover=leftover):
+                    f = Fixture(self)
+
+                    def fault(name):
+                        if name == event:
+                            raise Killed
+
+                    with self.assertRaises(Killed):
+                        f.step(fault).run('apply')
+                    f.put(leftover, b'torn', 0o600)
+                    self.assertEqual(f.step().run('recover'), 'ANVAR_ROOT_STEP_ROLLED_BACK')
+                    self.assertEqual(f.contents(), f.OLD)
+
+    def test_kill_before_the_first_journal_changes_nothing_and_apply_can_proceed(self):
+        self.f.put(m.PENDING, b'torn', 0o600)
+        self.assertEqual(self.f.step().run('apply'), 'ANVAR_ROOT_STEP_VERIFIED')
+
+    def test_kill_after_backup_mkdir_is_adopted(self):
+        real = self.f.fs.mkdir
+
+        def killed(path):
+            real(path)
+            raise Killed
+
+        with patch.object(self.f.fs, 'mkdir', killed), self.assertRaises(Killed):
+            self.f.step().run('apply')
+        self.assertEqual(self.f.step().run('recover'), 'ANVAR_ROOT_STEP_ROLLED_BACK')
+        self.assertEqual(self.f.contents(), self.f.OLD)
+
+    def test_kill_at_every_event_of_a_deliberate_rollback(self):
+        probe = Fixture(self)
+        probe.step().run('apply')
+        events = []
+        probe.step(events.append).run('rollback')
+        self.assertGreater(len(events), 6)
+        for event in events:
+            with self.subTest(event=event):
+                f = Fixture(self)
+                f.step().run('apply')
+
+                def fault(name):
+                    if name == event:
+                        raise Killed
+
+                with self.assertRaises(Killed):
+                    f.step(fault).run('rollback')
+                self.assertEqual(f.step().run('rollback'), 'ANVAR_ROOT_STEP_ROLLED_BACK')
+                self.assertEqual(f.contents(), f.OLD)
+
+    def test_timer_window(self):
+        at = lambda *a: datetime.datetime(*a, tzinfo=datetime.timezone.utc).timestamp() * 1000
+        self.assertTrue(m.timer_clear(at(2026, 11, 6, 12, 0)))
+        self.assertFalse(m.timer_clear(at(2026, 11, 6, 12, 45)))
+        self.assertFalse(m.timer_clear(at(2026, 11, 6, 0, 45)))
+        self.assertFalse(m.timer_clear(at(2026, 11, 8, 21, 45)))  # Sunday, weekly run
+        self.assertTrue(m.timer_clear(at(2026, 11, 7, 21, 45)))   # Saturday, no weekly run
+
+    def test_new_step_refuses_a_timer_window_and_recovery_does_not(self):
+        step = m.Step(self.f.fs, self.f.checks, clock=lambda: NOW + 3000000)
+        with self.assertRaisesRegex(m.Blocked, 'timer_window'):
+            step.run('apply')
+        self.f.step().run('apply')
+        self.assertEqual(m.Step(self.f.fs, self.f.checks, clock=lambda: NOW + 3000000).run('rollback'), 'ANVAR_ROOT_STEP_ROLLED_BACK')
+
     def test_kill_during_recovery_can_be_resumed(self):
         def apply_fault(name):
             if name == 'policy_replaced':
@@ -160,7 +237,7 @@ class StepTests(unittest.TestCase):
                 self.assertEqual(f.step().run('recover'), 'ANVAR_ROOT_STEP_ROLLED_BACK')
                 self.assertEqual(f.contents(), f.OLD)
 
-    def test_recovery_refuses_a_torn_unregistered_file(self):
+    def test_recovery_refuses_a_wrong_file_under_a_final_name(self):
         def fault(name):
             if name == 'stage_gate_unregistered':
                 raise Killed
@@ -272,14 +349,19 @@ class Pins(unittest.TestCase):
         p = importlib.util.module_from_spec(spec)
         loader.exec_module(p)
         self.assertEqual(m.SUCCESSION, p.POLICY_SUCCESSION)
+        self.assertEqual(m.APPROVAL, p.POLICY_APPROVAL)
         self.assertEqual((m.BASE_SOURCE, m.BASE_TREE, m.BASE_INVENTORY), (p.PIPELINE_BASE_SOURCE, p.PIPELINE_NEW_TREE, p.PIPELINE_BASE_INVENTORY))
         self.assertEqual(m.SELECTION, p.PIPELINE_SELECTION)
 
+        approval = m.canonical({'purpose': 'anvar-root-step', 'oldPolicySha256': m.OLD_POLICY, 'newPolicySha256': m.NEW_POLICY})
+        files = {p.POLICY_SUCCESSION: m.succession(hashlib.sha256(approval).hexdigest()), p.POLICY_APPROVAL: approval}
+
         class Fs:
             def read(self, path, cap=None):
-                return m.succession('a' * 64)
+                return files[path]
 
-        p.policy_succession(p, Fs(), m.OLD_POLICY, m.NEW_POLICY)
+        policy = json.loads(m.candidate((R / 'ops/c2/fixtures/anvar-root/policy-before.json').read_bytes(), lambda value: None))
+        p.policy_succession(p, Fs(), policy, m.OLD_POLICY, m.NEW_POLICY)
 
 
 if __name__ == '__main__':

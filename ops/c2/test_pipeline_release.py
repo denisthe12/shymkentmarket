@@ -127,6 +127,69 @@ class CoupledReleaseTests(unittest.TestCase):
         self.f.ledger.write_bytes(b'[{"natural":"later fixture"}]\n');latest=self.f.ledger.read_bytes()
         self.assertEqual(self.f.engine().recover(e.j,deliberate=True),'PIPELINE_V2_ROLLED_BACK')
         self.f.assert_old(self);self.assertEqual(self.f.ledger.read_bytes(),latest)
+    def test_failure_before_staging_aborts_without_touching_the_live_tuple(self):
+        class Stop(BaseException):pass
+        for phase in ['intent','capsule_staged']:
+            with self.subTest(phase=phase):
+                f=Fixture()
+                try:
+                    with patch.object(p,'pipeline_descriptor',side_effect=f.descriptor):
+                        def stop(name):
+                            if name==phase:raise Stop
+                        with self.assertRaises(Stop):f.engine(stop).promote(f.contents,f.manifest,'fixture')
+                        j=p.parse(f.fs.read(p.INTERLOCK,65536));self.assertEqual(j['phase'],phase)
+                        self.assertEqual(f.engine().recover(j),'PIPELINE_V2_ABORTED_UNSTAGED')
+                        self.assertFalse(f.fs.path(p.INTERLOCK).exists());f.assert_old(self)
+                        v.release_inventory_v2(p,f.fs)
+                finally:f.close()
+    def test_kill_between_abort_receipt_and_interlock_removal_resumes(self):
+        class Stop(BaseException):pass
+        def stop(name):
+            if name=='intent':raise Stop
+        with self.assertRaises(Stop):self.f.engine(stop).promote(self.f.contents,self.f.manifest,'fixture')
+        def late(name):
+            if name=='abort_receipt_durable':raise Stop
+        j=p.parse(self.f.fs.read(p.INTERLOCK,65536))
+        with self.assertRaises(Stop):self.f.engine(late).recover(j)
+        j=p.parse(self.f.fs.read(p.INTERLOCK,65536));self.assertEqual(j['phase'],'aborted')
+        self.assertEqual(self.f.engine().recover(j),'PIPELINE_V2_ABORTED_UNSTAGED')
+        self.assertFalse(self.f.fs.path(p.INTERLOCK).exists())
+    def test_repeat_of_a_sealed_generation_refuses_before_the_interlock(self):
+        e=self.f.engine();e.promote(self.f.contents,self.f.manifest,'fixture')
+        self.assertEqual(self.f.engine().recover(e.j,deliberate=True),'PIPELINE_V2_ROLLED_BACK')
+        self.f.fs.write(p.BASE+'/releases/fixture/source.bundle',b'model import_release writes nothing',0o444)
+        with self.assertRaisesRegex(p.Blocked,'pipeline_generation_exists'):
+            self.f.engine().promote(self.f.contents,self.f.manifest,'repeat')
+        self.assertFalse(self.f.fs.path(p.INTERLOCK).exists());self.f.assert_old(self)
+        self.assertFalse(self.f.fs.path(p.BASE+'/releases/repeat').exists())
+    def test_retained_rollback_stage_refuses_before_the_interlock(self):
+        selected=p.parse(self.f.fs.read(p.PIPELINE_SELECTION,16384))
+        self.f.fs.path(p.BASE+'/mounts/rollback-'+selected['inventorySha256'][:16]).mkdir()
+        with self.assertRaisesRegex(p.Blocked,'pipeline_rollback_stage_exists'):
+            self.f.engine().promote(self.f.contents,self.f.manifest,'fixture')
+        self.assertFalse(self.f.fs.path(p.INTERLOCK).exists())
+    def test_network_failure_comes_before_the_stage_mount(self):
+        e=self.f.engine();prepared=[]
+        real=e.mounts.prepare
+        e.mounts.prepare=lambda *a,**k:(prepared.append(a),real(*a,**k))[1]
+        def bad(*args,**kwargs):raise p.Blocked('main_drift')
+        e.host.check_release=bad
+        with self.assertRaisesRegex(p.Blocked,'main_drift'):e.promote(self.f.contents,self.f.manifest,'fixture')
+        self.assertEqual(prepared,[])
+        j=p.parse(self.f.fs.read(p.INTERLOCK,65536))
+        self.assertEqual(self.f.engine().recover(j),'PIPELINE_V2_ROLLED_BACK');self.f.assert_old(self)
+    def test_stage_left_inside_prepare_is_known_only_for_the_new_generation(self):
+        l=object.__new__(p.LinuxMounts);l.p=p;l.fs=self.f.fs;l.generations=set();l.stage=None
+        stage=p.BASE+'/mounts/x';rollback=p.BASE+'/mounts/rollback-x';self.f.fs.path(stage).mkdir()
+        ident=list(p.stamp(os.lstat(self.f.fs.path(stage))))[:6]
+        res={'mountStage':stage,'rollbackMountStage':rollback,'mountStageIdentity':ident,'rollbackMountStageIdentity':None}
+        new=list(p.stamp(os.lstat(self.f.fs.path(p.BASE+'/capsules/'+self.f.oldgen))))[:6]
+        record={'mountPrepared':None,'newGeneration':self.f.oldgen,'oldGeneration':self.f.oldgen}
+        with patch.object(p.LinuxMounts,'_root',lambda s,g:p.BASE+'/capsules/'+g):
+            l._record=lambda path:{'mountId':9,'namespace':'mnt:[1]','rootIdentity':new} if path==stage else None
+            self.assertEqual(l.classify(record,res),'absent')
+            l._record=lambda path:{'mountId':9,'namespace':'mnt:[1]','rootIdentity':[1]*6} if path==stage else None
+            with self.assertRaisesRegex(p.Blocked,'pipeline_unknown_prepared_mount'):l.classify(record,res)
     def test_sigkill_each_live_boundary_retains_interlock_then_recovers_tuple(self):
         phases=['backed_up','prepared','switching','old_mount_detached','publisher','new_mount_attached',
                 *['file_'+str(i) for i in range(14)],'selection_written','tuple_verified','committed']

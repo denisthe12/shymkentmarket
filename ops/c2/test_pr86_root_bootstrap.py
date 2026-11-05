@@ -467,6 +467,8 @@ class EnrolledUnderlyingInputTests(unittest.TestCase):
  def test_invalid_source_identity_has_no_exception(self):self.assertEqual(self.inputs(sha='invalid'),{})
  def test_exact_new_tree_can_read_unchanged_bound_old_files(self):
   self.assertEqual(p._enrolled_underlying_inputs(p,self.f.fs,{'sourceSha':'e'*40,'pipelineTreeSha1':p.PIPELINE_NEW_TREE,'inventorySha256':'b'*64},self.f.receipt['underlyingTargetIdentity']),{'package.json':self.row})
+ def test_next_tree_can_read_unchanged_bound_old_files(self):
+  self.assertEqual(p._enrolled_underlying_inputs(p,self.f.fs,{'sourceSha':'e'*40,'pipelineTreeSha1':p.PIPELINE_NEXT_TREE,'inventorySha256':'b'*64},self.f.receipt['underlyingTargetIdentity']),{'package.json':self.row})
  def test_other_pipeline_tree_has_no_exception(self):
   self.assertEqual(p._enrolled_underlying_inputs(p,self.f.fs,{'sourceSha':'e'*40,'pipelineTreeSha1':'e'*40,'inventorySha256':'b'*64},self.f.receipt['underlyingTargetIdentity']),{})
  def test_foreign_underlying_root_has_no_exception(self):

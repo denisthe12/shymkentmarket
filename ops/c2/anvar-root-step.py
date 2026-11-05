@@ -36,7 +36,7 @@ BASE = '/var/lib/aktau-sync-promotion'
 INPUT = BASE + '/anvar-root-input'
 BACKUP = '/var/backups/aktau-anvar-root-step-20261105'
 JOURNAL = BASE + '/state/anvar-root-step.json'
-PENDING = JOURNAL + '.pending'
+PENDING = JOURNAL + '.next'  # never '.pending': the executor refuses to run while such a name exists
 EXECUTOR_SOURCE = 'ops/c2/publisher-promotion.py'
 BUILDER_SOURCE = 'scripts/ops/build-sync-promotion.py'
 OLD_EXECUTOR = 'ee29a676284994d081f830e4395dff41340ba3b7990842dbd9610ae712765d65'
@@ -44,11 +44,11 @@ OLD_GATE = '07abcb00d675eb1e1de387957302dc8ba626ef07589f272df596648610a40d6e'
 OLD_PNPM = '41851591e276f54a019e61b74044352dac7dc61ad9bb0fb31227d9ac763f4dfe'
 OLD_BUILDER = '10684efbc8df6a7e0b9503c2cf063f555d6a741e0007abec21ad8b7ab2970a52'
 OLD_POLICY = '350b23639dc7faa69716ea22ee7b840ad99c719f219d8d18dcf9130b5b1ac8ec'
-NEW_EXECUTOR = '972be6ec0ba52ae8779df718a020685375244c0de65311f6abc82022246cbf86'
+NEW_EXECUTOR = '34fd8846bd7d7d14b160a19c306f27e361e144f7b5054c9832f13d0c493aef61'
 NEW_GATE = 'c4da815750f6470672b5dc3823c708a309b85f48650723f69786f98cf8754ecb'
 NEW_PNPM = 'e734f1b95ba6ca512aa7c8f9d89b55f024dfa9b0733b2c718615fe3e49b0ab35'
 NEW_BUILDER = '321cf18b879a3280dae36256ef563fdf22a59d9440b73b1e735fe0ce3a2ea2c5'
-NEW_POLICY = 'f0a1b91f00883acf240f489e313baa7a0b0f099ac2eb4602ed42b90cdd9117a4'
+NEW_POLICY = '1b75ce79852cf079fd2a19804a1ef2520edbeab30a1c69cc9c651d3811847aaa'
 # Order matters: the policy goes last, after the executor that can read the succession record.
 TARGETS = {'pnpm': (PNPM, 0o755, OLD_PNPM, NEW_PNPM), 'gate': (GATE, 0o755, OLD_GATE, NEW_GATE),
            'executor': (EXECUTOR, 0o755, OLD_EXECUTOR, NEW_EXECUTOR), 'policy': (POLICY, 0o644, OLD_POLICY, NEW_POLICY)}
@@ -61,6 +61,7 @@ PHASES = {'intent', 'backup_created', 'backed_up', 'staged', 'prepared', 'pnpm_r
           'rollback_pnpm_replaced', 'rolled_back'}
 MAX_FILE = 512 << 10
 APPROVAL_TTL_MS = 1800000
+TIMER_MARGIN_MS = 1800000
 
 
 class Blocked(Exception): pass
@@ -127,6 +128,18 @@ def verify_approval(raw, now_ms):
     return digest(raw)
 
 
+def timer_clear(now_ms):
+    """Fixed schedule in UTC: aktau-sync 01:00 and 13:00, aktau-sync-full Sunday 22:00."""
+    now = datetime.datetime.fromtimestamp(now_ms / 1000, datetime.timezone.utc)
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    runs = []
+    for offset in [0, 1]:
+        date = day + datetime.timedelta(days=offset)
+        runs += [date + datetime.timedelta(hours=1), date + datetime.timedelta(hours=13)]
+        if date.weekday() == 6: runs.append(date + datetime.timedelta(hours=22))
+    return not any(0 <= (run - now).total_seconds() * 1000 < TIMER_MARGIN_MS for run in runs)
+
+
 class Filesystem:
     """Pinned root custody. No sandbox/path override is exposed by main()."""
     def __init__(self, sandbox=None):
@@ -190,17 +203,28 @@ class Filesystem:
         with self.directory(path) as d: return set(os.listdir(d))
 
     def create(self, path, raw, mode):
+        """The final name appears only after a full fsynced write, so a kill never tears it."""
         need(type(raw) is bytes and 0 < len(raw) <= MAX_FILE, 'write_capacity')
+        name = Path(path).name; part = name + '.part'
         with self.directory(Path(path).parent.as_posix()) as d:
-            fd = os.open(Path(path).name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=d)
+            fd = os.open(part, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=d)
             try:
                 os.fchown(fd, self.uid, self.gid); at = 0
                 while at < len(raw):
                     n = os.write(fd, raw[at:]); need(n > 0, 'short_write'); at += n
                 os.fchmod(fd, mode); os.fsync(fd); created = stamp(os.fstat(fd))
             finally: os.close(fd)
-            os.fsync(d)
-        actual, st = self.read(path, mode); need(actual == raw and st == created, 'write_readback'); return st
+            need(name not in os.listdir(d), 'target_exists')
+            os.rename(part, name, src_dir_fd=d, dst_dir_fd=d); os.fsync(d)
+        actual, st = self.read(path, mode, MAX_FILE); need(actual == raw and core(st) == core(created), 'write_readback'); return st
+
+    def discard(self, path):
+        """Remove one pinned temporary name. It carries no state: targets are re-classified from disk."""
+        with self.directory(Path(path).parent.as_posix()) as d:
+            try: s = os.stat(Path(path).name, dir_fd=d, follow_symlinks=False)
+            except FileNotFoundError: return
+            need(stat.S_ISREG(s.st_mode) and (s.st_uid, s.st_gid) == (self.uid, self.gid), 'temp_custody')
+            os.unlink(Path(path).name, dir_fd=d); os.fsync(d)
 
     def mkdir(self, path):
         with self.directory(Path(path).parent.as_posix()) as d:
@@ -230,13 +254,9 @@ class Filesystem:
     def journal(self, value, previous, old_hash):
         raw = canonical(value); st = self.create(PENDING, raw, 0o600)
         if previous is None:
-            with self.opened(PENDING, 0o600, MAX_FILE) as (fd, d, content, actual):
-                need(actual == st and content == raw, 'journal_pending_changed')
-                os.link(Path(PENDING).name, Path(JOURNAL).name, src_dir_fd=d, dst_dir_fd=d, follow_symlinks=False)
-                linked = stamp(os.fstat(fd)); expected = st.copy(); expected[5] = 2
-                need(core(linked) == core(expected) and linked == stamp(os.stat(Path(PENDING).name, dir_fd=d, follow_symlinks=False))
-                     == stamp(os.stat(Path(JOURNAL).name, dir_fd=d, follow_symlinks=False)), 'journal_link_changed')
-                os.unlink(Path(PENDING).name, dir_fd=d); os.fsync(d)
+            need(not self.exists(JOURNAL), 'journal_exists')  # all locks are held
+            with self.directory(Path(JOURNAL).parent.as_posix()) as d:
+                os.rename(Path(PENDING).name, Path(JOURNAL).name, src_dir_fd=d, dst_dir_fd=d); os.fsync(d)
         else: self.rename(PENDING, JOURNAL, 0o600, st, previous, digest(raw), old_hash)
         actual, state = self.read(JOURNAL, 0o600, MAX_FILE); need(actual == raw, 'journal_readback'); return state
 
@@ -338,8 +358,18 @@ class Step:
         st = self.fs.create(path, raw, mode); self.fault(event + '_unregistered')
         self.j['resources'][key] = {'stamp': st, 'sha256': h}; self.save(phase, event); self.inventory(self.classify())
 
+    def clean(self):
+        for path in [PENDING, PENDING + '.part', SUCCESSION + '.part']: self.fs.discard(path)
+        for key in self.keys() - {'succession'}:
+            path = self.resource(key)[0]
+            if not path.startswith(BACKUP + '/') or self.fs.exists(BACKUP): self.fs.discard(path + '.part')
+
     def adopt(self):
         """A kill between create and registration leaves an exact pinned file. Anything else stays unknown."""
+        if self.j['backupDirectory'] is None and self.fs.exists(BACKUP):
+            need(self.fs.names(BACKUP) == set(), 'unknown_backup_resource')
+            with self.fs.directory(BACKUP) as d: self.j['backupDirectory'] = stamp(os.fstat(d))[:5]
+            self.save(self.j['phase'], 'adopt_backup')
         for k in sorted(self.keys() - set(self.j['resources'])):
             path, mode, h = self.resource(k)
             if self.j['backupDirectory'] is None and path.startswith(BACKUP + '/'): continue
@@ -359,6 +389,7 @@ class Step:
     def run(self, mode):
         need(mode in ['verify', 'apply', 'recover', 'rollback'], 'fixed_mode')
         with self.fs.locks():
+            if mode != 'verify': self.clean()
             if self.fs.exists(JOURNAL):
                 self.load()
                 if mode == 'apply': raise Blocked('existing_step_no_retry')
@@ -373,6 +404,7 @@ class Step:
                 self.unchanged(self.j['snapshot'], policy)
                 return self.rollback(self.j['snapshot'], policy, states)
             need(mode in ['verify', 'apply'], 'recovery_journal_missing'); self.inventory()
+            need(timer_clear(self.clock()), 'timer_window'); self.checks.preflight()
             approval = verify_approval(self.fs.read(APPROVAL, 0o400, 16384)[0], self.clock())
             original = {}; data = {}
             for k, (path, perm, h, _) in TARGETS.items():
@@ -439,6 +471,12 @@ class ProductionChecks:
     def __init__(self, fs, p): self.fs, self.p = fs, p
     def validate_policy(self, v): self.p.validate_policy(v)
 
+    def preflight(self):
+        """Only before a new step: an administrator may stop timers during recovery."""
+        for unit in ['aktau-sync.timer', 'aktau-sync-full.timer']:
+            raw = self.p.command(['/usr/bin/systemctl', 'show', unit, '--property=ActiveState,UnitFileState', '--value'], timeout=5, cap=256)
+            need(set(raw.decode().splitlines()) == {'active', 'enabled'}, 'timer_state')
+
     def snapshot(self, policy):
         """Everything this step must leave alone. The ledger may grow between runs, so it is excluded."""
         p = self.p; p.validate_policy(policy); pf = p.Filesystem(); host = p.Host(pf)
@@ -460,9 +498,6 @@ class ProductionChecks:
             expected = '/usr/bin/python3 -I -B ' + ROOT + '/promotion-runtime-gate.py ' + role
             need(text.count('argv[]=') == 1 and 'argv[]=' + expected + ' ;' in text, 'loaded_wrapper')
             stable['units'][unit] = expected
-        for unit in ['aktau-sync.timer', 'aktau-sync-full.timer']:
-            raw = p.command(['/usr/bin/systemctl', 'show', unit, '--property=ActiveState,UnitFileState', '--value'], timeout=5, cap=256)
-            need(set(raw.decode().splitlines()) == {'active', 'enabled'}, 'timer_state'); stable['units'][unit] = 'active'
         return {'stable': stable}
 
 

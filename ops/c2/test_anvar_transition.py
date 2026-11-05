@@ -7,8 +7,12 @@ import datetime
 import hashlib
 import importlib.machinery
 import importlib.util
+import io
 import json
 from pathlib import Path
+import subprocess
+import tarfile
+import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -64,7 +68,8 @@ class NextBaseline(unittest.TestCase):
             receipt.assert_called_once()
 
     def test_any_other_selection_is_refused(self):
-        for key, value in [('sourceSha', 'c' * 40), ('inventorySha256', 'c' * 64), ('provenanceKind', 'legacy-installed-attested')]:
+        for key, value in [('sourceSha', 'c' * 40), ('inventorySha256', 'c' * 64), ('provenanceKind', 'legacy-installed-attested'),
+                           ('pipelineTreeSha1', p.PIPELINE_NEXT_TREE), ('pipelineTreeSha1', p.PIPELINE_OLD_TREE)]:
             selected = p.parse(committed_selection())
             selected[key] = value
             fs = FakeFs({p.POLICY: b'{"version":2}\n', p.PIPELINE_SELECTION: p.canonical(selected)})
@@ -83,6 +88,108 @@ class NextBaseline(unittest.TestCase):
         selected['pipelineTreeSha1'] = 'c' * 40
         with self.assertRaisesRegex(p.Blocked, 'pipeline_selection'):
             p.selection(p, p.canonical(selected))
+
+
+class RollbackFloor(unittest.TestCase):
+    def test_base_release_is_never_rolled_below(self):
+        with self.assertRaisesRegex(p.Blocked, 'rollback_below_base'):
+            p.rollback_last_guard({'newPublisher': {'sha': BASE_SOURCE, 'branch': 'HEAD'}})
+        p.rollback_last_guard({'newPublisher': {'sha': 'c' * 40, 'branch': 'HEAD'}})
+
+
+class SourceAdmission(unittest.TestCase):
+    """Positive path of source_admission_v2 on a real disposable repository."""
+
+    def git(self, *args):
+        return subprocess.run(['git', '-C', str(self.repo), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory(prefix='anvar-admission-')
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        self.repo = self.root / 'repo'
+        self.repo.mkdir()
+        self.git('init', '-q')
+        self.git('config', 'user.name', 'Local fixture')
+        self.git('config', 'user.email', 'fixture@example.invalid')
+        self.files = {path: b'public fixture\n' for path in [*p.source_paths().values(), 'backend/prisma/schema.prisma',
+                                                             'contracts/openapi.yaml', 'pipeline/pnpm-lock.yaml']}
+        self.files['pipeline/package.json'] = b'{}\n'
+        self.write(self.files)
+        self.base = self.commit('base')
+        self.base_tree = self.git('rev-parse', 'HEAD:pipeline')
+
+    def write(self, files):
+        for path, raw in files.items():
+            target = self.repo / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
+
+    def commit(self, text):
+        self.git('add', '-A')
+        self.git('commit', '-q', '-m', text)
+        return self.git('rev-parse', 'HEAD')
+
+    def blob(self, ref, path):
+        return self.git('rev-parse', ref + ':' + path)
+
+    def next_commit(self, extra=None):
+        changed = {'pipeline/src/anvar.ts': b'export {}\n', 'backend/prisma/schema.prisma': b'changed\n', 'contracts/openapi.yaml': b'changed\n',
+                   'backend/prisma/migrations/x/migration.sql': b'select 1;\n', **(extra or {})}
+        self.write(changed)
+        return self.commit('next')
+
+    def admit(self, sha):
+        pins = {path: ((self.blob(self.base, path) if path != 'backend/prisma/migrations/x/migration.sql' else None), self.blob(sha, path))
+                for path in ['backend/prisma/schema.prisma', 'contracts/openapi.yaml', 'backend/prisma/migrations/x/migration.sql']}
+        tree = self.git('rev-parse', sha + ':pipeline')
+        names = self.git('ls-tree', '-r', '--name-only', sha, '--', 'pipeline').splitlines()
+        rows, blobs = [], []
+        for name in names:
+            raw = (self.repo / name).read_bytes()
+            rows.append({'path': name[9:], 'type': 'file', 'mode': 0o444, 'size': len(raw), 'sha256': p.digest(raw)})
+            blobs.append(raw)
+        for directory in sorted({str(Path(r['path']).parent.as_posix()) for r in rows} - {'.'}):
+            rows.append({'path': directory, 'type': 'dir', 'mode': 0o555})
+        rows.sort(key=lambda r: r['path'])
+        inventory = p.canonical({'version': 1, 'entries': rows})
+        out = io.BytesIO()
+        by_path = dict(zip([n[9:] for n in names], blobs))
+        with tarfile.open(fileobj=out, mode='w', format=tarfile.USTAR_FORMAT) as tar:
+            members = [('inventory.json', inventory)]
+            members += [('blob/' + str(i), by_path[row['path']]) for i, row in enumerate(rows) if row['type'] == 'file']
+            for name, raw in members:
+                item = tarfile.TarInfo(name)
+                item.mode = 0o444
+                item.size = len(raw)
+                tar.addfile(item, io.BytesIO(raw))
+        bundle = self.root / 'source.bundle'
+        self.git('bundle', 'create', '-q', str(bundle), 'HEAD')
+        files = {name: p.digest(self.files[path]) for name, path in p.source_paths().items()}
+        contents = {'source.bundle': bundle.read_bytes(), 'custodian.py': self.files[p.source_paths()['custodian.py']], 'pipeline-runtime.tar': out.getvalue()}
+        manifest = {'version': 2, 'sourceSha': sha, 'sourceTree': self.git('rev-parse', sha + '^{tree}'), 'files': files}
+        real_command = p.command
+
+        def command(argv, **kw):
+            return real_command(['git' if argv[0] == '/usr/bin/git' else argv[0], *argv[1:]], **kw)
+
+        with patch.object(p, 'PIPELINE_BASE_SOURCE', self.base), patch.object(p, 'PIPELINE_NEW_TREE', self.base_tree), \
+                patch.object(p, 'PIPELINE_NEXT_TREE', tree), patch.object(p, 'PIPELINE_NEXT_PROTECTED', pins), \
+                patch.object(p, 'PIPELINE_NEW_PACKAGE', self.blob(self.base, 'pipeline/package.json')), \
+                patch.object(p, 'PIPELINE_NEW_LOCK', self.blob(self.base, 'pipeline/pnpm-lock.yaml')), \
+                patch.object(p, 'PIPELINE_CUSTODIAN', p.digest(contents['custodian.py'])), patch.object(p, 'command', command), \
+                patch.object(p, 'pipeline_capsule', return_value=(p.parse(inventory), {i: raw for i, raw in enumerate(blobs)})), \
+                patch.object(p, 'pipeline_blob', side_effect=lambda path, rows, data: by_path[path]):
+            return p.source_admission_v2(contents, manifest)
+
+    def test_exact_next_commit_is_admitted(self):
+        result = self.admit(self.next_commit())
+        self.assertEqual(result['status'], 'ARTIFACT_V2_SOURCE_VALIDATED_NOT_AUTHORIZATION')
+        self.assertEqual(len(result['protectedPaths']), 3)
+
+    def test_extra_protected_change_is_refused(self):
+        with self.assertRaisesRegex(p.Blocked, 'protected_delta'):
+            self.admit(self.next_commit({'deploy/compose.production.yml': b'x\n'}))
 
 
 class ProtectedDelta(unittest.TestCase):
@@ -141,7 +248,8 @@ class EnrollmentSuccession(unittest.TestCase):
     """policy.json pins executor/gate/pnpm, so the root step must change it without voiding enrollment."""
 
     def setUp(self):
-        self.policy = {'version': 2, 'runtimeFiles': {'/x': 'a' * 64}, 'pipelineContract': {
+        self.policy = {'version': 2, 'runtimeFiles': {'/x': 'a' * 64, p.ROOT + '/publisher-promotion.py': 'e' * 64},
+                       'producerFiles': {'ops/c2/publisher-promotion.py': 'e' * 64}, 'pipelineContract': {
             'baselineInputInventorySha256': 'c' * 64, 'baselineRuntimeInventorySha256': 'd' * 64}}
         policy_hash = p.digest(p.canonical(self.policy))
         approval = p.canonical({
@@ -167,9 +275,10 @@ class EnrollmentSuccession(unittest.TestCase):
                 'underlyingTargetIdentity': [2] * 6, 'legacyReleaseIdentity': 'legacy',
                 'legacyReceiptName': 'receipt.json', 'legacyReceiptSha256': p.digest(legacy)}),
             legacy_dir + '/receipt.json': legacy})
-        store = patch.object(p, 'PipelineStore', return_value=SimpleNamespace(verify=lambda generation: {}))
-        store.start()
-        self.addCleanup(store.stop)
+        for ctx in [patch.object(p, 'PipelineStore', return_value=SimpleNamespace(verify=lambda generation: {})),
+                    patch.object(p, 'PIPELINE_NEXT_POLICY_SHAPE', p.policy_shape(p, self.changed()))]:
+            ctx.start()
+            self.addCleanup(ctx.stop)
 
     def test_enrollment_holds_for_the_policy_it_was_issued_for(self):
         self.assertEqual(p.require_enrollment(p, self.fs, self.policy)['generation'], 'd' * 64)
@@ -179,9 +288,15 @@ class EnrollmentSuccession(unittest.TestCase):
         value['runtimeFiles']['/x'] = 'b' * 64
         return value
 
+    def approval(self, **over):
+        value = {'purpose': 'anvar-root-step', 'oldPolicySha256': p.digest(p.canonical(self.policy)),
+                 'newPolicySha256': p.digest(p.canonical(self.changed()))}
+        return p.canonical({**value, **over})
+
     def record(self, **over):
+        self.fs.files[p.POLICY_APPROVAL] = self.approval()
         value = {'version': 1, 'purpose': 'anvar-next-transition', 'enrolledPolicySha256': p.digest(p.canonical(self.policy)),
-                 'policySha256': p.digest(p.canonical(self.changed())), 'approvalSha256': 'a' * 64}
+                 'policySha256': p.digest(p.canonical(self.changed())), 'approvalSha256': p.digest(self.approval())}
         return p.canonical({**value, **over})
 
     def test_changed_policy_without_a_record_is_refused(self):
@@ -197,10 +312,26 @@ class EnrollmentSuccession(unittest.TestCase):
         self.assertEqual(p.require_enrollment(p, self.fs, self.policy)['generation'], 'd' * 64)
 
     def test_record_for_another_policy_is_refused(self):
-        for over in [{'policySha256': 'c' * 64}, {'enrolledPolicySha256': 'c' * 64}, {'purpose': 'other'}, {'version': 2}]:
+        for over in [{'policySha256': 'c' * 64}, {'enrolledPolicySha256': 'c' * 64}, {'purpose': 'other'}, {'version': 2}, {'approvalSha256': 'a' * 64}]:
             self.fs.files[p.POLICY_SUCCESSION] = self.record(**over)
             with self.assertRaisesRegex(p.Blocked, 'pipeline_policy_succession'):
                 p.require_enrollment(p, self.fs, self.changed())
+
+    def test_a_third_policy_with_a_self_written_record_is_refused(self):
+        third = self.changed()
+        third['runtimeFiles']['/x'] = 'c' * 64
+        third_hash = p.digest(p.canonical(third))
+        self.fs.files[p.POLICY_SUCCESSION] = self.record(policySha256=third_hash)
+        self.fs.files[p.POLICY_APPROVAL] = self.approval(newPolicySha256=third_hash)
+        self.fs.files[p.POLICY_SUCCESSION] = self.record(policySha256=third_hash)
+        with self.assertRaisesRegex(p.Blocked, 'pipeline_policy_succession'):
+            p.require_enrollment(p, self.fs, third)
+
+    def test_missing_retained_approval_is_refused(self):
+        self.fs.files[p.POLICY_SUCCESSION] = self.record()
+        del self.fs.files[p.POLICY_APPROVAL]
+        with self.assertRaisesRegex(p.Blocked, 'pipeline_policy_succession'):
+            p.require_enrollment(p, self.fs, self.changed())
 
     def test_record_with_an_extra_field_is_refused(self):
         self.fs.files[p.POLICY_SUCCESSION] = self.record(extra=1)
