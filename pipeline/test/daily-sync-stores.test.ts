@@ -10,6 +10,12 @@ describe('store lists', () => {
     // Анвар скрапится всегда в scope из 19 категорий, полный каталог не нужен
     expect(storesLine(read('../scripts/weekly-full-scrape.sh'))).toEqual(['dina', 'dana', 'fixprice'])
   })
+  it('weekly sync requires only the stores the weekly run scrapes', () => {
+    const script = read('../scripts/weekly-full-scrape.sh')
+    const required = script.match(/^SYNC_STORES=(\S+) .*pnpm sync$/m)?.[1]?.split(',')
+    const codes: Record<string, string> = { dina: 'DINA', dana: 'DANA', fixprice: 'FIX_PRICE' }
+    expect(required).toEqual(storesLine(script)?.map((s) => codes[s]))
+  })
   it('sync defaults and the ops env example require all four stores', () => {
     expect(read('../src/cli/sync.ts')).toContain("'DINA,DANA,FIX_PRICE,ANVAR'")
     expect(read('../../ops/sync/aktau-sync.env.example')).toMatch(/^SYNC_STORES=DINA,DANA,FIX_PRICE,ANVAR$/m)
