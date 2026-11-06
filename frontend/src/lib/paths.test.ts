@@ -14,6 +14,12 @@ describe('paths', () => {
     expect(switchLanguagePath('/kk/search', 'ru')).toBe('/ru/search')
   })
 
+  it('leads from a blog post to the blog of the other language: posts exist in one language only', () => {
+    expect(switchLanguagePath('/ru/blog/gde-deshevle-produkty-aktau', 'kk')).toBe('/kk/blog')
+    expect(switchLanguagePath('/ru/blog', 'kk')).toBe('/kk/blog')
+    expect(switchLanguagePath('/kk/blog/authors/editorial', 'ru')).toBe('/ru/blog/authors/editorial')
+  })
+
   it('leaves paths without a language prefix as they are', () => {
     expect(stripLanguage('/catalog')).toBe('/catalog')
     expect(stripLanguage('/ru/catalog')).toBe('/catalog')

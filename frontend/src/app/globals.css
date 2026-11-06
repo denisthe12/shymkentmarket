@@ -178,6 +178,132 @@
   }
 }
 
+/* Типографика статей блога (components/blog/ArticleBlocks.tsx): длина строки ~70 знаков, ритм 16/24 */
+.article-prose {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--color-ink);
+
+  & > * + * {
+    margin-top: 1em;
+  }
+  & h2 {
+    margin-top: 1.8em;
+    font-size: 21px;
+    line-height: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  & h3 {
+    margin-top: 1.4em;
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  & h2 + *,
+  & h3 + * {
+    margin-top: 0.5em;
+  }
+  /* Якоря оглавления: заголовок не прячется под липкой шапкой */
+  & h2,
+  & h3 {
+    scroll-margin-top: 136px;
+
+    @media (width >= 48rem) {
+      scroll-margin-top: 96px;
+    }
+  }
+  & ul,
+  & ol {
+    padding-left: 1.4em;
+  }
+  & ul {
+    list-style: disc;
+  }
+  & ol {
+    list-style: decimal;
+  }
+  & li + li {
+    margin-top: 0.4em;
+  }
+  & li::marker {
+    color: var(--color-muted);
+  }
+}
+
+.article-table {
+  overflow-x: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+
+  & table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    line-height: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+  & caption {
+    padding: 10px 14px 0;
+    text-align: left;
+    font-weight: 600;
+  }
+  & th,
+  & td {
+    padding: 9px 14px;
+    text-align: left;
+    vertical-align: top;
+  }
+  & thead th {
+    color: var(--color-muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  & tbody tr {
+    border-top: 1px solid var(--color-line);
+  }
+  & tbody th {
+    font-weight: 500;
+  }
+}
+
+.article-callout {
+  border-left: 3px solid var(--color-ink);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background: var(--color-surface);
+  padding: 14px 16px;
+
+  & p + p {
+    margin-top: 0.4em;
+  }
+}
+
+.article-sources {
+  margin-top: 2em;
+  border-top: 1px solid var(--color-line);
+  padding-top: 1em;
+  font-size: 14px;
+  line-height: 20px;
+
+  & h2 {
+    margin-top: 0;
+    font-size: 15px;
+    line-height: 20px;
+  }
+  & ol {
+    margin-top: 0.6em;
+  }
+  & a {
+    color: var(--color-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    overflow-wrap: anywhere;
+  }
+  & a:hover {
+    color: var(--color-ink);
+  }
+}
+
 /* Сумма корзины сети у маркера на карте (Leaflet Tooltip) */
 /* .leaflet-tooltip — чтобы перебить стили leaflet.css, который грузится позже */
 .leaflet-tooltip.basket-label {

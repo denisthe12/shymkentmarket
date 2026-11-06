@@ -46,6 +46,21 @@ describe('seo', () => {
     expect(metadata.openGraph?.images).toEqual([{ url: 'https://cdn/1.jpg', alt: 'Молоко' }])
   })
 
+  it('gives a single-language article a canonical without hreflang and article Open Graph', () => {
+    const metadata = pageMetadata({
+      lang: 'kk',
+      path: '/blog/zhumyrtqa-bagasy',
+      title: 'Жұмыртқа',
+      description: '',
+      image: '/blog/og/kk/zhumyrtqa-bagasy.png',
+      singleLanguage: true,
+      article: { publishedTime: '2026-10-06', modifiedTime: '2026-11-06', authors: ['Данияр Өтебаев'], section: 'Бағалар' },
+    })
+    expect(metadata.alternates).toEqual({ canonical: '/kk/blog/zhumyrtqa-bagasy' })
+    expect(metadata.openGraph).toMatchObject({ type: 'article', publishedTime: '2026-10-06', modifiedTime: '2026-11-06' })
+    expect(metadata.openGraph).not.toHaveProperty('alternateLocale')
+  })
+
   it('describes a product by its lowest price, store and snapshot date', () => {
     expect(productDescription('ru', product)).toBe(
       'Молоко 3,2% 1 л — от 570 ₸ в DINA. Сравнение цен в магазинах Актау на 24.09.2026.',

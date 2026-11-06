@@ -5,9 +5,15 @@ export function localePath(lang: Language, path: string): string {
   return path === '/' ? `/${lang}` : `/${lang}${path}`
 }
 
-/** Тот же путь на другом языке: '/ru/products/1' → '/kk/products/1' */
+/**
+ * Тот же путь на другом языке: '/ru/products/1' → '/kk/products/1'.
+ * Статьи блога у каждого языка свои — со статьи ведём в блог другого языка
+ */
 export function switchLanguagePath(pathname: string, lang: Language): string {
-  return localePath(lang, stripLanguage(pathname))
+  const path = stripLanguage(pathname)
+  const [, first, second] = path.split('/')
+  if (first === 'blog' && second && second !== 'authors') return localePath(lang, '/blog')
+  return localePath(lang, path)
 }
 
 /** Путь без префикса языка: '/ru/catalog' → '/catalog', '/ru' → '/' */

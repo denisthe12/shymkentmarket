@@ -12,7 +12,9 @@
     "test:e2e": "playwright test",
     "typecheck": "next typegen && tsc --noEmit",
     "mocks": "node scripts/generate-mocks.mjs",
-    "og": "node scripts/generate-og.mjs"
+    "og": "node scripts/generate-og.mjs",
+    "blog:photos": "node scripts/fetch-blog-photos.mjs",
+    "og:blog": "node scripts/generate-blog-og.mjs"
   },
   "dependencies": {
     "@fontsource-variable/golos-text": "^5.3.0",
