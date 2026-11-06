@@ -22,7 +22,7 @@ if (group === 'contracts') {
   for (const args of [['mod', 'verify'], ['test', '-count=1', './...'], ['test', '-count=1', '-race', './...'],
     ['vet', './...'], ['tool', 'staticcheck', './...'], ['tool', 'staticcheck', '-tags=integration', './...'],
     ['tool', 'govulncheck', './...']]) console.log(go(args));
-  for (const name of ['api', 'ingest']) go(['build', '-o', join(temporary, name), `./cmd/${name}`]);
+  for (const name of ['api', 'ingest', 'prune']) go(['build', '-o', join(temporary, name), `./cmd/${name}`]);
 } else if (group === 'nest') {
   install('backend'); pnpm('backend', ['db:generate']); pnpm('backend', ['build']);
   console.log(pnpm('backend', ['test']).split('\n').slice(-10).join('\n'));

@@ -97,7 +97,7 @@ Expected: файл `.dump.gpg` и ключ для расшифровки дос�
 Текст фиксирован. Один запуск удаляет не больше 8 снимков, начиная с самых старых.
 
 ```sql
--- Разовая очистка: оставляет 14 последних опубликованных снимков. Запускать повторно, пока victims > 0.
+-- Разовая очистка: оставляет 14 последних опубликованных снимков. Запускать повторно, пока remaining = 0.
 BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='120s';
@@ -117,6 +117,7 @@ DELETE FROM public.source_runs WHERE "snapshotId" IN (SELECT id FROM victims);
 DELETE FROM public.snapshots WHERE id IN (SELECT id FROM victims);
 SELECT count(*) AS victims FROM victims;
 COMMIT;
+SELECT count(*) FILTER (WHERE rn>14) AS remaining FROM (SELECT row_number() OVER (ORDER BY "publishedAt" DESC, id DESC) rn FROM public.snapshots WHERE status='published' AND "publishedAt" IS NOT NULL) r;
 ```
 
 `71791791920392` — это `ingestion.AdvisoryLockKey` (`0x414B54415508`) в десятичном виде.
@@ -126,10 +127,10 @@ COMMIT;
 Показать результат задачи 1 и число снимков к удалению.
 Expected: в чате есть явное «удаляй». Удаление не меняет checkout и не запускает sync, поэтому правила приёмки G3 соблюдены. Перед запуском проверить, что нет окна sync.
 
-- [ ] **Step 3: Запускать скрипт в окне без sync, пока `victims` не станет 0**
+- [ ] **Step 3: Запускать скрипт в окне без sync, пока `remaining` не станет 0**
 
 Запуск: SQL Editor Supabase или MCP `execute_sql` с отдельного разрешения пользователя.
-Expected: `victims` равен 8, затем меньше, затем 0. Ошибка `ingestion running` означает, что нужно подождать окончания sync.
+Expected: `victims` равен 8, затем меньше; последний запрос показывает `remaining`, и повторять нужно до `remaining` = 0. Ошибка `ingestion running` означает, что нужно подождать окончания sync.
 
 - [ ] **Step 4: Освободить место для повторного использования**
 

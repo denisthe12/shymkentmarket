@@ -1,4 +1,4 @@
--- Разовая очистка: оставляет 14 последних опубликованных снимков. Запускать повторно, пока victims > 0.
+-- Разовая очистка: оставляет 14 последних опубликованных снимков. Запускать повторно, пока remaining = 0.
 BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='120s';
@@ -18,3 +18,4 @@ DELETE FROM public.source_runs WHERE "snapshotId" IN (SELECT id FROM victims);
 DELETE FROM public.snapshots WHERE id IN (SELECT id FROM victims);
 SELECT count(*) AS victims FROM victims;
 COMMIT;
+SELECT count(*) FILTER (WHERE rn>14) AS remaining FROM (SELECT row_number() OVER (ORDER BY "publishedAt" DESC, id DESC) rn FROM public.snapshots WHERE status='published' AND "publishedAt" IS NOT NULL) r;

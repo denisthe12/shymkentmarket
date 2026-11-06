@@ -59,7 +59,9 @@ with **--exit-on-error**; zero exit is mandatory. Plaintext is removed on failur
 or success. Missing/invalid target or non-loopback target is rejected first.
 
 RLS policy role references require **local-only** NOLOGIN prerequisites
-aktau_api_reader and aktau_ingest_writer. Restore no-owner/no-acl intentionally
+aktau_api_reader and aktau_ingest_writer, plus aktau_retention_writer once that
+role exists in production (new dumps then hold its policies and
+`pg_restore --exit-on-error` fails without it). Restore no-owner/no-acl intentionally
 does not recreate production owners/ACLs/logins/passwords. Verify schema/RLS/
 policies/constraints/indexes/history plus all table counts/fingerprints before
 local least-privilege setup. Reconstruct only reviewed LOCAL reader grants:

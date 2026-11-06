@@ -72,6 +72,7 @@ func (p *Pruner) Apply(ctx context.Context) (Report, error) {
 		return Report{}, err
 	}
 	defer p.unlock()
+	// kept and candidates agree only because the advisory lock is held.
 	kept, _, err := p.kept(ctx)
 	if err != nil {
 		return Report{}, err
@@ -117,7 +118,11 @@ func (p *Pruner) deleteOne(ctx context.Context, id string, rep *Report) error {
 	if err != nil {
 		return errors.New("retention transaction failed")
 	}
-	defer func() { _ = tx.Rollback(context.Background()) }()
+	defer func() {
+		rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = tx.Rollback(rctx)
+	}()
 	steps := []struct {
 		sql string
 		dst *int64

@@ -12,7 +12,7 @@ import (
 // connect would produce a connection error instead of the expected early one.
 const unreachable = "postgres://u:p@127.0.0.1:1/db?sslmode=disable"
 
-func runWith(t *testing.T, args ...string) (error, string) {
+func runWith(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 	oldArgs, oldFlags, oldStderr := os.Args, flag.CommandLine, os.Stderr
 	r, w, err := os.Pipe()
@@ -30,14 +30,14 @@ func runWith(t *testing.T, args ...string) (error, string) {
 	runErr := run()
 	_ = w.Close()
 	raw, _ := io.ReadAll(r)
-	return runErr, string(raw)
+	return string(raw), runErr
 }
 
 func TestConfigurationFailureStructuredPrivacy(t *testing.T) {
 	t.Setenv("APP_ENV", "test")
 	const secret = "invalid-private-credential-c7aed213571b7af3"
 	t.Setenv("RETENTION_DATABASE_URL", secret)
-	err, logs := runWith(t, "-keep", "14")
+	logs, err := runWith(t, "-keep", "14")
 	if err == nil {
 		t.Fatal("missing invalid config failure")
 	}
@@ -49,7 +49,7 @@ func TestConfigurationFailureStructuredPrivacy(t *testing.T) {
 func TestKeepBelowMinimumRejected(t *testing.T) {
 	t.Setenv("APP_ENV", "test")
 	t.Setenv("RETENTION_DATABASE_URL", unreachable)
-	err, _ := runWith(t, "-keep", "3")
+	_, err := runWith(t, "-keep", "3")
 	if err == nil || err.Error() != "keep below minimum" {
 		t.Fatal("keep below minimum must fail before connecting")
 	}
@@ -59,7 +59,7 @@ func TestProductionApplyRequiresConfirm(t *testing.T) {
 	t.Setenv("APP_ENV", "production")
 	t.Setenv("RETENTION_PRODUCTION_APPLY_CONFIRM", "")
 	t.Setenv("RETENTION_DATABASE_URL", unreachable)
-	err, _ := runWith(t, "-keep", "14", "-apply")
+	_, err := runWith(t, "-keep", "14", "-apply")
 	if err == nil || err.Error() != "production retention apply not confirmed" {
 		t.Fatal("production apply must require confirmation before connecting")
 	}
