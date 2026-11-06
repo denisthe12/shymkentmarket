@@ -47,6 +47,26 @@ describe('DashboardPage', () => {
     expect(first.textContent).not.toMatch(/%\s*$|разница/)
   })
 
+  it('shows price spreads in pages of 10 with a "show more" button', async () => {
+    const spreads = Array.from({ length: 25 }, (_, i) => ({ ...dashboardMock.priceSpreads[0], productId: `p-${i}`, name: `Товар ${i}` }))
+    vi.spyOn(catalogApi, 'getDashboard').mockResolvedValue({ ...dashboardMock, priceSpreads: spreads } as never)
+    renderPage(<DashboardPage />, '/ru/dashboard')
+
+    expect(await screen.findAllByTestId('price-spread')).toHaveLength(10)
+    const more = screen.getByRole('button', { name: 'Показать ещё' })
+    await userEvent.click(more)
+    expect(screen.getAllByTestId('price-spread')).toHaveLength(20)
+    await userEvent.click(more)
+    expect(screen.getAllByTestId('price-spread')).toHaveLength(25)
+    expect(screen.queryByRole('button', { name: 'Показать ещё' })).not.toBeInTheDocument()
+  })
+
+  it('has no "show more" button when all spreads fit', async () => {
+    renderPage(<DashboardPage />, '/ru/dashboard')
+    expect(await screen.findAllByTestId('price-spread')).toHaveLength(10)
+    expect(screen.queryByTestId('load-more')).not.toBeInTheDocument()
+  })
+
   it('groups store points by chain next to the map', async () => {
     renderPage(<DashboardPage />, '/ru/dashboard')
     const groups = await screen.findAllByTestId('store-group')

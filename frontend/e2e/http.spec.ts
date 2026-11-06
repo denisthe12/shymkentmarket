@@ -158,6 +158,9 @@ test('dashboard summary, spreads, baskets and map use real API', async ({ page, 
   await expect(page.getByTestId('summary-card').nth(1)).toContainText(String(dashboard.summary.stores))
   await expect(page.getByTestId('summary-card').nth(2)).toContainText(String(dashboard.summary.matchedAcrossStores))
   const spreads = page.getByTestId('price-spread')
+  // Сразу показываем 10 строк, остальные — по «Показать ещё»
+  await expect(spreads).toHaveCount(Math.min(10, dashboard.priceSpreads.length))
+  while ((await spreads.count()) < dashboard.priceSpreads.length) await page.getByTestId('load-more').click()
   await expect(spreads).toHaveCount(dashboard.priceSpreads.length)
   for (let i = 0; i < dashboard.priceSpreads.length; i++) {
     await expect(spreads.nth(i)).toContainText(dashboard.priceSpreads[i].name)

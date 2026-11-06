@@ -61,6 +61,23 @@ enhanced events/form interactions для режима «только базов�
 | `/sitemap.xml`, `/robots.txt` | `src/app/sitemap.ts` (страницы, категории, товары из API на обоих языках), `src/app/robots.ts` |
 | Картинка для соцсетей | `public/og/{ru,kk}.png`, генерирует `pnpm og` (Playwright, шрифты сайта) — перезапустить после правки `brand` в словарях или текстов в самом скрипте |
 
+### Блог
+
+Статьи лежат в репозитории, от API не зависят, собираются статически.
+
+| Что | Где |
+|---|---|
+| Статьи | `src/content/blog/posts/{ru,kk}/<slug>.ts`, реестр и даты публикации — `posts/index.ts`. Каждая статья на одном языке, по адресу `/{lang}/blog/<slug>`; на другом языке — 404, переключатель языка ведёт в блог |
+| Блоки статьи | `types.ts`: `h2`, `h3`, `p`, `ul/ol`, `table`, `chart` (SVG-график), `image` (фото), `callout`, `sources`. В тексте — `**жирный**` и `[ссылка](/ru/catalog)` |
+| Цифры | `src/content/blog/data.ts` — снимок API от 06.11.2026 и инфляция БНС с источниками. Новых цифр без источника не добавлять |
+| Авторы | `authors.ts`. **TODO: вымышленные авторы (`placeholder: true`) — временные, заменить на настоящих до продвижения блога.** Их LinkedIn/GitHub ведут на example.com, в JSON-LD у них нет `sameAs` |
+| Страницы | `/blog` и `/blog/page/<n>` (лента обоих языков, по 10 статей — `POSTS_PER_PAGE`; `/blog/page/1` → 308 на `/blog`), `/blog/<slug>` (слева список статей, справа оглавление), `/blog/authors/<id>`. Ссылка «Блог» — только в футере |
+| SEO | статья: canonical без hreflang, Open Graph `article`, JSON-LD `BlogPosting` + `BreadcrumbList`; автор — `ProfilePage`. Всё в sitemap |
+| Фото | `pnpm blog:photos` — Openverse (CC0/CC BY, ключ не нужен; Pexels приостановил выдачу ключей) → `public/blog/photos`, автор и лицензия — `photo-credits.json`. Запросы и alt — `photo-queries.ts`. Автоподбор часто ошибается: каждое скачанное фото нужно посмотреть глазами, неподходящее — удалить из `photo-credits.json` и подобрать заново; alt описывает то, что на фото |
+| Картинки для соцсетей | `pnpm og:blog` → `public/blog/og/<lang>/<slug>.png` — перезапустить после новой статьи или правки заголовка |
+
+Казахские тексты написаны и вычитаны без носителя языка — перед продвижением стоит дать их на вычитку.
+
 Поиск — `noindex, follow`, в sitemap не входит. После деплоя: Rich Results Test для страницы товара, sitemap — в Google Search Console и Яндекс.Вебмастер.
 
 ## Проверки

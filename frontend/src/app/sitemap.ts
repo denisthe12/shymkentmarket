@@ -2,6 +2,8 @@ import type { MetadataRoute } from 'next'
 import { connection } from 'next/server'
 import { catalogApi } from '../api/catalogApi'
 import type { ProductCardDto } from '../api/types'
+import { AUTHORS, blogPagePath, postPath, totalPages } from '../content/blog'
+import { POSTS } from '../content/blog/posts'
 import { LANGUAGES } from '../i18n/languages'
 import { localePath } from '../lib/paths'
 import { hreflangPaths } from '../lib/seo'
@@ -38,6 +40,24 @@ function localized(path: string, extra: Omit<MetadataRoute.Sitemap[number], 'url
   return LANGUAGES.map((lang) => ({ url: absoluteUrl(localePath(lang, path)), alternates: { languages }, ...extra }))
 }
 
+/** Блог: список и авторы — на всех языках; статья — только по адресу своего языка, без hreflang */
+function blogEntries(): MetadataRoute.Sitemap {
+  const lastPost = POSTS.map((post) => post.updated).sort().at(-1)
+  const posts = POSTS.map((post) => ({
+    url: absoluteUrl(localePath(post.lang, postPath(post))),
+    lastModified: post.updated,
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  }))
+  const authors = AUTHORS.flatMap((author) =>
+    localized(`/blog/authors/${author.id}`, { changeFrequency: 'monthly', priority: 0.3 }),
+  )
+  const pages = Array.from({ length: totalPages() }, (_, i) =>
+    localized(blogPagePath(i + 1), { lastModified: lastPost, changeFrequency: 'weekly', priority: i === 0 ? 0.6 : 0.4 }),
+  ).flat()
+  return [...pages, ...posts, ...authors]
+}
+
 // Поиск не включён — он noindex
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection()
@@ -49,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const snapshot = dashboard.summary.snapshotAt
 
   return [
+    ...blogEntries(),
     // /ru и /kk — редирект на каталог, в sitemap им не место
     ...localized('/catalog', { lastModified: snapshot, changeFrequency: 'daily', priority: 1 }),
     ...localized('/dashboard', { lastModified: snapshot, changeFrequency: 'daily', priority: 0.6 }),
