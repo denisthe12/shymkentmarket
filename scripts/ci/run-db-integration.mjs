@@ -32,7 +32,7 @@ await postgres(async ({ url, sql, login, load, go }) => {
   go(['test', '-count=1', '-race', '-tags=integration', './tests/integration', '-run', '^TestCloneRestrictedSecurity$', '-v'], {
     SMOKE_DATABASE_URL: url('part04_security', 'part04_api_login'),
   });
-  sql('part13_retention', readFileSync(join(root, 'backend/prisma/security/aktau_retention_writer_role.sql')));
+  sql('part13_retention', readFileSync(join(root, 'ops/postgres/security/aktau_retention_writer_role.sql')));
   login('part13_retention_login', 'aktau_retention_writer');
   go(['test', '-count=1', '-race', '-tags=integration', './internal/retention', '-run', '^TestLocalRetention', '-v'], {
     TEST_RETENTION_ADMIN_DATABASE_URL: url('part13_retention'),
@@ -40,7 +40,7 @@ await postgres(async ({ url, sql, login, load, go }) => {
   });
   // Access-only rollback must be executable: remove the LOGIN member first, then drop the group.
   sql('part13_retention', 'DROP ROLE part13_retention_login;');
-  sql('part13_retention', readFileSync(join(root, 'backend/prisma/security/rollback_aktau_retention_writer_access.sql')));
+  sql('part13_retention', readFileSync(join(root, 'ops/postgres/security/rollback_aktau_retention_writer_access.sql')));
   if (sql('part13_retention', "SELECT to_regrole('aktau_retention_writer') IS NULL;") !== 't') {
     throw new Error('retention rollback left aktau_retention_writer behind');
   }

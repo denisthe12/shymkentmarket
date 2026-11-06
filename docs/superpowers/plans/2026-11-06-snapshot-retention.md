@@ -167,8 +167,8 @@ git commit -m "ops(postgres): add one-off snapshot cleanup script"
 ### Task 3: Роль `aktau_retention_writer`
 
 **Files:**
-- Create: `backend/prisma/security/aktau_retention_writer_role.sql`
-- Create: `backend/prisma/security/rollback_aktau_retention_writer_access.sql`
+- Create: `ops/postgres/security/aktau_retention_writer_role.sql`
+- Create: `ops/postgres/security/rollback_aktau_retention_writer_access.sql`
 - Modify: `scripts/ci/postgres.mjs` (добавить `part13_retention` в `databases`)
 - Modify: `scripts/ci/run-db-integration.mjs` (новый блок в конце `postgres(...)`)
 - Test: `backend-go/internal/retention/role_integration_test.go`
@@ -204,7 +204,7 @@ Expected: PASS, включая `TestLocalSnapshotSecurity` без изменен
 - [ ] **Step 5: Commit**
 
 ```bash
-git add backend/prisma/security scripts/ci backend-go/internal/retention/role_integration_test.go
+git add ops/postgres/security scripts/ci backend-go/internal/retention/role_integration_test.go
 git commit -m "feat(retention): add restricted retention writer role"
 ```
 
