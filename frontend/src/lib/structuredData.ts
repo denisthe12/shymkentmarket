@@ -1,4 +1,5 @@
 import type { ProductCardDto } from '../api/types'
+import type { Author, Post } from '../content/blog/types'
 import { getI18n } from '../i18n'
 import type { Language } from '../i18n/languages'
 import { categoryName } from './dataLabels'
@@ -85,6 +86,46 @@ export function productJsonLd(lang: Language, product: ProductCardDto) {
       })),
     },
   }
+}
+
+/** Автор статьи: редакция — организация, остальные — Person со страницей автора */
+function authorJsonLd(lang: Language, author: Author) {
+  const url = absoluteUrl(localePath(lang, `/blog/authors/${author.id}`))
+  if (author.kind === 'organization') return { '@type': 'Organization', name: author.name[lang], url }
+  // У временных (вымышленных) авторов профили — заглушки: sameAs не отдаём
+  const sameAs = author.placeholder ? [] : Object.values(author.links ?? {}).filter(Boolean)
+  return {
+    '@type': 'Person',
+    name: author.name[lang],
+    url,
+    jobTitle: author.role[lang],
+    ...(sameAs.length > 0 && { sameAs }),
+  }
+}
+
+/** BlogPosting: заголовок, даты, автор, издатель — для расширенного сниппета статьи */
+export function blogPostingJsonLd(post: Post, author: Author | undefined, image: string) {
+  const url = absoluteUrl(localePath(post.lang, `/blog/${post.slug}`))
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    '@id': url,
+    url,
+    mainEntityOfPage: url,
+    headline: post.title,
+    description: post.description,
+    inLanguage: post.lang,
+    datePublished: post.published,
+    dateModified: post.updated,
+    image: [absoluteUrl(image)],
+    ...(author && { author: authorJsonLd(post.lang, author) }),
+    publisher: { '@type': 'Organization', '@id': absoluteUrl('/#organization'), name: SITE_NAME, logo: absoluteUrl('/icon.svg') },
+  }
+}
+
+/** Страница автора: ProfilePage с автором в mainEntity */
+export function authorPageJsonLd(lang: Language, author: Author) {
+  return { '@context': 'https://schema.org', '@type': 'ProfilePage', mainEntity: authorJsonLd(lang, author) }
 }
 
 /** JSON для <script type="application/ld+json">: `<` экранируется, чтобы название товара не закрыло тег */

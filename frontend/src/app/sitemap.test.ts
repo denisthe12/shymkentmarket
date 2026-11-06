@@ -2,6 +2,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import mockCategories from '../mocks/categories.json'
 import mockProducts from '../mocks/products.json'
+import { AUTHORS, totalPages } from '../content/blog'
+import { POSTS } from '../content/blog/posts'
 import robots from './robots'
 import sitemap from './sitemap'
 
@@ -14,7 +16,9 @@ vi.mock('next/server', async (original) => ({
 describe('sitemap', () => {
   it('lists static pages, every category and every product in both languages', async () => {
     const entries = await sitemap()
-    expect(entries).toHaveLength(2 * (2 + mockCategories.length + mockProducts.length))
+    // Блог: страницы ленты на 2 языках + каждая статья на своём языке + авторы на 2 языках
+    const blog = 2 * totalPages() + POSTS.length + 2 * AUTHORS.length
+    expect(entries).toHaveLength(2 * (2 + mockCategories.length + mockProducts.length) + blog)
 
     const urls = entries.map((entry) => entry.url)
     expect(urls).not.toContain('http://localhost:3000/ru')
@@ -22,6 +26,14 @@ describe('sitemap', () => {
     expect(urls).toContain('http://localhost:3000/kk/collections/milk')
     expect(urls).toContain(`http://localhost:3000/ru/products/${mockProducts[0].id}`)
     expect(urls.some((url) => url.includes('/search'))).toBe(false)
+  })
+
+  it('lists each blog post only at the address of its own language, without hreflang', async () => {
+    const entries = await sitemap()
+    const post = entries.find((e) => e.url === 'http://localhost:3000/kk/blog/zhumyrtqa-bagasy')
+    expect(post).toBeDefined()
+    expect(post?.alternates).toBeUndefined()
+    expect(entries.some((e) => e.url === 'http://localhost:3000/ru/blog/zhumyrtqa-bagasy')).toBe(false)
   })
 
   it('links each language version to the others with hreflang', async () => {

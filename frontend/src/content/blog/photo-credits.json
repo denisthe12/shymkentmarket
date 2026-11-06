@@ -1,0 +1,602 @@
+{
+  "grocery-basket": {
+    "src": "/blog/photos/grocery-basket.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "leonie wise",
+    "url": "https://stocksnap.io/photo/basket-groceries-CUPJ7AU7JD",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "store-shelves": {
+    "src": "/blog/photos/store-shelves.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Ryan McGuire",
+    "url": "https://stocksnap.io/photo/bananas-fruits-D0C5D92CD9",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "cargo-truck": {
+    "src": "/blog/photos/cargo-truck.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Seb Creativo",
+    "url": "https://stocksnap.io/photo/truck-transportation-L05LPK1M02",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "bread-loaves": {
+    "src": "/blog/photos/bread-loaves.jpg",
+    "width": 960,
+    "height": 720,
+    "author": "Drew Coffman",
+    "url": "https://stocksnap.io/photo/bread-bakery-EA1243E167",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "dairy-products": {
+    "src": "/blog/photos/dairy-products.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Andrew E Weber",
+    "url": "https://stocksnap.io/photo/glass-milk-BSR3PNWQ1K",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "shopping-list": {
+    "src": "/blog/photos/shopping-list.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Negative Space",
+    "url": "https://stocksnap.io/photo/notebook-pen-2H0QPGDVGZ",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "price-tags": {
+    "src": "/blog/photos/price-tags.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Leeroy",
+    "url": "https://stocksnap.io/photo/fruits-vegetables-AA39511B59",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "phone-shopping": {
+    "src": "/blog/photos/phone-shopping.jpg",
+    "width": 960,
+    "height": 638,
+    "author": "Wilfred Iven",
+    "url": "https://stocksnap.io/photo/samsung-galaxy-QVKE96OD36",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "citrus-fruits": {
+    "src": "/blog/photos/citrus-fruits.jpg",
+    "width": 960,
+    "height": 638,
+    "author": "Lauren Mancke",
+    "url": "https://stocksnap.io/photo/lemons-fruits-W28QPZPAK6",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "eggs-carton": {
+    "src": "/blog/photos/eggs-carton.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Patryk Dziejma",
+    "url": "https://stocksnap.io/photo/eggs-food-M9KEI36GNT",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "grains-pasta": {
+    "src": "/blog/photos/grains-pasta.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Jorge Zapata",
+    "url": "https://stocksnap.io/photo/pasta-flour-I4MIIMHZ5M",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "vegetables-market": {
+    "src": "/blog/photos/vegetables-market.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Pavan Trikutam",
+    "url": "https://stocksnap.io/photo/vegetables-market-6247D5B0BB",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "bread-milk-staples": {
+    "src": "/blog/photos/bread-milk-staples.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Ali Inay",
+    "url": "https://stocksnap.io/photo/breakfast-food-OC8WX0E0X3",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "sale-sign": {
+    "src": "/blog/photos/sale-sign.jpg",
+    "width": 960,
+    "height": 667,
+    "author": "Anne Preble",
+    "url": "https://stocksnap.io/photo/cherry-tomatoes-FSNQ8BLRWE",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "pasta-shelf": {
+    "src": "/blog/photos/pasta-shelf.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "JESHOOTS.com",
+    "url": "https://stocksnap.io/photo/spaghetti-pasta-A06F9A9896",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "festive-table": {
+    "src": "/blog/photos/festive-table.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Travel Photographer",
+    "url": "https://stocksnap.io/photo/festive-table-ZVRDRIQ7BZ",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "calculator-receipt": {
+    "src": "/blog/photos/calculator-receipt.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Negative Space",
+    "url": "https://stocksnap.io/photo/calculator-numbers-Y2GUBQIPXD",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "supermarket-aisle": {
+    "src": "/blog/photos/supermarket-aisle.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Lukas Budimaier",
+    "url": "https://stocksnap.io/photo/food-fruits-AWJD4WV6W1",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "family-groceries": {
+    "src": "/blog/photos/family-groceries.jpg",
+    "width": 960,
+    "height": 632,
+    "author": "Skitter Photo",
+    "url": "https://stocksnap.io/photo/redpeppers-vegetables-76667A2B18",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "meat-counter": {
+    "src": "/blog/photos/meat-counter.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Lukas Budimaier",
+    "url": "https://stocksnap.io/photo/meat-beef-HRVOVU93ZA",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "oil-bottles": {
+    "src": "/blog/photos/oil-bottles.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Martin Philpot",
+    "url": "https://stocksnap.io/photo/oliveoil-jars-Z7UAMJU01N",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "cheese-board": {
+    "src": "/blog/photos/cheese-board.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Jakub Rostkowski",
+    "url": "https://stocksnap.io/photo/cheese-food-ABFRSZL8XB",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "yogurt-bowl": {
+    "src": "/blog/photos/yogurt-bowl.jpg",
+    "width": 960,
+    "height": 541,
+    "author": "Daria Nepriakhina",
+    "url": "https://stocksnap.io/photo/yogurt-granola-ELZKUZYJK0",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "buckwheat": {
+    "src": "/blog/photos/buckwheat.jpg",
+    "width": 1024,
+    "height": 683,
+    "author": "Ervins Strauhmanis",
+    "url": "https://www.flickr.com/photos/76523360@N03/9545949677",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "rice-bowl": {
+    "src": "/blog/photos/rice-bowl.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Patryk Dziejma",
+    "url": "https://stocksnap.io/photo/paella-rice-T3JTA2VN26",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "root-vegetables": {
+    "src": "/blog/photos/root-vegetables.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Irina Blok",
+    "url": "https://stocksnap.io/photo/carrots-vegetables-RKHZEX3629",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "chicken-raw": {
+    "src": "/blog/photos/chicken-raw.jpg",
+    "width": 960,
+    "height": 643,
+    "author": "Krzysztof Puszczyński",
+    "url": "https://stocksnap.io/photo/grilled-chicken-34LMASJHCT",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "butter": {
+    "src": "/blog/photos/butter.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Brooke Cagle",
+    "url": "https://stocksnap.io/photo/sandwich-bread-NS5Q6MVMZQ",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "milk-carton": {
+    "src": "/blog/photos/milk-carton.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Matt Bango",
+    "url": "https://stocksnap.io/photo/milk-jar-XKGTU3EST0",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "city-street": {
+    "src": "/blog/photos/city-street.jpg",
+    "width": 3456,
+    "height": 2304,
+    "author": "Thomson200",
+    "url": "https://commons.wikimedia.org/w/index.php?curid=58428924",
+    "source": "Wikimedia Commons",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en/"
+  },
+  "sale-shopping": {
+    "src": "/blog/photos/sale-shopping.jpg",
+    "width": 960,
+    "height": 742,
+    "author": "Gili Benita",
+    "url": "https://stocksnap.io/photo/suits-shoes-YK0P22J6D7",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "home-cooking": {
+    "src": "/blog/photos/home-cooking.jpg",
+    "width": 960,
+    "height": 720,
+    "author": "Pawel Kadysz",
+    "url": "https://stocksnap.io/photo/stove-pot-IZYP5AYVUD",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "student-kitchen": {
+    "src": "/blog/photos/student-kitchen.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Healthy Living",
+    "url": "https://stocksnap.io/photo/cooking-pasta-D6JMBXIORW",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "store-shelves-2": {
+    "src": "/blog/photos/store-shelves-2.jpg",
+    "width": 960,
+    "height": 662,
+    "author": "Bruce Mars",
+    "url": "https://stocksnap.io/photo/vegetable-stall-KZ19NV9MVY",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "price-label": {
+    "src": "/blog/photos/price-label.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Carli Jean",
+    "url": "https://stocksnap.io/photo/coffee-cafelatte-F9A95133A1",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "wallet-money": {
+    "src": "/blog/photos/wallet-money.jpg",
+    "width": 960,
+    "height": 720,
+    "author": "Jess Watters",
+    "url": "https://stocksnap.io/photo/glasses-camera-BNAAVL4TVK",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "legumes": {
+    "src": "/blog/photos/legumes.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Foodie Girl",
+    "url": "https://stocksnap.io/photo/bowl-soup-WOZ7PQGMMI",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "laptop-data": {
+    "src": "/blog/photos/laptop-data.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Raymond Sam",
+    "url": "https://stocksnap.io/photo/charts-graphs-OOOQUFW69J",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "oatmeal": {
+    "src": "/blog/photos/oatmeal.jpg",
+    "width": 960,
+    "height": 720,
+    "author": "Andrew Pons",
+    "url": "https://stocksnap.io/photo/oatmeal-blueberries-F7TE35CV6D",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "kefir-glass": {
+    "src": "/blog/photos/kefir-glass.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Burst",
+    "url": "https://stocksnap.io/photo/milk-jar-4NUBIMJO6N",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "milk-glass": {
+    "src": "/blog/photos/milk-glass.jpg",
+    "width": 960,
+    "height": 658,
+    "author": "Foodie Girl",
+    "url": "https://stocksnap.io/photo/milk-bottle-YFZUAHJV1M",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "flour-baking": {
+    "src": "/blog/photos/flour-baking.jpg",
+    "width": 960,
+    "height": 686,
+    "author": "Maciej Szlachta",
+    "url": "https://stocksnap.io/photo/baking-cooking-UQFSNYXB9C",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "fried-dough": {
+    "src": "/blog/photos/fried-dough.jpg",
+    "width": 960,
+    "height": 631,
+    "author": "Thomas Kelley",
+    "url": "https://stocksnap.io/photo/donut-dessert-UIFVOYFRW1",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "pilaf": {
+    "src": "/blog/photos/pilaf.jpg",
+    "width": 1024,
+    "height": 630,
+    "author": "jeffreyw",
+    "url": "https://www.flickr.com/photos/7927684@N03/4501076271",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "boiled-meat": {
+    "src": "/blog/photos/boiled-meat.jpg",
+    "width": 1024,
+    "height": 765,
+    "author": "Studio Sarah Lou",
+    "url": "https://www.flickr.com/photos/86665756@N00/5894642932",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "grains-jars": {
+    "src": "/blog/photos/grains-jars.jpg",
+    "width": 1024,
+    "height": 683,
+    "author": "Ervins Strauhmanis",
+    "url": "https://www.flickr.com/photos/76523360@N03/9548721480",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "pasta-bowl": {
+    "src": "/blog/photos/pasta-bowl.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "JESHOOTS.com",
+    "url": "https://stocksnap.io/photo/fork-chicken-FDCDEAE61C",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "breakfast-porridge": {
+    "src": "/blog/photos/breakfast-porridge.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "JESHOOTS.com",
+    "url": "https://stocksnap.io/photo/breakfast-bowl-V9AOG26R2W",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "soup-pot": {
+    "src": "/blog/photos/soup-pot.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "JESHOOTS.com",
+    "url": "https://stocksnap.io/photo/soup-broth-F8CED10668",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "meal-prep": {
+    "src": "/blog/photos/meal-prep.jpg",
+    "width": 960,
+    "height": 720,
+    "author": "Jeffrey Betts",
+    "url": "https://stocksnap.io/photo/watermelon-fruits-AE3F359626",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "supermarket-cart": {
+    "src": "/blog/photos/supermarket-cart.jpg",
+    "width": 1024,
+    "height": 768,
+    "author": "Shlomi Fish",
+    "url": "https://www.flickr.com/photos/81969889@N00/3968828323",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "cargo-ship": {
+    "src": "/blog/photos/cargo-ship.jpg",
+    "width": 960,
+    "height": 720,
+    "author": "Leeroy",
+    "url": "https://stocksnap.io/photo/cargo-harbor-1FA263F8AF",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "winter-fruit": {
+    "src": "/blog/photos/winter-fruit.jpg",
+    "width": 1023,
+    "height": 682,
+    "author": "Carriagehouse2011",
+    "url": "https://www.flickr.com/photos/87866532@N04/8074168006",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "sour-cream": {
+    "src": "/blog/photos/sour-cream.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Burst",
+    "url": "https://stocksnap.io/photo/bowl-raspberries-ZHYE8XFKRZ",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "pumpkin": {
+    "src": "/blog/photos/pumpkin.jpg",
+    "width": 960,
+    "height": 636,
+    "author": "Hide Obara",
+    "url": "https://stocksnap.io/photo/pumpkins-orange-18A29D3ACA",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "fridge-food": {
+    "src": "/blog/photos/fridge-food.jpg",
+    "width": 1024,
+    "height": 826,
+    "author": "bradipo",
+    "url": "https://www.flickr.com/photos/84632209@N00/5617896008",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  },
+  "coins": {
+    "src": "/blog/photos/coins.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Negative Space",
+    "url": "https://stocksnap.io/photo/money-coins-SDM03P88BO",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "wallet-cash": {
+    "src": "/blog/photos/wallet-cash.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Martin Vorel",
+    "url": "https://stocksnap.io/photo/money-euros-WX191DV28C",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "phone-hand": {
+    "src": "/blog/photos/phone-hand.jpg",
+    "width": 960,
+    "height": 640,
+    "author": "Negative Space",
+    "url": "https://stocksnap.io/photo/smartphone-mobile-IU6HNPC2NT",
+    "source": "StockSnap",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+  },
+  "minced-meat": {
+    "src": "/blog/photos/minced-meat.jpg",
+    "width": 1024,
+    "height": 681,
+    "author": "Southern Foodways Alliance",
+    "url": "https://www.flickr.com/photos/25257922@N07/4438460066",
+    "source": "Flickr",
+    "license": "CC BY",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+  }
+}

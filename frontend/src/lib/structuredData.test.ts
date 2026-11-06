@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ProductCardDto } from '../api/types'
-import { breadcrumbJsonLd, productJsonLd, serializeJsonLd, siteJsonLd } from './structuredData'
+import { AUTHORS, getAuthor, getPost } from '../content/blog'
+import { authorPageJsonLd, blogPostingJsonLd, breadcrumbJsonLd, productJsonLd, serializeJsonLd, siteJsonLd } from './structuredData'
 
 const product: ProductCardDto = {
   id: 'p1',
@@ -16,6 +17,32 @@ const product: ProductCardDto = {
   ],
   snapshotAt: '2026-09-24T06:00:00Z',
 }
+
+describe('blog structured data', () => {
+  const post = getPost('ru', 'gde-deshevle-produkty-aktau')!
+  const person = AUTHORS.find((a) => a.kind === 'person' && a.placeholder)!
+
+  it('describes a post as BlogPosting with dates, publisher and the editorial team as author', () => {
+    const data = blogPostingJsonLd(post, getAuthor('editorial'), '/blog/og/ru/x.png')
+    expect(data).toMatchObject({
+      '@type': 'BlogPosting',
+      url: 'http://localhost:3000/ru/blog/gde-deshevle-produkty-aktau',
+      headline: post.title,
+      inLanguage: 'ru',
+      datePublished: post.published,
+      dateModified: post.updated,
+      image: ['http://localhost:3000/blog/og/ru/x.png'],
+      author: { '@type': 'Organization', url: 'http://localhost:3000/ru/blog/authors/editorial' },
+      publisher: { '@type': 'Organization', '@id': 'http://localhost:3000/#organization' },
+    })
+  })
+
+  it('does not link placeholder authors to their stub profiles', () => {
+    expect(blogPostingJsonLd(post, person, '/x.png').author).not.toHaveProperty('sameAs')
+    const real = { ...person, placeholder: false, links: { linkedin: 'https://linkedin.com/in/real' } }
+    expect(authorPageJsonLd('kk', real).mainEntity).toMatchObject({ '@type': 'Person', sameAs: ['https://linkedin.com/in/real'] })
+  })
+})
 
 describe('structuredData', () => {
   it('describes a product with the price range across stores and an offer per store', () => {
