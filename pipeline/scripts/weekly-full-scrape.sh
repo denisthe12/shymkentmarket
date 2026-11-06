@@ -43,7 +43,8 @@ fi
 scope_failed=()
 pnpm scope:dina --in ../data/sources-full/dina.json --out ../data/sources-full/dina-scope-categories.candidate.json || scope_failed+=(scope:dina)
 pnpm scope:dana --in ../data/sources-full/dana.json --out ../data/sources-full/dana-scope-sections.candidate.json || scope_failed+=(scope:dana)
-SYNC_MAX_SOURCE_AGE_HOURS=36 pnpm sync
+# Анвар не входит в недельный скрап, поэтому sync требует только сети из STORES, а не SYNC_STORES из env
+SYNC_STORES=DINA,DANA,FIX_PRICE SYNC_MAX_SOURCE_AGE_HOURS=36 pnpm sync
 
 echo "[full] done in $((SECONDS - started))s"
 echo "[full] candidates written; compare with data/mapping/dina-scope-categories.json and dana-scope-sections.json, commit manually"
