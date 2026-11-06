@@ -2,10 +2,12 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDashboard } from '../api/queries'
 import type { DashboardDto, PriceSpreadDto, StoreLocationDto } from '../api/types'
 import { Baskets } from '../components/dashboard/Baskets'
+import { Button } from '../components/ui/Button'
 import { DashboardSkeleton } from '../components/ui/Skeleton'
 import { ErrorState, LoadingState } from '../components/ui/States'
 import { basketLine } from '../lib/basketText'
@@ -86,9 +88,13 @@ function Summary({ summary }: { summary: DashboardDto['summary'] }) {
   )
 }
 
+/** Сколько строк разброса цен показываем сразу и догружаем по кнопке «Показать ещё» */
+export const SPREADS_STEP = 10
+
 function PriceSpreads({ spreads }: { spreads: PriceSpreadDto[] }) {
   const { t } = useTranslation()
   const href = useHref()
+  const [count, setCount] = useState(SPREADS_STEP)
 
   return (
     <section aria-labelledby="spreads-title" className="mt-8 md:mt-12">
@@ -99,23 +105,32 @@ function PriceSpreads({ spreads }: { spreads: PriceSpreadDto[] }) {
       {spreads.length === 0 ? (
         <p className="mt-4 rounded-card bg-card px-4 py-6 text-muted md:px-5">{t('dashboard.spreadsEmpty')}</p>
       ) : (
-        <ol className="mt-4 divide-y divide-line rounded-card bg-card px-4 md:px-5">
-          {spreads.map((spread) => (
-            <li
-              key={spread.productId}
-              data-testid="price-spread"
-              className="flex items-center justify-between gap-4 py-3"
-            >
-              <Link href={href(`/products/${spread.productId}`)} className="min-w-0 font-medium text-pretty hover:underline">
-                {spread.name}
-              </Link>
-              <p className="shrink-0 text-right text-[15px] tabular">
-                <span className="font-semibold text-accent">{formatPrice(spread.minPrice)}</span>
-                <span className="text-muted"> – {formatPrice(spread.maxPrice)}</span>
-              </p>
-            </li>
-          ))}
-        </ol>
+        <>
+          <ol className="mt-4 divide-y divide-line rounded-card bg-card px-4 md:px-5">
+            {spreads.slice(0, count).map((spread) => (
+              <li
+                key={spread.productId}
+                data-testid="price-spread"
+                className="flex items-center justify-between gap-4 py-3"
+              >
+                <Link href={href(`/products/${spread.productId}`)} className="min-w-0 font-medium text-pretty hover:underline">
+                  {spread.name}
+                </Link>
+                <p className="shrink-0 text-right text-[15px] tabular">
+                  <span className="font-semibold text-accent">{formatPrice(spread.minPrice)}</span>
+                  <span className="text-muted"> – {formatPrice(spread.maxPrice)}</span>
+                </p>
+              </li>
+            ))}
+          </ol>
+          {count < spreads.length && (
+            <div className="mt-6 flex justify-center">
+              <Button onClick={() => setCount((n) => n + SPREADS_STEP)} testId="load-more" className="w-full md:w-auto">
+                {t('category.loadMore')}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </section>
   )
