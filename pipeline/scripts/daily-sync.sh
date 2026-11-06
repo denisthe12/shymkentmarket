@@ -7,13 +7,18 @@
 #     относительные пути считаются от корня репозитория, абсолютные остаются как есть;
 #   SYNC_MAX_SOURCE_AGE_HOURS — сколько часов можно публиковать прошлый удачный файл упавшей сети (по умолчанию 36);
 #   SCRAPE_TIMEOUT_SEC — лимит времени на один скрапер в секундах (по умолчанию 720); зависший скрапер
-#     убивается и считается упавшим, чтобы медленная сеть не блокировала публикацию остальных.
+#     убивается и считается упавшим, чтобы медленная сеть не блокировала публикацию остальных;
+#   RETENTION_DATABASE_URL — строка подключения роли aktau_retention_writer; пусто или не задано — очистка старых snapshot пропускается;
+#   RETENTION_KEEP_SNAPSHOTS — сколько последних опубликованных snapshot хранить (по умолчанию 14);
+#   RETENTION_PRODUCTION_APPLY_CONFIRM=1 — подтверждение удаления в production (читает cmd/prune).
 # Упавший скрапер не перезаписывает свой source-файл, поэтому sync берёт прошлый удачный (если он не старше лимита).
 # Коды выхода:
 #   0 — все четыре скрапера удачны, snapshot опубликован;
 #   1 — ошибка sync/ingest или упали все четыре скрапера (snapshot не опубликован);
 #   3 — snapshot опубликован, но хотя бы одна сеть взята из прошлого удачного файла
-#       (в журнале строка "[sync] stale stores: <list>").
+#       (в журнале строка "[sync] stale stores: <list>");
+#   4 — snapshot опубликован, но очистка старых snapshot упала (в stderr строка "[sync] retention failed");
+#       приоритет кодов: 3 важнее 4, 4 важнее 0.
 
 # Без -e на этапе скрапа: упавший скрапер не должен останавливать скрипт до pnpm sync
 set -uo pipefail
@@ -81,10 +86,26 @@ go run ./cmd/ingest -bundle "$BUNDLE"
 go run ./cmd/ingest -bundle "$BUNDLE" -apply
 
 trap - ERR
+set +e
+
+# Очистка старых snapshot после публикации: её ошибка не отменяет уже опубликованный snapshot
+prune_failed=0
+if [ -n "${RETENTION_DATABASE_URL:-}" ]; then
+  if ! go run ./cmd/prune -keep "${RETENTION_KEEP_SNAPSHOTS:-14}" -apply; then
+    echo "[sync] retention failed" >&2
+    prune_failed=1
+  fi
+else
+  echo "[sync] retention skipped"
+fi
+
 echo "[sync] done in $((SECONDS - started))s"
 
 if [ "${#failed[@]}" -gt 0 ]; then
   echo "[sync] stale stores: ${failed[*]}"
   exit 3
+fi
+if [ "$prune_failed" -ne 0 ]; then
+  exit 4
 fi
 exit 0

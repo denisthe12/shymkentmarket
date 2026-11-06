@@ -14,6 +14,7 @@ Ingestion не входит в API-релиз (`deploy/`) и ставится о
 | `0` | все три скрапера удачны, snapshot опубликован | `SUCCESS` |
 | `1` | ошибка sync/ingest или упали все три скрапера; snapshot не опубликован, на сайте остаются прошлые цены | `failed` |
 | `3` | snapshot опубликован, но хотя бы одна сеть взята из прошлого удачного файла (не старше `SYNC_MAX_SOURCE_AGE_HOURS`, 36 ч); в журнале строка `[sync] stale stores: <список>` | `failed` |
+| `4` | snapshot опубликован, но очистка старых snapshot упала; в stderr строка `[sync] retention failed`. Если одновременно есть устаревшая сеть, итоговый код `3` | `failed` |
 
 Код `3` намеренно даёт `failed` (в юните нет `SuccessExitStatus`), чтобы проблема со скрапером была видна, хотя сайт обновился.
 
@@ -54,6 +55,18 @@ cd /opt/aktau-sync/pipeline && sudo -n -u aktau-sync -H env PATH=/usr/local/go/b
 ```
 
 PATH должен совпадать с PATH юнита. Откат: те же две последние команды с записанным SHA. Миграции БД и API выкатываются отдельно до обновления sync.
+
+## Хранение snapshot
+
+После публикации `daily-sync.sh` вызывает `go run ./cmd/prune -keep N -apply` и удаляет опубликованные snapshot старше последних `N` (по умолчанию 14) вместе с их `source_runs`, `raw_products`, `product_mappings` и `offers`. Переменные в `/etc/aktau-sync.env`:
+
+- `RETENTION_DATABASE_URL` — строка подключения роли `aktau_retention_writer`-группы (отдельный LOGIN `aktau_retention_runtime.<project_ref>`, session pooler, порт 5432). Пусто или не задано — в журнале `[sync] retention skipped`, очистка не идёт, коды выхода не меняются;
+- `RETENTION_KEEP_SNAPSHOTS` — сколько последних snapshot хранить (по умолчанию 14);
+- `RETENTION_PRODUCTION_APPLY_CONFIRM=1` — обязательно при `APP_ENV=production`, иначе `cmd/prune -apply` откажется работать.
+
+Ошибка очистки не отменяет уже опубликованный snapshot: журнал получает `[sync] retention failed` в stderr, скрипт завершается кодом `4` (если нет устаревших сетей, иначе `3`).
+
+Установка роли — операция владельца базы, не sync. Порядок: сначала `backend/prisma/security/aktau_ingest_writer_role.sql`, затем `backend/prisma/security/aktau_retention_writer_role.sql` (он создаёт группу `aktau_retention_writer` с правами только SELECT и DELETE на пять snapshot-таблиц; порядок важен, потому что ingest-скрипт ожидает ровно 6 политик). Затем владелец вручную создаёт LOGIN-роль `aktau_retention_runtime`, входящую в группу (`GRANT aktau_retention_writer TO aktau_retention_runtime WITH ADMIN FALSE, INHERIT TRUE, SET FALSE`), с паролем, который задаёт человек (пароль не хранится в репозитории и в чат не передаётся), и кладёт строку подключения только в `/etc/aktau-sync.env` (chmod 600). Откат доступа: `backend/prisma/security/rollback_aktau_retention_writer_access.sql`.
 
 ## Эксплуатация
 
