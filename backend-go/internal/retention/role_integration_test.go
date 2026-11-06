@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -112,6 +113,57 @@ func TestLocalRetentionRoleBoundary(t *testing.T) {
 		for _, table := range []string{"snapshots", "source_runs", "raw_products", "product_mappings", "offers"} {
 			allowed("DELETE FROM public." + table + " WHERE false")
 			allowed("SELECT * FROM public." + table + " LIMIT 1")
+		}
+	})
+	t.Run("real rows visible and deletable under RLS", func(t *testing.T) {
+		const id = "retention-boundary-test"
+		cleanup := func() {
+			for _, q := range []string{
+				`DELETE FROM public.offers WHERE id=$1`, `DELETE FROM public.product_mappings WHERE id=$1`,
+				`DELETE FROM public.raw_products WHERE id=$1`, `DELETE FROM public.source_runs WHERE id=$1`,
+				`DELETE FROM public.snapshots WHERE id=$1`, `DELETE FROM public.canonical_products WHERE id=$1`,
+				`DELETE FROM public.categories WHERE id=$1`,
+			} {
+				_, _ = admin.Exec(context.Background(), q, id)
+			}
+		}
+		cleanup()
+		t.Cleanup(cleanup)
+		var store string
+		if admin.QueryRow(ctx, `SELECT id FROM public.stores ORDER BY id LIMIT 1`).Scan(&store) != nil {
+			t.Fatal("a seeded store row is required")
+		}
+		for _, q := range []string{
+			`INSERT INTO public.snapshots(id) VALUES($1)`,
+			`INSERT INTO public.source_runs(id,"snapshotId","storeId") VALUES($1,$1,$2)`,
+			`INSERT INTO public.categories(id,slug,name) VALUES($1,$1,$1)`,
+			`INSERT INTO public.canonical_products(id,name,"categoryId") VALUES($1,$1,$1)`,
+			`INSERT INTO public.raw_products(id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES($1,$2,$1,$1,1,$1)`,
+			`INSERT INTO public.product_mappings(id,"rawProductId","canonicalProductId","matchMethod") VALUES($1,$1,$1,'manual')`,
+			`INSERT INTO public.offers(id,"canonicalProductId","rawProductId","storeId",price,"snapshotId") VALUES($1,$1,$1,$2,1,$1)`,
+		} {
+			args := []any{id}
+			if strings.Contains(q, "$2") {
+				args = append(args, store)
+			}
+			if _, err := admin.Exec(ctx, q, args...); err != nil {
+				t.Fatalf("fixture insert failed %q: %v", q, err)
+			}
+		}
+		// Leaf-first so no FK blocks the delete; each must remove exactly one real row.
+		for _, table := range []string{"offers", "product_mappings", "raw_products", "source_runs", "snapshots"} {
+			var seen int
+			if err := writer.QueryRow(ctx, `SELECT count(*) FROM public.`+table+` WHERE id=$1`, id).Scan(&seen); err != nil || seen != 1 {
+				t.Fatalf("%s: writer must see the real row through RLS, saw %d (%v)", table, seen, err)
+			}
+			tag, err := writer.Exec(ctx, `DELETE FROM public.`+table+` WHERE id=$1`, id)
+			if err != nil || tag.RowsAffected() != 1 || tag.String() != "DELETE 1" {
+				t.Fatalf("%s: expected DELETE 1, got %v (%v)", table, tag, err)
+			}
+			var left int
+			if admin.QueryRow(ctx, `SELECT count(*) FROM public.`+table+` WHERE id=$1`, id).Scan(&left) != nil || left != 0 {
+				t.Fatalf("%s: row still present after delete", table)
+			}
 		}
 	})
 	t.Run("insert and update denied", func(t *testing.T) {

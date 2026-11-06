@@ -1,6 +1,8 @@
 -- Separate operator-only retention group bootstrap; never runtime/migration LOGIN.
 -- Grants only SELECT+DELETE on the five snapshot-scoped tables. No INSERT/UPDATE,
 -- no access to stores/categories/canonical_products/store_locations.
+-- Apply AFTER aktau_ingest_writer_role.sql in the same database: that file requires
+-- exactly 6 public policies, which this file would raise to 16.
 BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='10s';
