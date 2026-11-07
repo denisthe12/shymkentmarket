@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { root, env, run, wait, localURL } from './common.mjs';
+import { root, env, run, wait, localURL, goTestArgs } from './common.mjs';
 
 // No caller-selected database: create a new owned container and derive loopback
 // port from Docker. Only this container can receive setup SQL or be cleaned up.
@@ -54,7 +54,7 @@ export async function postgres(task) {
     const fixture = readFileSync(join(root, 'backend-go/tests/fixtures/catalog.sql'));
     // The taxonomy migration seeds production categories; the INSERT-only fixture needs a catalog with only its own rows.
     const load = db => sql(db, `TRUNCATE categories CASCADE;\n${fixture}`);
-    const go = (args, extra) => console.log(run(`Go local ${args.join(' ')}`, 'go', args,
+    const go = (args, extra) => console.log(run(`Go local ${args.join(' ')}`, 'go', goTestArgs(args),
       { cwd: join(root, 'backend-go'), env: { ...env, ...extra } }));
     await task({ name, url, sql, login, load, go, docker });
   } finally {
