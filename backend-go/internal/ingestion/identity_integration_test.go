@@ -111,7 +111,6 @@ func TestLocalIdentityRegistry(t *testing.T) {
 		t.Fatalf("offers on restored card = %d, want 1", live)
 	}
 
-	before = fingerprint()
 	s, err := engine.Stage(ctx, identityBundle(a, e, d, f, n))
 	if err != nil {
 		t.Fatal(err)
