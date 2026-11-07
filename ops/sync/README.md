@@ -121,3 +121,10 @@ git push -u origin HEAD                                    # дальше — PR
 - Статус сопоставления хранится в `reviewStatus` (`pending` и другие); для аналитики фильтровать по нему.
 - Доступ: после миграции `20261107000000_price_history` и после `aktau_retention_writer_role.sql` владелец применяет `ops/postgres/security/aktau_retention_price_history_access.sql` (SELECT и INSERT, без UPDATE/DELETE). Откат в обратном порядке: сначала `rollback_aktau_retention_price_history_access.sql`, затем `rollback_aktau_retention_writer_access.sql`, потому что откат роли ждёт ровно свои 10 прав.
 - Разовый импорт из CSV (владелец, одна транзакция, ничего не удаляет и не меняет, повторный запуск строк не добавляет): `psql -X -v ON_ERROR_STOP=1 -f ops/postgres/import-price-history.sql "$DATABASE_URL" < history.csv` (запускать из Git Bash: в PowerShell `< file` не работает).
+
+## Реестр UUID товаров
+
+Таблица `public.product_identities` хранит последний `canonicalProductId` каждого товара магазина. По ней товар, пропавший из снимков на любой срок, при возвращении получает прежний UUID. `cmd/ingest` обновляет реестр в транзакции публикации, `cmd/prune` её не трогает.
+
+- Порядок установки: миграция `20261107000100_product_identities`, затем `ops/postgres/security/aktau_ingest_product_identities_access.sql` (SELECT, INSERT, UPDATE), затем заполнение реестра, и только потом новый код. Новый код без таблицы падает на чтении реестра, старый код её не замечает.
+- Откат доступа: сначала `rollback_aktau_ingest_product_identities_access.sql`, затем `rollback_aktau_ingest_writer_access.sql`, потому что откат роли ждёт ровно свои 17 политик.

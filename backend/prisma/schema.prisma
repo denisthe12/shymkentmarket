@@ -79,15 +79,16 @@ model SourceRun {
 }
 
 model Store {
-  id           String          @id @default(uuid())
-  code         StoreCode       @unique
-  name         String
-  logoUrl      String?
-  locations    StoreLocation[]
-  rawProducts  RawProduct[]
-  offers       Offer[]
-  sourceRuns   SourceRun[]
-  priceHistory PriceHistory[]
+  id                String            @id @default(uuid())
+  code              StoreCode         @unique
+  name              String
+  logoUrl           String?
+  locations         StoreLocation[]
+  rawProducts       RawProduct[]
+  offers            Offer[]
+  sourceRuns        SourceRun[]
+  priceHistory      PriceHistory[]
+  productIdentities ProductIdentity[]
 
   @@map("stores")
 }
@@ -152,9 +153,10 @@ model CanonicalProduct {
   attributes Json?
   createdAt  DateTime @default(now())
 
-  mappings     ProductMapping[]
-  offers       Offer[]
-  priceHistory PriceHistory[]
+  mappings          ProductMapping[]
+  offers            Offer[]
+  priceHistory      PriceHistory[]
+  productIdentities ProductIdentity[]
 
   @@index([categoryId])
   @@index([brand])
@@ -219,4 +221,16 @@ model PriceHistory {
 
   @@id([month, storeId, canonicalProductId])
   @@map("price_history")
+}
+
+model ProductIdentity {
+  storeId            String
+  store              Store            @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  sourceProductId    String
+  canonicalProductId String
+  canonicalProduct   CanonicalProduct @relation(fields: [canonicalProductId], references: [id], onDelete: Restrict)
+  lastSeenAt         DateTime
+
+  @@id([storeId, sourceProductId])
+  @@map("product_identities")
 }
