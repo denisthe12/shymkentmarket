@@ -111,3 +111,14 @@ git push -u origin HEAD                                    # дальше — PR
 
 Разбор ошибок — `docs/data/SYNC_RUNBOOK.md §4`, еженедельный прогон — `§5`.
 
+
+## История цен по месяцам
+
+Перед удалением старых snapshot `cmd/prune` дописывает в постоянную таблицу `public.price_history` месячные цены; в логе `retention_complete` поле `history_count` — сколько строк добавлено за прогон.
+
+- Цена месяца — первый успешный захват магазина в этом месяце по `capturedAt`; границы месяца считаются в `Asia/Aqtau`.
+- Месяц магазина пишется один раз и не меняется. Товар, появившийся позже, попадает в историю со следующего месяца.
+- Если запись истории упала, прогон ничего не удаляет, `sync` завершается кодом `4` со строкой `[sync] retention failed`; snapshot при этом опубликован. Снапшоты копятся, пока ошибку не починят.
+- Статус сопоставления хранится в `reviewStatus` (`pending` и другие); для аналитики фильтровать по нему.
+- Доступ: после миграции `20261107000000_price_history` и после `aktau_retention_writer_role.sql` владелец применяет `ops/postgres/security/aktau_retention_price_history_access.sql` (SELECT и INSERT, без UPDATE/DELETE). Откат в обратном порядке: сначала `rollback_aktau_retention_price_history_access.sql`, затем `rollback_aktau_retention_writer_access.sql`, потому что откат роли ждёт ровно свои 10 прав.
+- Разовый импорт из CSV (владелец, одна транзакция, ничего не удаляет и не меняет, повторный запуск строк не добавляет): `psql -X -v ON_ERROR_STOP=1 -f ops/postgres/import-price-history.sql "$DATABASE_URL" < history.csv`.
