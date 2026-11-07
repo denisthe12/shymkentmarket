@@ -37,6 +37,13 @@ describe('queryProducts', () => {
     expect(queryProducts(all, { search: 'FOODMASTER' }).length).toBe(3)
     expect(queryProducts(all, { search: 'шедевр' }).every((p) => p.category.slug === 'oil')).toBe(true)
   })
+
+  it('matches query words in any order', () => {
+    const direct = queryProducts(all, { search: 'масло шедевр' })
+    expect(direct.length).toBeGreaterThan(0)
+    expect(queryProducts(all, { search: 'шедевр  масло' })).toEqual(direct)
+    expect(queryProducts(all, { search: 'шедевр ананас' })).toEqual([])
+  })
 })
 
 describe('mock adapter', () => {

@@ -21,16 +21,26 @@ export function SearchBox() {
   const urlQuery = onSearchPage ? (params.get('q') ?? '').trim() : ''
   const [value, setValue] = useState(urlQuery)
   const [syncedQuery, setSyncedQuery] = useState(urlQuery)
+  // Запросы, которые поле само отправило в URL и которые ещё не пришли обратно.
+  // router.replace идёт через сервер, URL обновляется с задержкой — пока пользователь печатает дальше
+  const [pending, setPending] = useState<string[]>([])
 
   // Синхронизация с URL (назад/вперёд в истории) — прямо во время рендера, без эффекта.
-  // Если URL просто догнал набранный текст, ввод не трогаем (иначе съедим пробел в конце)
+  // Если URL догнал наш же (возможно, уже устаревший) запрос, ввод не трогаем: иначе затрём
+  // буквы, набранные или стёртые за время перехода, и съедим пробел в конце
   if (urlQuery !== syncedQuery) {
     setSyncedQuery(urlQuery)
-    if (urlQuery !== value.trim()) setValue(urlQuery)
+    const own = pending.indexOf(urlQuery)
+    if (own !== -1) setPending(pending.slice(own + 1))
+    else {
+      setPending([])
+      if (urlQuery !== value.trim()) setValue(urlQuery)
+    }
   }
 
   // На /search заменяем запись в истории и сохраняем сортировку, с других страниц — обычный переход
   function goTo(q: string) {
+    setPending((list) => [...list, q])
     const next = new URLSearchParams(onSearchPage ? params.toString() : undefined)
     if (q) next.set('q', q)
     else next.delete('q')
