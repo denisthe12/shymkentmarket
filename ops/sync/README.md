@@ -128,3 +128,4 @@ git push -u origin HEAD                                    # дальше — PR
 
 - Порядок установки: миграция `20261107000100_product_identities`, затем `ops/postgres/security/aktau_ingest_product_identities_access.sql` (SELECT, INSERT, UPDATE), затем заполнение реестра, и только потом новый код. Новый код без таблицы падает на чтении реестра, старый код её не замечает.
 - Откат доступа: сначала `rollback_aktau_ingest_product_identities_access.sql`, затем `rollback_aktau_ingest_writer_access.sql`, потому что откат роли ждёт ровно свои 17 политик.
+- Заполнение реестра (владелец, одна транзакция, ничего не удаляет, повторный запуск безопасен): `psql -X -v ON_ERROR_STOP=1 -f ops/postgres/backfill-product-identities.sql "$DATABASE_URL"`. Сначала берутся месячные цены, затем хранимые снимки, потому что они свежее. После отката кода запустить снова перед повторной выкладкой.
