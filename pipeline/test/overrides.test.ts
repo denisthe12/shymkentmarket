@@ -1,6 +1,6 @@
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DictionarySchema, canonicalKey, readDictionary, writeDictionary, type Dictionary } from '../src/mapping/dictionary.js'
 import { OverridesSchema, applyOverrides, markSplitsApplied, readOverrides, writeOverrides } from '../src/mapping/overrides.js'
@@ -97,5 +97,15 @@ describe('applyOverrides', () => {
     const p = join(mkdtempSync(join(tmpdir(), 'ov-')), 'o.json')
     writeFileSync(p, JSON.stringify({ version: 1, moveCategory: [{ key: 'k', to: 'salt' }] }))
     expect(() => readOverrides(p)).toThrow()
+  })
+})
+
+describe('real mapping files', () => {
+  const dir = resolve(import.meta.dirname, '../../data/mapping')
+  it('every split rule is marked and a full run changes nothing', () => {
+    const o = readOverrides(join(dir, 'overrides.json'))
+    const d = readDictionary(join(dir, 'dictionary.json'))
+    expect(o.split.filter((s) => !s.appliedAt)).toEqual([])
+    expect(applyOverrides(d, o)).toEqual(d)
   })
 })
