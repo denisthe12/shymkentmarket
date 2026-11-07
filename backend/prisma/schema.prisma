@@ -79,14 +79,15 @@ model SourceRun {
 }
 
 model Store {
-  id          String          @id @default(uuid())
-  code        StoreCode       @unique
-  name        String
-  logoUrl     String?
-  locations   StoreLocation[]
-  rawProducts RawProduct[]
-  offers      Offer[]
-  sourceRuns  SourceRun[]
+  id           String          @id @default(uuid())
+  code         StoreCode       @unique
+  name         String
+  logoUrl      String?
+  locations    StoreLocation[]
+  rawProducts  RawProduct[]
+  offers       Offer[]
+  sourceRuns   SourceRun[]
+  priceHistory PriceHistory[]
 
   @@map("stores")
 }
@@ -151,8 +152,9 @@ model CanonicalProduct {
   attributes Json?
   createdAt  DateTime @default(now())
 
-  mappings ProductMapping[]
-  offers   Offer[]
+  mappings     ProductMapping[]
+  offers       Offer[]
+  priceHistory PriceHistory[]
 
   @@index([categoryId])
   @@index([brand])
@@ -198,4 +200,23 @@ model Offer {
   @@index([snapshotId, canonicalProductId])
   @@index([snapshotId, storeId])
   @@map("offers")
+}
+
+model PriceHistory {
+  month              DateTime         @db.Date
+  storeId            String
+  store              Store            @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  canonicalProductId String
+  canonicalProduct   CanonicalProduct @relation(fields: [canonicalProductId], references: [id], onDelete: Restrict)
+  sourceProductId    String
+  rawName            String
+  price              Int
+  oldPrice           Int?
+  reviewStatus       ReviewStatus
+  capturedAt         DateTime
+  snapshotId         String
+  createdAt          DateTime         @default(now())
+
+  @@id([month, storeId, canonicalProductId])
+  @@map("price_history")
 }
