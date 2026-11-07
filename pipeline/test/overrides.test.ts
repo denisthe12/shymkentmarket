@@ -1,9 +1,9 @@
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DictionarySchema, canonicalKey, readDictionary, writeDictionary, type Dictionary } from '../src/mapping/dictionary.js'
-import { OverridesSchema, applyOverrides, readOverrides } from '../src/mapping/overrides.js'
+import { OverridesSchema, applyOverrides, markSplitsApplied, readOverrides, writeOverrides } from '../src/mapping/overrides.js'
 
 const card = (name: string, category: string, review: 'approved' | 'pending' = 'approved') =>
   ({ name, brand: 'B', category, attributes: { weightGrams: 1000 }, method: 'ai', confidence: 0.9, review })
@@ -14,6 +14,13 @@ const dict = (): Dictionary => DictionarySchema.parse({
   products: { 'DANA:1': multi, 'DINA:1': multi, 'FIX_PRICE:1': multi, 'DINA:9': 'c_other' }, storeCategories: {},
 })
 const ov = (o: object) => OverridesSchema.parse({ version: 1, ...o })
+const joined = canonicalKey(['DINA:5'])
+const withJoiner = (): Dictionary => DictionarySchema.parse({
+  version: 1, generatedAt: '2026-10-06T00:00:00.000Z',
+  canonicals: { c_orig: card('Сыр', 'dairy'), [joined]: card('Сыр', 'dairy') },
+  products: { 'DANA:5': 'c_orig', 'DINA:5': joined, 'ANVAR:7': joined }, storeCategories: {},
+})
+const rule = { key: 'c_orig', ids: ['DINA:5'], reason: 'weight-vs-piece' }
 
 describe('applyOverrides', () => {
   it('moves category and approves', () => {
@@ -51,6 +58,40 @@ describe('applyOverrides', () => {
   })
   it('rejects ids that are not members', () => {
     expect(() => applyOverrides(dict(), ov({ split: [{ key: multi, ids: ['DINA:9'], reason: 'oops' }] }))).toThrow(/not a member/)
+  })
+  it('skips an applied split after a later store joined the isolated card', () => {
+    const d = withJoiner()
+    expect(applyOverrides(d, ov({ split: [{ ...rule, appliedAt: '2026-10-06' }] }))).toEqual(d)
+  })
+  it('unmarked split on the same state still throws', () => {
+    expect(() => applyOverrides(withJoiner(), ov({ split: [rule] }))).toThrow(/not a member/)
+  })
+  it('applied split does not evict a store that joined the key holder', () => {
+    const o = ov({ split: [{ key: joined, ids: ['DINA:5'], reason: 'false-group', appliedAt: '2026-10-06' }] })
+    expect(applyOverrides(withJoiner(), o).products['ANVAR:7']).toBe(joined)
+  })
+  it('applied split with a missing card is skipped', () => {
+    const o = ov({ split: [{ key: 'c_nope', ids: ['DINA:5'], reason: 'gone', appliedAt: '2026-10-06' }] })
+    expect(applyOverrides(withJoiner(), o)).toEqual(withJoiner())
+  })
+  it('re-applying an unmarked simple split changes nothing', () => {
+    const o = ov({ split: [{ key: multi, ids: ['DANA:1'], reason: 'weight' }] })
+    const once = applyOverrides(dict(), o)
+    expect(applyOverrides(once, o)).toEqual(once)
+  })
+  it('rejects a malformed appliedAt', () => {
+    expect(() => ov({ split: [{ ...rule, appliedAt: '06.10.2026' }] })).toThrow()
+  })
+  it('markSplitsApplied dates only unmarked rules', () => {
+    const o = ov({ split: [{ ...rule, appliedAt: '2026-10-06' }, { key: multi, reason: 'new' }] })
+    expect(markSplitsApplied(o, '2026-11-08').split.map((s) => s.appliedAt)).toEqual(['2026-10-06', '2026-11-08'])
+  })
+  it('writeOverrides round-trips with one-space indent and no trailing newline', () => {
+    const p = join(mkdtempSync(join(tmpdir(), 'ov-')), 'o.json')
+    const o = ov({ split: [{ ...rule, appliedAt: '2026-10-06' }] })
+    writeOverrides(p, o)
+    expect(readOverrides(p)).toEqual(o)
+    expect(readFileSync(p, 'utf8')).toBe(JSON.stringify(o, null, 1))
   })
   it('overrides file requires a reason', () => {
     const p = join(mkdtempSync(join(tmpdir(), 'ov-')), 'o.json')
