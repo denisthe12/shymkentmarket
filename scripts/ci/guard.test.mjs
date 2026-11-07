@@ -5,7 +5,7 @@ import { eventBase } from './select-event-base.mjs';
 
 test('disposable database allowlist remains exact', () => {
   const good = 'postgres://postgres:ci-local-only@127.0.0.1:15432/part08?sslmode=disable';
-  for (const database of ['part04_fixture', 'part04_security', 'part08', 'part10_security', 'part11_recovery', 'part13_retention']) {
+  for (const database of ['part04_fixture', 'part04_security', 'part08', 'part10_security', 'part11_recovery', 'part13_retention', 'part14_identities']) {
     assert.equal(localURL(good.replace('part08', database)).pathname, '/' + database);
   }
 });
