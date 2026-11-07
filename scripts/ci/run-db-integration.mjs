@@ -46,5 +46,19 @@ await postgres(async ({ url, sql, login, load, go }) => {
   if (sql('part13_retention', "SELECT to_regrole('aktau_retention_writer') IS NULL;") !== 't') {
     throw new Error('retention rollback left aktau_retention_writer behind');
   }
+  // part08 has already dropped the writer role, so it is created again here, in its own database.
+  sql('part14_identities', readFileSync(join(root, 'backend/prisma/security/aktau_ingest_writer_role.sql')));
+  sql('part14_identities', readFileSync(join(root, 'ops/postgres/security/aktau_ingest_product_identities_access.sql')));
+  login('part14_writer', 'aktau_ingest_writer');
+  go(['test', '-count=1', '-race', '-tags=integration', './internal/ingestion', '-run', '^TestLocalIdentity', '-v'], {
+    TEST_IDENTITY_ADMIN_DATABASE_URL: url('part14_identities'),
+    TEST_IDENTITY_WRITER_DATABASE_URL: url('part14_identities', 'part14_writer'),
+  });
+  sql('part14_identities', 'DROP ROLE part14_writer;');
+  sql('part14_identities', readFileSync(join(root, 'ops/postgres/security/rollback_aktau_ingest_product_identities_access.sql')));
+  sql('part14_identities', readFileSync(join(root, 'backend/prisma/security/rollback_aktau_ingest_writer_access.sql')));
+  if (sql('part14_identities', "SELECT to_regrole('aktau_ingest_writer') IS NULL;") !== 't') {
+    throw new Error('identity rollback left aktau_ingest_writer behind');
+  }
 });
 

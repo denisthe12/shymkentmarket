@@ -31,7 +31,7 @@ func run() (resultErr error) {
 			class = "failure"
 			code = "ingestion_" + phase + "_failed"
 		}
-		args := []any{"mode", mode, "phase", phase, "outcome_class", class, "error_code", code, "duration_ms", time.Since(start).Milliseconds(), "raw_count", report.RawCount, "canonical_count", report.CanonicalCount, "reused_count", report.ReusedCanonical, "new_count", report.NewCanonical, "matched_count", report.MatchedAcrossStores}
+		args := []any{"mode", mode, "phase", phase, "outcome_class", class, "error_code", code, "duration_ms", time.Since(start).Milliseconds(), "raw_count", report.RawCount, "canonical_count", report.CanonicalCount, "reused_count", report.ReusedCanonical, "restored_count", report.RestoredCanonical, "new_count", report.NewCanonical, "matched_count", report.MatchedAcrossStores}
 		if resultErr != nil {
 			logger.Error("ingestion_complete", args...)
 		} else {

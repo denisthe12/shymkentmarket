@@ -7,17 +7,19 @@ import (
 )
 
 type Report struct {
-	RawCount                   int            `json:"rawCount"`
-	PerStore                   map[string]int `json:"perStoreCounts"`
-	CanonicalCount             int            `json:"canonicalCount"`
-	MatchedAcrossStores        int            `json:"matchedAcrossTwoOrMoreStores"`
-	NewCanonical               int            `json:"newCanonicalCount"`
-	ReusedCanonical            int            `json:"reusedCanonicalCount"`
-	MergedCanonical            int            `json:"mergedCanonicalCount"`
-	SplitCanonical             int            `json:"splitCanonicalCount"`
-	ImageCoverage              float64        `json:"imageCoverage"`
-	SourceMetadataAvailability int            `json:"sourceMetadataAvailability"`
-	FailureCode                string         `json:"failureCode,omitempty"`
+	RawCount            int            `json:"rawCount"`
+	PerStore            map[string]int `json:"perStoreCounts"`
+	CanonicalCount      int            `json:"canonicalCount"`
+	MatchedAcrossStores int            `json:"matchedAcrossTwoOrMoreStores"`
+	NewCanonical        int            `json:"newCanonicalCount"`
+	ReusedCanonical     int            `json:"reusedCanonicalCount"`
+	// RestoredCanonical counts groups that got a remembered id; they are also in ReusedCanonical.
+	RestoredCanonical          int     `json:"restoredCanonicalCount"`
+	MergedCanonical            int     `json:"mergedCanonicalCount"`
+	SplitCanonical             int     `json:"splitCanonicalCount"`
+	ImageCoverage              float64 `json:"imageCoverage"`
+	SourceMetadataAvailability int     `json:"sourceMetadataAvailability"`
+	FailureCode                string  `json:"failureCode,omitempty"`
 }
 
 func opaqueID() (string, error) {
