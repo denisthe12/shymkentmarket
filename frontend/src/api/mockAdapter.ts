@@ -38,12 +38,14 @@ export function createMockAdapter({ delayMs = 250 }: MockOptions = {}): CatalogA
 
 /** Фильтрация и сортировка так, как их (по нашему предложению) делает бэк */
 export function queryProducts(source: ProductCardDto[], query: ProductQuery): ProductCardDto[] {
-  const search = query.search?.trim().toLowerCase()
+  // Каждое слово запроса должно встретиться в названии или бренде, порядок не важен
+  const words = (query.search ?? '').toLowerCase().split(/\s+/).filter(Boolean)
   const activeFilters = Object.entries(query.filters ?? {}).filter(([, values]) => values.length > 0)
 
   const result = source.filter((p) => {
     if (query.category && p.category.slug !== query.category) return false
-    if (search && !`${p.name} ${p.brand ?? ''}`.toLowerCase().includes(search)) return false
+    const text = `${p.name} ${p.brand ?? ''}`.toLowerCase()
+    if (!words.every((word) => text.includes(word))) return false
     // Между значениями одного фильтра — OR, между фильтрами — AND
     return activeFilters.every(([key, values]) => values.includes(String(p.attributes[key])))
   })

@@ -1,6 +1,7 @@
 import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { useRouter } from 'next/navigation'
+import { describe, expect, it, vi } from 'vitest'
 import { navigation } from '../../test/navigation'
 import { renderPage } from '../../test/render'
 import { Header } from './Header'
@@ -62,6 +63,33 @@ describe('Header', () => {
     expect(url.pathname).toBe('/ru/search')
     expect(url.searchParams.get('q')).toBe('сахар')
     expect(url.searchParams.get('sort')).toBe('price_desc')
+  })
+
+  it('keeps typed text when a slow URL update for an older query lands', async () => {
+    renderPage(<Header />, '/ru/search?q=хлеб')
+    const input = screen.getByTestId('search-input')
+    // Настоящий router.replace — переход с запросом к серверу: URL меняется не сразу
+    vi.mocked(useRouter().replace).mockImplementationOnce((url: string) => {
+      navigation.history.push({ method: 'replace', url })
+      setTimeout(() => navigation.setUrl(url), 300)
+    })
+
+    await userEvent.clear(input)
+    await userEvent.type(input, 'сах')
+    await act(() => new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 50)))
+    await userEvent.type(input, 'ар')
+    await act(() => new Promise((resolve) => setTimeout(resolve, 300)))
+    expect(input).toHaveValue('сахар')
+
+    await act(() => new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 50)))
+    expect(new URL(navigation.url, 'http://x').searchParams.get('q')).toBe('сахар')
+    expect(input).toHaveValue('сахар')
+  })
+
+  it('still follows the URL when it changes from outside (back/forward)', () => {
+    renderPage(<Header />, '/ru/search?q=хлеб')
+    act(() => navigation.setUrl('/ru/search?q=молоко'))
+    expect(screen.getByTestId('search-input')).toHaveValue('молоко')
   })
 
   it('switches language by linking to the same page under the other prefix', async () => {
