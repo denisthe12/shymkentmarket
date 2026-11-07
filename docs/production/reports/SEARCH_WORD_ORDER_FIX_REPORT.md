@@ -26,3 +26,9 @@ Node24.10.0, Go1.27.3, existing disposable loopback PG17 harness; no production 
 ## Risks and release boundary
 
 ILIKE substring matching remains scan-based; per-token predicate work grows with tokens. No performance SLA or production-sized benchmark claimed. Brand matches and literal wildcards intentionally change search behavior; no other public contract changed. No index/migration/full-text engine added. Existing EXPLAIN suite retained. Hosted exact-head CI initially PENDING; do not interpret local PASS as hosted PASS. Review CI on exact PR HEAD before merging. NO DEPLOY / DO NOT MERGE BEFORE REVIEW.
+
+## Publication addendum
+
+PR: https://github.com/kiratonine/AdilBaga/pull/103 (ordinary review PR, not merged). Implementation commit: d5ce0b0528aa2bb382c28347ecaefdcb2f7fb1a9. A report-only follow-up records these identifiers; exact final HEAD is supplied in the delivery.
+
+Final full PG17 harness exit0:103PASS markers (parent/subtests),0SKIP; includes deterministic catalog, pool/security/EXPLAIN/observability, ingestion batching, snapshot security, retention and identity regressions. Earlier failed run retained; affected EXPLAIN cases now all PASS. Hosted exact-head CI is PENDING at this report commit; authoritative final results are available in PR checks and final delivery. Never treat this snapshot as hosted CI PASS.
