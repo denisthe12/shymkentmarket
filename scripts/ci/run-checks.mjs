@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { root, temporary, env, httpEnv, run, prepareBrowser } from './common.mjs';
+import { root, temporary, env, httpEnv, run, prepareBrowser, goTestArgs } from './common.mjs';
 
 const group = process.argv[2];
 const cwd = name => join(root, name);
@@ -11,7 +11,7 @@ if (group === 'contracts') {
   install('contracts'); pnpm('contracts', ['lint']);
   console.log(pnpm('contracts', ['test']).split('\n').slice(-10).join('\n'));
 } else if (group === 'go') {
-  const go = args => run(`go ${args.join(' ')}`, 'go', args, { cwd: cwd('backend-go') });
+  const go = args => run(`go ${args.join(' ')}`, 'go', goTestArgs(args), { cwd: cwd('backend-go') });
   if (run('gofmt check', 'gofmt', ['-l', '.'], { cwd: cwd('backend-go') })) throw new Error('gofmt drift');
   const before = ['go.mod', 'go.sum'].map(f => readFileSync(join(cwd('backend-go'), f)));
   go(['mod', 'tidy']);

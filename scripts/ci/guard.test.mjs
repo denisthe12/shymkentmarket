@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { env, localURL, browserInstallArgs } from './common.mjs';
+import { env, goTestArgs, localURL, browserInstallArgs, platformEnvKeys, usesShell } from './common.mjs';
 import { eventBase } from './select-event-base.mjs';
 
 test('disposable database allowlist remains exact', () => {
@@ -47,3 +47,12 @@ test('child environment contains no provider/live/backup fallback', () => {
 });
 
 test('removed C2 database is no longer allowed', () => { assert.throws(() => localURL('postgres://postgres:ci-local-only@127.0.0.1:15432/part16_c2?sslmode=disable')); });
+test('Windows support stays off on Linux', () => {
+  assert.equal(usesShell('pnpm', 'win32'), true);
+  assert.equal(usesShell('docker', 'win32'), false);
+  assert.equal(usesShell('pnpm', 'linux'), false);
+  assert.deepEqual(platformEnvKeys('linux'), []);
+  assert.ok(platformEnvKeys('win32').includes('SystemRoot'));
+  assert.deepEqual(goTestArgs(['test', '-race'], 'linux'), ['test', '-race']);
+  assert.deepEqual(goTestArgs(['test', '-race'], 'win32'), ['test']);
+});

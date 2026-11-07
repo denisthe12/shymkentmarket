@@ -5,9 +5,18 @@ import { resolve, join } from 'node:path';
 
 export const root = resolve(import.meta.dirname, '../..');
 export const temporary = mkdtempSync(join(tmpdir(), 'adilbaga-ci-'));
+// Windows only: Node and Docker need these to start, none of them carries configuration.
+export const platformEnvKeys = (platform = process.platform) => platform === 'win32'
+  ? ['SystemRoot', 'SystemDrive', 'ComSpec', 'PATHEXT', 'TEMP', 'TMP', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA',
+    'ProgramData', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432']
+  : [];
+// pnpm is a .cmd wrapper on Windows, and Node starts those only through a shell.
+export const usesShell = (command, platform = process.platform) => platform === 'win32' && command === 'pnpm';
+// -race needs cgo and a C compiler, which a Windows machine may lack. CI on Linux always keeps it.
+export const goTestArgs = (args, platform = process.platform) => platform === 'win32' ? args.filter(a => a !== '-race') : args;
 // Do not inherit runtime, backup, live-profile, provider or libpq configuration.
 export const env = Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'RUNNER_TEMP', 'CI', 'CI_BASE_SHA',
-  'GOCACHE', 'GOMODCACHE', 'PLAYWRIGHT_BROWSERS_PATH', 'PW_CHANNEL'].filter(k => process.env[k])
+  'GOCACHE', 'GOMODCACHE', 'PLAYWRIGHT_BROWSERS_PATH', 'PW_CHANNEL', ...platformEnvKeys()].filter(k => process.env[k])
   .map(k => [k, process.env[k]]));
 Object.assign(env, { GOTOOLCHAIN: 'local', COREPACK_ENABLE_AUTO_PIN: '0',
   NEXT_TELEMETRY_DISABLED: '1', DATABASE_URL: 'postgres://ci:ci@127.0.0.1:1/unused',
@@ -19,7 +28,7 @@ export function safe(text) {
   return text.replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, '[REDACTED_DATABASE_URL]');
 }
 export function run(label, command, args = [], options = {}) {
-  const r = spawnSync(command, args, { cwd: root, env, encoding: 'utf8',
+  const r = spawnSync(command, args, { cwd: root, env, encoding: 'utf8', shell: usesShell(command),
     timeout: 20 * 60_000, maxBuffer: 32 * 1024 * 1024, ...options });
   const output = safe((r.stdout ?? '') + (r.stderr ?? ''));
   if (r.status !== 0) {
