@@ -17,8 +17,10 @@ test('mobile: tab bar navigates between sections and the search tab focuses the 
   await expect(page).toHaveURL(/\/ru\/search$/)
   await expect(page.getByTestId('search-input')).toBeFocused()
 
-  // Футер не прячется под таб-баром
-  await page.getByTestId('copyright').scrollIntoViewIfNeeded()
+  // Футер не прячется под таб-баром, когда страница прокручена до конца.
+  // scrollIntoViewIfNeeded не годится: текст под таб-баром он считает видимым и не прокручивает
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await expect.poll(() => page.evaluate(() => Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight)).toBe(true)
   const footer = await page.getByTestId('copyright').boundingBox()
   const bar = await tabBar.boundingBox()
   expect(footer!.y + footer!.height).toBeLessThanOrEqual(bar!.y)
