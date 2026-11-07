@@ -241,11 +241,19 @@ Expected: CI зелёный.
 
 - [ ] **Step 1: Восстановить дамп в одноразовый PostgreSQL 17**
 
-Порядок из `rehearse-inner.sh`: создать NOLOGIN-роли `aktau_api_reader`, `aktau_ingest_writer`, `DROP SCHEMA public CASCADE`, `pg_restore`. Затем применить миграцию Task 1, `aktau_retention_writer_role.sql`, SQL прав из Task 2 и создать локальный логин.
+Порядок из `rehearse-inner.sh`: создать NOLOGIN-роли `aktau_api_reader`, `aktau_ingest_writer`, `DROP SCHEMA public CASCADE`, `pg_restore`. Затем применить миграцию Task 1, `aktau_retention_writer_role.sql`, SQL прав из Task 2 и создать локальный логин командой `GRANT aktau_retention_writer TO <логин> WITH INHERIT TRUE, SET FALSE`: обычный GRANT `cmd/prune` отвергает.
 
 - [ ] **Step 2: Записать историю на копии, ничего не удаляя**
 
-Run: `APP_ENV=development RETENTION_DATABASE_URL=<локальная строка> go run ./cmd/prune -keep 1000 -apply`
+Сначала проверить копию на дубли, в проде проверены только 14 снимков:
+
+```sql
+SELECT count(*) FROM (SELECT 1 FROM public.offers GROUP BY "snapshotId","storeId","canonicalProductId" HAVING count(*)>1) d;
+```
+
+Expected: 0.
+
+Run из `backend-go`: `APP_ENV=development RETENTION_DATABASE_URL=<локальная строка> go run ./cmd/prune -keep 1000 -apply`
 Expected: `deleted_count=0`, `history_count` больше нуля.
 
 - [ ] **Step 3: Проверить результат на копии и выгрузить CSV**
@@ -256,11 +264,19 @@ SELECT month, "storeId", count(*), min("capturedAt") FROM public.price_history G
 
 Expected: месяцы `2026-10-01` и `2026-11-01`. Ноябрь у трёх магазинов с `capturedAt` 2026-11-01, у Anvar от 2026-11-05. Октябрь начинается примерно с 4-5 октября: самый ранний снимок виден только по старым логам сессии, точную дату покажет этот запрос.
 
+В дампе могут быть сборы из разовой загрузки `baseline-internal-v1` с ранней датой. Если появится месяц раньше октября или октябрь с такими данными, показать это пользователю до выгрузки.
+
+Выгрузка: `\copy public.price_history TO 'history.csv' CSV HEADER`.
+
 ### Task 6: Выкатка в прод
 
 Строго в этом порядке. Команды с паролем вводит пользователь.
 
+Всю выкатку нужно закончить до следующего обновления checkout на VPS из `main`, иначе новый `cmd/prune` приедет раньше импорта. Если код всё же попал на VPS до прав, запуск завершится кодом 4 и ничего не удалит. Если права и код оказались раньше импорта, скрипт импорта откажется работать, потому что месяц уже записан из другого сбора.
+
 - [ ] **Step 1: Применить миграцию к проду**
+
+Сначала `pnpm exec prisma migrate status`. Expected: ровно одна неприменённая миграция, `20261107000000_price_history`.
 
 Run: `pnpm exec prisma migrate deploy` из `backend` с `DIRECT_URL`, пароль скрытым вводом.
 Expected: применена только `20261107000000_price_history`, сайт отвечает 200.
