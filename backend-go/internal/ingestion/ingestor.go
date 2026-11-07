@@ -90,12 +90,14 @@ type baseline struct {
 	PublishedAt *time.Time
 	Counts      map[string]int
 	Identities  map[Identity][]string
-	Categories  map[string]string
-	Stores      map[string]string
+	// Remembered is the last known card of every product, including ones absent from the latest snapshot.
+	Remembered map[Identity]string
+	Categories map[string]string
+	Stores     map[string]string
 }
 
 func (e *Ingestor) baseline(ctx context.Context) (baseline, error) {
-	b := baseline{Counts: map[string]int{}, Identities: map[Identity][]string{}, Categories: map[string]string{}, Stores: map[string]string{}}
+	b := baseline{Counts: map[string]int{}, Identities: map[Identity][]string{}, Remembered: map[Identity]string{}, Categories: map[string]string{}, Stores: map[string]string{}}
 	var at time.Time
 	err := e.conn.QueryRow(ctx, `SELECT id,"publishedAt" FROM snapshots WHERE status='published' AND "publishedAt" IS NOT NULL ORDER BY "publishedAt" DESC,id DESC LIMIT 1`).Scan(&b.ID, &at)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
@@ -143,6 +145,24 @@ func (e *Ingestor) baseline(ctx context.Context) (baseline, error) {
 	if err != nil {
 		return b, errors.New("ingestion categories unavailable")
 	}
+	rows, err = e.conn.Query(ctx, `SELECT st.code::text,i."sourceProductId",i."canonicalProductId" FROM product_identities i JOIN stores st ON st.id=i."storeId"`)
+	if err != nil {
+		return b, errors.New("ingestion identity registry unavailable")
+	}
+	for rows.Next() {
+		var key Identity
+		var id string
+		if rows.Scan(&key.StoreCode, &key.SourceProductID, &id) != nil {
+			rows.Close()
+			return b, errors.New("ingestion identity registry unavailable")
+		}
+		b.Remembered[key] = id
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return b, errors.New("ingestion identity registry unavailable")
+	}
 	if b.ID != "" {
 		rows, err = e.conn.Query(ctx, `SELECT st.code::text,r."sourceProductId",m."canonicalProductId" FROM raw_products r JOIN stores st ON st.id=r."storeId" LEFT JOIN product_mappings m ON m."rawProductId"=r.id WHERE r."snapshotId"=$1`, b.ID)
 		if err != nil {
@@ -173,6 +193,14 @@ func (e *Ingestor) baseline(ctx context.Context) (baseline, error) {
 	return b, nil
 }
 
+// plan resolves b against the baseline after restoring remembered identities.
+func (e *Ingestor) plan(b Bundle, previous baseline) ([]resolved, Report, error) {
+	identities, restored := restoreIdentities(b, previous.Identities, previous.Remembered)
+	groups, report, err := resolve(b, identities, previous.Counts, previous.Categories, e.maxDrop, e.recluster)
+	report.RestoredCanonical = restored
+	return groups, report, err
+}
+
 func (e *Ingestor) DryRun(ctx context.Context, b Bundle) (Report, error) {
 	start := time.Now()
 	report, err := e.dryRun(ctx, b)
@@ -198,7 +226,7 @@ func (e *Ingestor) dryRun(ctx context.Context, b Bundle) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
-	_, report, err := resolve(b, previous.Identities, previous.Counts, previous.Categories, e.maxDrop, e.recluster)
+	_, report, err := e.plan(b, previous)
 	return report, err
 }
 
@@ -345,7 +373,7 @@ func (e *Ingestor) stage(ctx context.Context, b Bundle) (*Staged, error) {
 		e.unlock()
 		return nil, errors.New("snapshot staging unavailable")
 	}
-	s.groups, s.Report, err = resolve(b, previous.Identities, previous.Counts, previous.Categories, e.maxDrop, e.recluster)
+	s.groups, s.Report, err = e.plan(b, previous)
 	if err != nil {
 		failure := s.fail(s.Report.FailureCode)
 		s.Close()
@@ -359,6 +387,12 @@ func (e *Ingestor) stage(ctx context.Context, b Bundle) (*Staged, error) {
 	}
 	return s, nil
 }
+
+// Bundle.Validate rejects duplicate products, so ON CONFLICT never meets a row twice.
+const rememberIdentitiesSQL = `INSERT INTO product_identities("storeId","sourceProductId","canonicalProductId","lastSeenAt")
+SELECT r."storeId",r."sourceProductId",m."canonicalProductId",timezone('UTC',clock_timestamp())
+FROM raw_products r JOIN product_mappings m ON m."rawProductId"=r.id WHERE r."snapshotId"=$1
+ON CONFLICT("storeId","sourceProductId") DO UPDATE SET "canonicalProductId"=EXCLUDED."canonicalProductId","lastSeenAt"=EXCLUDED."lastSeenAt"`
 
 func (s *Staged) Publish(ctx context.Context) error {
 	start := time.Now()
@@ -422,6 +456,9 @@ func (s *Staged) publish(ctx context.Context) error {
 		}
 	}
 	if err := writes.flush(ctx); err != nil {
+		return fail()
+	}
+	if _, err := tx.Exec(ctx, rememberIdentitiesSQL, s.id); err != nil {
 		return fail()
 	}
 	tag, err := tx.Exec(ctx, `UPDATE snapshots SET status='published',"publishedAt"=greatest(timezone('UTC',clock_timestamp())::timestamp(3),coalesce($2::timestamp+interval '1 millisecond','-infinity'::timestamp)) WHERE id=$1 AND status='validating'`, s.id, s.previous.PublishedAt)
