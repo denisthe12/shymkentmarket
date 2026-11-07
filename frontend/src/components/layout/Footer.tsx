@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { useHref } from '../../lib/useLang'
 import { LogoMark } from './Logo'
 
+/** Почта для связи — только в футере, в JSON-LD контакты не публикуем (см. brand.test) */
+export const CONTACT_EMAIL = 'info@aktau.market'
+
 export function Footer() {
   const { t } = useTranslation()
   const href = useHref()
@@ -23,6 +26,9 @@ export function Footer() {
               {t('footer.blog')}
             </Link>
           </nav>
+          <a href={`mailto:${CONTACT_EMAIL}`} data-testid="footer-email" className="font-medium text-ink hover:underline">
+            {CONTACT_EMAIL}
+          </a>
           <p data-testid="copyright" className="shrink-0 tabular">
             {/* oxlint-disable-next-line react/purity -- год берётся в момент рендера намеренно */}
             {t('footer.rights', { year: new Date().getFullYear() })}
