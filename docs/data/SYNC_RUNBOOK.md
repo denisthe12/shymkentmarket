@@ -59,13 +59,23 @@ bash pipeline/scripts/daily-sync.sh
 | `canonical_merge_conflict` | словарь меняли (объединили карточки) — запустить `cmd/ingest` с `-recluster` |
 | ошибка `sync` или ingest (exit 1) | snapshot не публикуется, на сайте остаются прошлые цены. Падение одного скрапера сюда не относится: оно даёт exit 3 (следующая строка) |
 | exit 3 — stale stores | snapshot **опубликован**, но сети из строки `[sync] stale stores: <список>` взяты из прошлого удачного файла; юнит в статусе `failed` намеренно. Смотрите `journalctl -u aktau-sync`, ищите `[<сеть>]` с причиной падения скрапера. Цены такой сети устаревают, и через `SYNC_MAX_SOURCE_AGE_HOURS` (36 ч) `sync` откажется их публиковать (`... source file is stale`) — до этого срока скрапер надо починить |
-| exit 4 — retention failed | snapshot **опубликован**, но очистка старых snapshot упала: в stderr строка `[sync] retention failed`. Юнит в статусе `failed`. Цены на сайте актуальны; смотреть `journalctl -u aktau-sync`, чинить `RETENTION_DATABASE_URL`/роль (см. `ops/sync/README.md`). Если одновременно есть устаревшая сеть, итоговый код 3 |
+| exit 4 — retention failed | snapshot **опубликован**, но очистка старых snapshot упала: в stderr строка `[sync] retention failed`. Юнит в статусе `failed`. Если в логе `retention_complete` стоит `error_code=retention_history_failed`, упала запись месячной истории цен (`public.price_history`), а не удаление: старые snapshot при этом не тронуты, причина обычно в правах роли на `price_history`. Цены на сайте актуальны; смотреть `journalctl -u aktau-sync`, чинить `RETENTION_DATABASE_URL`/роль (см. `ops/sync/README.md`). Если одновременно есть устаревшая сеть, итоговый код 3 |
 | `all scrapers failed, nothing to publish` (exit 1) | упали все три скрапера, ничего не опубликовано — сначала проверить сеть и доступность VPS в целом |
 | `FIX_PRICE: scope alias ... not in category menu` | магазин переименовал или убрал категорию из `FIXPRICE_SCOPE_ALIASES` — скрапер упал намеренно, чтобы не публиковать 0 товаров. Найти новое имя в `category/menu` и поправить `FIXPRICE_SCOPE_ALIASES` в `pipeline/src/scrapers/fixprice.ts` |
 | `[sync] <сеть> timed out after Ns, treating as failed` | скрапер не уложился в `SCRAPE_TIMEOUT_SEC` (по умолчанию 720 с) и был убит (`exit=124`, при игнорировании сигнала — `137`). Сеть берётся из прошлого удачного файла: exit 3, сеть в `[sync] stale stores`. Обычно сайт магазина тормозит или лежит; повторяется — смотреть журнал `[<сеть>]` выше и при необходимости временно поднять лимит в `/etc/aktau-sync.env` (должен оставаться заметно меньше `TimeoutStartSec`) |
 | `<СЕТЬ>: scoped scrape finished with N error(s) ... keeping previous file` | узкий скрап Dina (батчи), Dana (подразделы) или Fix Price (алиас) получил ошибки страниц и намеренно не перезаписал свой файл. Сеть берётся из прошлого удачного файла: exit 3, сеть в `[sync] stale stores`. Разовое — дождаться следующего прогона; повторяется — разобрать ошибки `[dina]`/`[fixprice]` в журнале выше этой строки |
 | `DINA: too many page errors` | более 10 ошибок страниц за прогон (ответ с `errors` в одном из алиасов батча тоже считается). Повторить запуск; если повторяется — `DINA_BATCH_PAGES=1` в env-файле как временный откат на «страница = запрос», затем разобрать формат ответа |
 | `... source file missing` / `... source file is stale` | source-файла обязательной сети нет или он старше `SYNC_MAX_SOURCE_AGE_HOURS`: удачного скрапа сети давно не было или файл удалили — перезапустить соответствующий `pnpm scrape:*` и разобрать, почему он падает |
+
+### История цен по месяцам
+
+`cmd/prune` перед очисткой дописывает месячные цены в `public.price_history`; число добавленных строк — `history_count` в логе `retention_complete`. Цена месяца — первый успешный захват магазина в месяце (`capturedAt`, границы по `Asia/Aqtau`); месяц магазина пишется один раз и не меняется, поздно появившийся товар идёт со следующего месяца. Статус сопоставления лежит в `reviewStatus`, для аналитики фильтровать по нему. Проверка:
+
+```sql
+SELECT "month", count(*) FROM public.price_history GROUP BY 1 ORDER BY 1;
+```
+
+Если запись истории упала, ничего не удаляется, `sync` выходит с кодом 4 (`[sync] retention failed`), snapshot опубликован, а старые snapshot копятся до починки. Доступ роли и импорт из CSV — в `ops/sync/README.md`.
 
 ## 5. Еженедельный полный прогон и новые товары
 

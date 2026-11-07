@@ -137,7 +137,7 @@ func TestDeterministicCatalog(t *testing.T) {
 	}
 	// Initialize from the existing Prisma init/bootstrap/security artifacts BEFORE
 	// provisioning LOGIN membership. An activated reader must not bootstrap again.
-	if tables != 9 {
+	if tables != 10 {
 		t.Fatal("prepare the dedicated fixture schema and security before activating LOGIN")
 	}
 	var products int

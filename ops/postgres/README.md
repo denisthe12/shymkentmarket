@@ -76,7 +76,7 @@ encrypted backup and a recoverable private key outside repo; never archive eithe
 
 ## Integrity and operations
 
-Compare counts and deterministic ordered row fingerprints for all nine app
+Compare counts and deterministic ordered row fingerprints for all ten app
 tables plus _prisma_migrations. Floating confidence fingerprints use PostgreSQL
 float8send bytes plus canonical non-float JSON rather than formatter-dependent
 float JSON text; no rounding/normalization that could conceal data loss.

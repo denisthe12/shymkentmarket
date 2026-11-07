@@ -22,6 +22,8 @@ const (
 type Report struct {
 	Kept, Deleted                             int
 	Offers, Mappings, RawProducts, SourceRuns int64
+	// History is the number of price_history rows written (Apply) or still to be written (Plan).
+	History int64
 }
 
 type Pruner struct {
@@ -64,7 +66,11 @@ func (p *Pruner) Plan(ctx context.Context) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
-	return Report{Kept: kept, Deleted: candidates}, nil
+	history, err := p.pendingHistory(ctx)
+	if err != nil {
+		return Report{}, err
+	}
+	return Report{Kept: kept, Deleted: candidates, History: history}, nil
 }
 
 func (p *Pruner) Apply(ctx context.Context) (Report, error) {
@@ -78,6 +84,10 @@ func (p *Pruner) Apply(ctx context.Context) (Report, error) {
 		return Report{}, err
 	}
 	rep := Report{Kept: kept}
+	// History first, under the same lock: a failure here deletes nothing.
+	if rep.History, err = p.archive(ctx); err != nil {
+		return Report{Kept: kept}, err
+	}
 	ids, err := p.candidates(ctx)
 	if err != nil {
 		return rep, err
