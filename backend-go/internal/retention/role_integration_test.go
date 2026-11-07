@@ -105,8 +105,23 @@ func TestLocalRetentionRoleBoundary(t *testing.T) {
 			t.Fatal("retention role must be NOLOGIN NOSUPERUSER NOCREATEROLE NOBYPASSRLS")
 		}
 		var n int
-		if admin.QueryRow(ctx, `SELECT count(*) FROM pg_policies WHERE schemaname='public' AND roles=ARRAY['aktau_retention_writer']::name[]`).Scan(&n) != nil || n != 10 {
-			t.Fatalf("expected 10 retention policies, got %d", n)
+		if admin.QueryRow(ctx, `SELECT count(*) FROM pg_policies WHERE schemaname='public' AND roles=ARRAY['aktau_retention_writer']::name[]`).Scan(&n) != nil || n != 12 {
+			t.Fatalf("expected 12 retention policies, got %d", n)
+		}
+	})
+	t.Run("price_history is append-only for retention", func(t *testing.T) {
+		for priv, want := range map[string]bool{"SELECT": true, "INSERT": true, "UPDATE": false, "DELETE": false, "TRUNCATE": false} {
+			var got bool
+			if admin.QueryRow(ctx, `SELECT has_table_privilege('aktau_retention_writer','public.price_history',$1)`, priv).Scan(&got) != nil || got != want {
+				t.Fatalf("aktau_retention_writer %s on price_history: want %v, got %v", priv, want, got)
+			}
+			for _, role := range []string{"aktau_ingest_writer", "aktau_api_reader"} {
+				// Roles are cluster-global; skip one that this database's cluster does not have.
+				var has bool
+				if admin.QueryRow(ctx, `SELECT to_regrole($1) IS NOT NULL AND has_table_privilege($1,'public.price_history',$2)`, role, priv).Scan(&has) != nil || has {
+					t.Fatalf("%s must have no %s on price_history", role, priv)
+				}
+			}
 		}
 	})
 	t.Run("delete allowed on retention tables", func(t *testing.T) {
