@@ -292,7 +292,7 @@ git commit -m "feat(ops): add product identity backfill"
 
 - [ ] **Step 4: Проверить реестр**
 
-Expected: строк не меньше 5 023. Запрос ниже возвращает 0, то есть все товары последнего снимка указывают на его UUID.
+Expected: строк не меньше, чем товаров в хранимых снимках (на 2026-11-07 было 5 023). Запрос ниже возвращает 0, то есть все товары последнего снимка указывают на его UUID.
 
 ```sql
 SELECT count(*) FROM raw_products r JOIN product_mappings m ON m."rawProductId"=r.id
@@ -303,7 +303,7 @@ AND i."canonicalProductId" IS DISTINCT FROM m."canonicalProductId";
 
 - [ ] **Step 5: Обновить VPS по разделу «Обновление кода на VPS» в `ops/sync/README.md`**
 
-Репозиторий приватный, поэтому код доставляется через bundle.
+Репозиторий приватный, поэтому код доставляется через bundle. Если между Step 3 и этим шагом прошёл sync, сначала ещё раз выполнить backfill: старый код реестр не обновляет.
 
 - [ ] **Step 6: Строгий dry-run без `-recluster`**
 
