@@ -83,13 +83,13 @@ func TestLocalClonePlans(t *testing.T) {
 		sql  string
 		args []any
 	}{
-		{"default", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{"", "", "{}", "", 24, 0, snapshot.ID}},
-		{"category", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{slug, "", "{}", "", 24, 0, snapshot.ID}},
-		{"search", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{"", "молоко", "{}", "", 24, 0, snapshot.ID}},
-		{"filter", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{slug, "", string(filter), "", 24, 0, snapshot.ID}},
-		{"price_desc", productBaseSQL + priceDesc + ` LIMIT $5 OFFSET $6`, []any{"", "", "{}", "", 24, 0, snapshot.ID}},
-		{"name_asc", productBaseSQL + nameAsc + ` LIMIT $5 OFFSET $6`, []any{"", "", "{}", "", 24, 0, snapshot.ID}},
-		{"detail", productBaseSQL + `ORDER BY id COLLATE "ru-x-icu" ASC LIMIT $5 OFFSET $6`, []any{"", "", "{}", products[0].ID, 1, 0, snapshot.ID}},
+		{"default", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{"", searchPatterns(""), "{}", "", 24, 0, snapshot.ID}},
+		{"category", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{slug, searchPatterns(""), "{}", "", 24, 0, snapshot.ID}},
+		{"search", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{"", searchPatterns("молоко"), "{}", "", 24, 0, snapshot.ID}},
+		{"filter", productBaseSQL + priceAsc + ` LIMIT $5 OFFSET $6`, []any{slug, searchPatterns(""), string(filter), "", 24, 0, snapshot.ID}},
+		{"price_desc", productBaseSQL + priceDesc + ` LIMIT $5 OFFSET $6`, []any{"", searchPatterns(""), "{}", "", 24, 0, snapshot.ID}},
+		{"name_asc", productBaseSQL + nameAsc + ` LIMIT $5 OFFSET $6`, []any{"", searchPatterns(""), "{}", "", 24, 0, snapshot.ID}},
+		{"detail", productBaseSQL + `ORDER BY id COLLATE "ru-x-icu" ASC LIMIT $5 OFFSET $6`, []any{"", searchPatterns(""), "{}", products[0].ID, 1, 0, snapshot.ID}},
 		{"filters", discoverySQL, []any{categoryID, []string{key}, snapshot.ID}},
 		{"offers", offersSQL, []any{[]string{products[0].ID}, snapshot.ID}},
 		{"latest_snapshot", latestSnapshotSQL, nil},

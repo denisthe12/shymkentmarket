@@ -15,7 +15,8 @@ const productBaseSQL = `WITH selected AS (
  MIN(o.price) AS min_price,MAX(o."snapshotAt" AT TIME ZONE 'UTC') AS snapshot_at
  FROM public.canonical_products p JOIN public.categories c ON c.id=p."categoryId"
  JOIN public.offers o ON o."canonicalProductId"=p.id AND o."inStock" AND o.price>0
- WHERE o."snapshotId"=$7 AND ($1::text='' OR c.slug=$1) AND ($2::text='' OR p.name ILIKE '%'||$2||'%')
+ WHERE o."snapshotId"=$7 AND ($1::text='' OR c.slug=$1) AND NOT EXISTS (SELECT 1 FROM unnest($2::text[]) AS search(pattern)
+  WHERE NOT (p.name ILIKE search.pattern ESCAPE E'\\' OR coalesce(p.brand,'') ILIKE search.pattern ESCAPE E'\\'))
  AND NOT EXISTS (SELECT 1 FROM jsonb_each($3::jsonb) f WHERE NOT EXISTS (
   SELECT 1 FROM jsonb_array_elements(f.value) option WHERE option.value =
    CASE WHEN f.key='brand' THEN to_jsonb(p.brand) ELSE p.attributes->f.key END))
@@ -25,6 +26,18 @@ const productBaseSQL = `WITH selected AS (
 const offersSQL = `SELECT o."canonicalProductId",s.code,s.name,o.price,o."oldPrice"
 FROM public.offers o JOIN public.stores s ON s.id=o."storeId"
 WHERE o."snapshotId"=$2 AND o."canonicalProductId"=ANY($1::text[]) AND o."inStock" AND o.price>0 ORDER BY o.price ASC`
+
+// Each token is a literal substring; PostgreSQL uses backslash as the
+// explicit LIKE escape character. An empty array imposes no restriction.
+func searchPatterns(search string) []string {
+	tokens := strings.Fields(search)
+	patterns := make([]string, 0, len(tokens))
+	escape := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	for _, token := range tokens {
+		patterns = append(patterns, "%"+escape.Replace(token)+"%")
+	}
+	return patterns
+}
 
 func sortSQL(sort catalog.Sort) (string, error) {
 	switch sort {
@@ -138,7 +151,7 @@ func (r *Repository) products(ctx context.Context, q catalog.ProductQuery, order
 	if err != nil {
 		return nil, catalog.ErrInvalidQuery
 	}
-	rows, err := r.db.Query(ctx, productBaseSQL+order+` LIMIT $5 OFFSET $6`, q.Category, q.Search, string(raw), id, q.Limit, q.Offset, snapshotID)
+	rows, err := r.db.Query(ctx, productBaseSQL+order+` LIMIT $5 OFFSET $6`, q.Category, searchPatterns(q.Search), string(raw), id, q.Limit, q.Offset, snapshotID)
 	if err != nil {
 		return nil, databaseError(err)
 	}

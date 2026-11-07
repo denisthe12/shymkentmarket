@@ -168,6 +168,42 @@ func TestDeterministicCatalog(t *testing.T) {
 	defer pool.Close()
 	db := &countedDB{pool: pool}
 	repo := postgres.NewRepository(db)
+	t.Run("word search", func(t *testing.T) {
+		if _, err := admin.Exec(ctx, `UPDATE canonical_products SET name='Творог 50%_\ Тест',brand='Dekmy' WHERE id='p1'; UPDATE canonical_products SET brand=NULL WHERE id='p2'`); err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			if _, err := admin.Exec(ctx, `UPDATE canonical_products SET name='Молоко Альфа',brand='A' WHERE id='p1'; UPDATE canonical_products SET brand='B' WHERE id='p2'`); err != nil {
+				t.Error(err)
+			}
+		}()
+		for _, tc := range []struct {
+			search string
+			want   []string
+		}{
+			{"творог dekmy", []string{"p1"}}, {"dekmy творог", []string{"p1"}},
+			{" DEKMY\u2003ТВОРОГ\t", []string{"p1"}}, {"dekmy", []string{"p1"}},
+			{"творог missing", []string{}}, {"молоко", []string{"p2", "p3"}},
+			{" \t", []string{"p4", "p1", "p2", "p3"}},
+			{"%", []string{"p1"}}, {"_", []string{"p1"}}, {`\`, []string{"p1"}},
+			{"50X", []string{}}, {"'; OR true --", []string{}},
+		} {
+			t.Run(tc.search, func(t *testing.T) {
+				got, err := repo.ListProducts(ctx, catalog.ProductQuery{Search: tc.search})
+				if err != nil || !reflect.DeepEqual(ids(got), tc.want) {
+					t.Fatalf("got %v err %v want %v", ids(got), err, tc.want)
+				}
+			})
+		}
+		got, err := repo.ListProducts(ctx, catalog.ProductQuery{Search: "dekmy творог", Category: "milk", Limit: 1, Filters: catalog.DynamicFilter{"volumeMl": raw(`1000`)}})
+		if err != nil || !reflect.DeepEqual(ids(got), []string{"p1"}) {
+			t.Fatalf("filtered search: %v %v", ids(got), err)
+		}
+		got, err = repo.ListProducts(ctx, catalog.ProductQuery{Search: "dekmy творог", Offset: 1, Limit: 1, Sort: catalog.PriceDesc})
+		if err != nil || len(got) != 0 {
+			t.Fatalf("paged search: %v %v", ids(got), err)
+		}
+	})
 	t.Run("approved security state", func(t *testing.T) { assertReaderSecurity(t, ctx, pool) })
 	t.Run("categories and filters", func(t *testing.T) {
 		categories, err := repo.ListCategories(ctx)

@@ -172,10 +172,48 @@ func TestHTTPParity(t *testing.T) {
 			}
 		})
 	}
-	for _, term := range []string{"МОЛОКО", "%", "_", `\`, "Молок%", "Молок_", `\%`, `\_`, `literal%_\not-present`, `' OR true --`} {
+	// Nest retains legacy wildcard/phrase semantics. Build an independent literal
+	// AND-token oracle from its unsearched catalog rather than copying that bug.
+	catalogItems := []any{}
+	for page := 0; page < pageCeiling(total); page++ {
+		items := get(reference, fmt.Sprintf("/api/products?limit=100&offset=%d", page*100), 200).([]any)
+		catalogItems = append(catalogItems, items...)
+		if len(items) < 100 {
+			break
+		}
+	}
+	if len(catalogItems) != total {
+		t.Fatal("reference catalog incomplete")
+	}
+	for _, term := range []string{"МОЛОКО", "%", "_", `\`, "Молок%", "Молок_", `\%`, `\_`, `literal%_\not-present`, `' OR true --`, "Альфа Молоко", "Молоко Альфа", "A молоко", "молоко A", " \t"} {
 		t.Run("search_"+fmt.Sprint(len(term))+"_"+url.QueryEscape(term), func(t *testing.T) {
-			n := scan(url.Values{"search": {term}})
-			t.Logf("exact search parity products=%d", n)
+			want := []any{}
+			for _, item := range catalogItems {
+				product := item.(map[string]any)
+				name, _ := product["name"].(string)
+				brand, _ := product["brand"].(string)
+				matches := true
+				for _, word := range strings.Fields(strings.ToLower(term)) {
+					if !strings.Contains(strings.ToLower(name), word) && !strings.Contains(strings.ToLower(brand), word) {
+						matches = false
+						break
+					}
+				}
+				if matches {
+					want = append(want, item)
+				}
+			}
+			actual := []any{}
+			for page := 0; page < pageCeiling(total); page++ {
+				items := get(goBase, fmt.Sprintf("/api/products?limit=100&offset=%d&search=%s", page*100, url.QueryEscape(term)), 200).([]any)
+				actual = append(actual, items...)
+				if len(items) < 100 {
+					break
+				}
+			}
+			if equal, err := equalHTTPProducts(actual, want); err != nil || !equal {
+				t.Fatalf("literal word search DTO/order mismatch: got %d want %d, err %v", len(actual), len(want), err)
+			}
 		})
 	}
 	for _, query := range []string{"limit=101", "limit=0", "limit=1.5", "offset=-1", "offset=9007199254740992", "sort=invalid", "limit=1&limit=2", "category=milk&category=milk", "search=a&search=b", "sort=price_asc&sort=price_desc", "offset=0&offset=1", "category=milk&unknownFilter=1", "volumeMl=1000", "category=unknown&someDynamicKey=1"} {
