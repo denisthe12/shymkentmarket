@@ -1,11 +1,15 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"adilbaga/backend-go/internal/retention"
 )
 
 // unreachable is a well-formed URL to a closed loopback port: any attempt to
@@ -62,5 +66,17 @@ func TestProductionApplyRequiresConfirm(t *testing.T) {
 	_, err := runWith(t, "-keep", "14", "-apply")
 	if err == nil || err.Error() != "production retention apply not confirmed" {
 		t.Fatal("production apply must require confirmation before connecting")
+	}
+}
+
+func TestPhaseOfHistoryFailure(t *testing.T) {
+	wrapped := fmt.Errorf("apply: %w", retention.ErrHistory)
+	for _, from := range []string{"deletion", "planning"} {
+		if got := phaseOf(from, wrapped); got != "history" {
+			t.Fatalf("phase %q -> %q, want history", from, got)
+		}
+		if got := phaseOf(from, errors.New("retention deletion failed")); got != from {
+			t.Fatalf("other error changed phase %q -> %q", from, got)
+		}
 	}
 }

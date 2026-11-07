@@ -102,6 +102,7 @@ func run() (resultErr error) {
 		report, err = pruner.Plan(ctx)
 	}
 	if err != nil {
+		phase = phaseOf(phase, err)
 		return err
 	}
 	// Counts only: no source names, URLs, product names or snapshot IDs.
@@ -117,6 +118,16 @@ func run() (resultErr error) {
 	}
 	return nil
 }
+
+// phaseOf reports a failed history step as "history", not as the surrounding
+// deletion or planning phase, so error_code is retention_history_failed.
+func phaseOf(phase string, err error) string {
+	if errors.Is(err, retention.ErrHistory) {
+		return "history"
+	}
+	return phase
+}
+
 func main() {
 	if err := run(); err != nil {
 		os.Exit(1)

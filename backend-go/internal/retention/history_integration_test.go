@@ -4,6 +4,7 @@ package retention
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -17,6 +18,10 @@ type hist struct {
 	Price      int
 	CapturedAt time.Time
 	Snapshot   string
+	SourceID   string
+	RawName    string
+	OldPrice   int // -1 when NULL
+	Review     string
 }
 
 func day(m time.Month, d, h, min int) time.Time {
@@ -73,7 +78,7 @@ func (e *env) addOffer(t *testing.T, snapshotID, store, canon, key string, price
 
 func (e *env) historyRows(t *testing.T) []hist {
 	t.Helper()
-	rs, err := e.admin.Query(e.ctx, `SELECT to_char(month,'YYYY-MM-DD'),"storeId","canonicalProductId",price,"capturedAt","snapshotId"
+	rs, err := e.admin.Query(e.ctx, `SELECT to_char(month,'YYYY-MM-DD'),"storeId","canonicalProductId",price,"capturedAt","snapshotId","sourceProductId","rawName",COALESCE("oldPrice",-1),"reviewStatus"::text
  FROM public.price_history WHERE "canonicalProductId" LIKE $1 ORDER BY month,"storeId","canonicalProductId"`, e.prefix+"%")
 	if err != nil {
 		t.Fatalf("history query failed: %v", err)
@@ -82,7 +87,7 @@ func (e *env) historyRows(t *testing.T) []hist {
 	var out []hist
 	for rs.Next() {
 		var h hist
-		if err := rs.Scan(&h.Month, &h.Store, &h.Canonical, &h.Price, &h.CapturedAt, &h.Snapshot); err != nil {
+		if err := rs.Scan(&h.Month, &h.Store, &h.Canonical, &h.Price, &h.CapturedAt, &h.Snapshot, &h.SourceID, &h.RawName, &h.OldPrice, &h.Review); err != nil {
 			t.Fatalf("history scan failed: %v", err)
 		}
 		out = append(out, h)
@@ -261,6 +266,34 @@ func TestLocalRetentionHistorySurvivesPrune(t *testing.T) {
 	wantRow(t, got[0], "2026-11-01", s, 1, day(11, 1, 10, 0), ids[0])
 }
 
+func TestLocalRetentionHistoryStoresMappingColumns(t *testing.T) {
+	e := setup(t, "ret4-hcols-")
+	ids := e.seed(t, published(1))
+	s := e.stores(t)[0]
+	e.capture(t, ids[0], s, day(11, 1, 10, 0), "succeeded")
+	canon := e.canonical(t, "colscanon")
+	raw := ids[0] + "-xcols"
+	e.exec(t, `INSERT INTO public.raw_products(id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES($1,$2,'src-777','Raw Name Alpha',1,$3)`, raw, s, ids[0])
+	e.exec(t, `INSERT INTO public.product_mappings(id,"rawProductId","canonicalProductId","matchMethod","reviewStatus") VALUES($1,$2,$3,'manual','pending')`, raw+"-m", raw, canon)
+	e.exec(t, `INSERT INTO public.offers(id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","snapshotId") VALUES($1,$2,$3,$4,1234,5678,$5)`, raw+"-o", canon, raw, s, ids[0])
+	if _, err := e.pruner(t, 4).Apply(e.ctx); err != nil {
+		t.Fatalf("apply failed: %v", err)
+	}
+	var got *hist
+	for _, h := range e.historyRows(t) {
+		if h.Canonical == canon {
+			h := h
+			got = &h
+		}
+	}
+	if got == nil {
+		t.Fatal("history row missing")
+	}
+	if got.SourceID != "src-777" || got.RawName != "Raw Name Alpha" || got.Price != 1234 || got.OldPrice != 5678 || got.Review != "pending" {
+		t.Fatalf("stored row %+v", *got)
+	}
+}
+
 func TestLocalRetentionHistoryFailureStopsDeletes(t *testing.T) {
 	e := setup(t, "ret4-hstop-")
 	ids := e.seed(t, published(6))
@@ -272,6 +305,9 @@ func TestLocalRetentionHistoryFailureStopsDeletes(t *testing.T) {
 	rep, err := e.pruner(t, 4).Apply(e.ctx)
 	if err == nil {
 		t.Fatal("expected history failure")
+	}
+	if !errors.Is(err, ErrHistory) {
+		t.Fatalf("error is not the history error: %v", err)
 	}
 	if strings.Contains(err.Error(), "permission") || strings.Contains(err.Error(), "price_history") {
 		t.Fatalf("error leaks driver text: %v", err)

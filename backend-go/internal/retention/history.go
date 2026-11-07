@@ -5,6 +5,10 @@ import (
 	"errors"
 )
 
+// ErrHistory marks a failure of the monthly price history step (archive or its
+// dry-run count). Callers use errors.Is to tell it from a deletion failure.
+var ErrHistory = errors.New("retention history failed")
+
 // historyRowsSQL selects the price_history rows that are still missing: for every
 // store and month (Asia/Aqtau) the offers of that store's first successful capture.
 // A (month, store) that already has rows is never selected again, so a month is
@@ -43,7 +47,7 @@ const historyCountSQL = `SELECT count(*) FROM (` + historyRowsSQL + `) missing`
 func (p *Pruner) archive(ctx context.Context) (int64, error) {
 	tag, err := p.conn.Exec(ctx, archiveSQL)
 	if err != nil {
-		return 0, errors.New("retention history failed")
+		return 0, ErrHistory
 	}
 	return tag.RowsAffected(), nil
 }
@@ -52,7 +56,7 @@ func (p *Pruner) archive(ctx context.Context) (int64, error) {
 func (p *Pruner) pendingHistory(ctx context.Context) (int64, error) {
 	var n int64
 	if p.conn.QueryRow(ctx, historyCountSQL).Scan(&n) != nil {
-		return 0, errors.New("retention history failed")
+		return 0, ErrHistory
 	}
 	return n, nil
 }
