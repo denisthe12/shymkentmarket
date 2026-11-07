@@ -2534,7 +2534,7 @@
     "c_1f5610f280660c82": {"name":"Горошек зеленый Хозяин барин 425 мл","brand":"Хозяин барин","category":"canned","attributes":{"volumeMl":425},"method":"deterministic","confidence":1,"review":"approved"},
     "c_1f56a0addaaf4ab0": {"name":"Леденцы Люмик на светящихся палочках 7 шт 70 г","brand":"Люмик","category":"sweets","attributes":{"weightGrams":70,"packageCount":7},"method":"deterministic","confidence":1,"review":"approved"},
     "c_1f5763c66bfa4126": {"name":"Макароны Мукатай Пружинки №1 2 кг","brand":"Мукатай","category":"groats","attributes":{"weightGrams":2000},"method":"deterministic","confidence":1,"review":"approved"},
-    "c_1f576b2844c493c7": {"name":"Сочни с творогом","brand":null,"category":"bread","attributes":{},"method":"deterministic","confidence":1,"review":"approved"},
+    "c_1f576b2844c493c7": {"name":"Сочни с творогом","brand":null,"category":"other","attributes":{},"method":"deterministic","confidence":1,"review":"approved"},
     "c_1f58149e53232671": {"name":"Корм Felix влажный утки мясные ломтики 85 г","brand":"Felix","category":"other","attributes":{"weightGrams":85},"method":"deterministic","confidence":1,"review":"approved"},
     "c_1f58798e3ab1b5c4": {"name":"Микрофибра универсальная Горница 1шт","brand":"Горница","category":"household","attributes":{"packageCount":1},"method":"deterministic","confidence":1,"review":"approved"},
     "c_1f5b162f43e2cc66": {"name":"Йогурт FRUTTIS клубника 180г","brand":"FRUTTIS","category":"dairy","attributes":{"weightGrams":180},"method":"deterministic","confidence":1,"review":"approved"},

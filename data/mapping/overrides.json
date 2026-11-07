@@ -65,6 +65,11 @@
    "key": "c_fabaf73aea4d3538",
    "to": "salt",
    "reason": "salt moved out of sugar basket (B1)"
+  },
+  {
+   "key": "c_1f576b2844c493c7",
+   "to": "other",
+   "reason": "hidden: no weight at either store, 199 vs 1009 cannot be verified"
   }
  ],
  "split": [
