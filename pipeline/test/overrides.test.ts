@@ -93,6 +93,16 @@ describe('applyOverrides', () => {
     expect(readOverrides(p)).toEqual(o)
     expect(readFileSync(p, 'utf8')).toBe(JSON.stringify(o, null, 1))
   })
+  it('rejects a misspelled key on a split rule', () => {
+    expect(() => ov({ split: [{ ...rule, applied_at: '2026-10-06' }] })).toThrow()
+  })
+  it('rejects an unknown key on a move or approve rule', () => {
+    expect(() => ov({ moveCategory: [{ key: 'k', to: 'salt', reason: 'salt', note: 'x' }] })).toThrow()
+    expect(() => ov({ approve: [{ key: 'k', reason: 'okay', note: 'x' }] })).toThrow()
+  })
+  it('rejects an unknown top-level key', () => {
+    expect(() => ov({ comment: 'x' })).toThrow()
+  })
   it('overrides file requires a reason', () => {
     const p = join(mkdtempSync(join(tmpdir(), 'ov-')), 'o.json')
     writeFileSync(p, JSON.stringify({ version: 1, moveCategory: [{ key: 'k', to: 'salt' }] }))

@@ -5,11 +5,11 @@ import { canonicalKey, DictionarySchema, type Dictionary, type DictionaryCanonic
 
 const Slug = z.string().refine(isCategorySlug, 'unknown category').transform((s) => s as CategorySlug)
 const reason = z.string().min(3)
-export const OverridesSchema = z.object({
+export const OverridesSchema = z.strictObject({
   version: z.literal(1),
-  moveCategory: z.array(z.object({ key: z.string(), to: Slug, reason })).default([]),
-  split: z.array(z.object({ key: z.string(), ids: z.array(z.string()).min(1).optional(), reason, appliedAt: z.iso.date().optional() })).default([]),
-  approve: z.array(z.object({ key: z.string(), reason })).default([]),
+  moveCategory: z.array(z.strictObject({ key: z.string(), to: Slug, reason })).default([]),
+  split: z.array(z.strictObject({ key: z.string(), ids: z.array(z.string()).min(1).optional(), reason, appliedAt: z.iso.date().optional() })).default([]),
+  approve: z.array(z.strictObject({ key: z.string(), reason })).default([]),
 })
 export type Overrides = z.infer<typeof OverridesSchema>
 
@@ -28,6 +28,7 @@ const membersOf = (d: Dictionary, key: string) => Object.entries(d.products).fil
 /**
  * Split-правило одноразовое: ключ карточки считается по первому участнику, поэтому по словарю нельзя понять,
  * применено ли правило, если к карточке позже присоединился другой магазин. Применённое правило хранит appliedAt и пропускается.
+ * После полной пересборки словаря (agent:match) разделения пропадают: чтобы применить их заново, снимите appliedAt с правил.
  */
 export function applyOverrides(dict: Dictionary, overrides: Overrides): Dictionary {
   const d: Dictionary = DictionarySchema.parse(structuredClone(dict))
