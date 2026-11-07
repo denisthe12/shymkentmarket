@@ -66,11 +66,14 @@ func (e *env) cleanup() {
 	_, _ = e.admin.Exec(bg, `DROP TRIGGER IF EXISTS retention_test_fail ON public.source_runs`)
 	_, _ = e.admin.Exec(bg, `DROP FUNCTION IF EXISTS public.retention_test_fail()`)
 	for _, q := range []string{
+		// price_history has FK RESTRICT to canonical_products and stores, and Apply writes it.
+		`DELETE FROM public.price_history WHERE "canonicalProductId" LIKE $1`,
 		`DELETE FROM public.offers WHERE "snapshotId" LIKE $1`,
 		`DELETE FROM public.product_mappings WHERE "rawProductId" LIKE $1`,
 		`DELETE FROM public.raw_products WHERE "snapshotId" LIKE $1`,
 		`DELETE FROM public.source_runs WHERE "snapshotId" LIKE $1`,
 		`DELETE FROM public.snapshots WHERE id LIKE $1`,
+		`DELETE FROM public.stores WHERE id LIKE $1`,
 		`DELETE FROM public.canonical_products WHERE id LIKE $1`,
 		`DELETE FROM public.categories WHERE id LIKE $1`,
 	} {
@@ -199,12 +202,16 @@ func TestLocalRetentionDeletesOldest(t *testing.T) {
 func TestLocalRetentionPlanIsReadOnly(t *testing.T) {
 	e := setup(t, "ret4-plan-")
 	ids := e.seed(t, published(6))
+	e.capture(t, ids[0], e.stores(t)[0], time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC), "succeeded")
 	rep, err := e.pruner(t, 4).Plan(e.ctx)
 	if err != nil {
 		t.Fatalf("plan failed: %v", err)
 	}
-	if rep.Deleted != 2 || rep.Kept != 4 {
+	if rep.Deleted != 2 || rep.Kept != 4 || rep.History == 0 {
 		t.Fatalf("report %+v", rep)
+	}
+	if got := e.historyRows(t); len(got) != 0 {
+		t.Fatalf("plan wrote history: %+v", got)
 	}
 	for _, id := range ids {
 		if got := e.rows(t, id); got != full {

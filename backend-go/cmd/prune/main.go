@@ -28,7 +28,7 @@ func run() (resultErr error) {
 			class = "failure"
 			code = "retention_" + phase + "_failed"
 		}
-		args := []any{"mode", mode, "phase", phase, "outcome_class", class, "error_code", code, "duration_ms", time.Since(start).Milliseconds(), "kept_count", report.Kept, "deleted_count", report.Deleted, "offer_count", report.Offers, "mapping_count", report.Mappings, "raw_count", report.RawProducts, "source_run_count", report.SourceRuns}
+		args := []any{"mode", mode, "phase", phase, "outcome_class", class, "error_code", code, "duration_ms", time.Since(start).Milliseconds(), "kept_count", report.Kept, "deleted_count", report.Deleted, "offer_count", report.Offers, "mapping_count", report.Mappings, "raw_count", report.RawProducts, "source_run_count", report.SourceRuns, "history_count", report.History}
 		if resultErr != nil {
 			logger.Error("retention_complete", args...)
 		} else {
