@@ -21,7 +21,7 @@ Files: backend-go/internal/postgres/products.go (implementation); search_test.go
 - Full node scripts/ci/run-db-integration.mjs initially FAIL: EXPLAIN fixtures passed old string $2 after SQL array change. Fixed only those seven test arguments using searchPatterns; no assertions removed. Final run recorded in publication addendum.
 - gofmt changed Go files; git diff --check exit0.
 
-Node24.10.0, Go1.27.3, existing disposable loopback PG17 harness; no production DSN/env used. Logs retained off-tree /tmp/search-pg-baseline.log, search-pg-final.log, search-pg-regressions.log, search-pg-regressions-final.log, search-go-checks.log, search-security.log. Missing external/clone-specific integration tests outside existing harness are NOT_RUN; no full production/staging dataset qualification claimed. No new real-HTTP end-to-end test: SQL repository integration and existing HTTP regression suite used.
+Node24.10.0, Go1.27.3, existing disposable loopback PG17 harness; no production DSN/env used. Logs retained off-tree /tmp/search-pg-baseline.log, search-pg-final.log, search-pg-regressions.log, search-pg-regressions-final.log, search-go-checks.log, search-security.log. Missing external/clone-specific integration tests outside existing harness are NOT_RUN; no full production/staging dataset qualification claimed. Real HTTP search assertions were subsequently added to the staging parity suite; see follow-up below.
 
 ## Risks and release boundary
 
@@ -32,3 +32,11 @@ ILIKE substring matching remains scan-based; per-token predicate work grows with
 PR: https://github.com/kiratonine/AdilBaga/pull/103 (ordinary review PR, not merged). Implementation commit: d5ce0b0528aa2bb382c28347ecaefdcb2f7fb1a9. A report-only follow-up records these identifiers; exact final HEAD is supplied in the delivery.
 
 Final full PG17 harness exit0:103PASS markers (parent/subtests),0SKIP; includes deterministic catalog, pool/security/EXPLAIN/observability, ingestion batching, snapshot security, retention and identity regressions. Earlier failed run retained; affected EXPLAIN cases now all PASS. Hosted exact-head CI is PENDING at this report commit; authoritative final results are available in PR checks and final delivery. Never treat this snapshot as hosted CI PASS.
+
+## Hosted parity failure and correction
+
+Run42403138651 on63e1aa9 completed7SUCCESS/2FAIL (Ephemeral Staging and dependent CI Gate). Exact failure was HTTPParity search `%`: legacy Nest wildcard output was incorrectly treated as the required oracle for newly specified literal Go search. Full failed log: /tmp/search-ci-failure.log. No runtime fix was reverted and no case skipped.
+
+backend-go/tests/integration/http_parity_test.go now derives expected search results independently from the unsearched reference catalog using literal Unicode-whitespace AND tokens across name/brand. Every prior wildcard/injection case remains checked; added reversed name words/brand words/blank input. Exact complete DTO array and order remain compared, including pagination; all non-search Nest parity checks unchanged. This is an intentional search-semantic divergence from the unmodified reference implementation, not a wire-contract change. Final changed scope is six files including this HTTP test.
+
+Local node scripts/ci/run-ephemeral-staging.mjs exit0: real HTTP search cases PASS, Voice/security parity PASS, frontend E2E14passed/6existing skipped, Nest unit18passed/4existing skipped, Docker nonroot/readonly/DB outage+recovery checks PASS. Skips are existing non-search environment/fixture gates, not suppressed search regressions. go vet -tags=integration ./... exit0 after test update. Full log /tmp/search-staging-final.log. New exact-head hosted qualification pending on this follow-up; previous failed run is preserved, not represented as PASS.
