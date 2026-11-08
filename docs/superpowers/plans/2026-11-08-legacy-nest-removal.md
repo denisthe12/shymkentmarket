@@ -230,7 +230,7 @@
 - Modify (вне репозитория): `C:\Development\AdilBaga-local-ci\run-local.mjs:4,14,28`, `C:\Development\AdilBaga-local-ci\inside.sh` (`ALL`)
 
 **Interfaces:**
-- Consumes: SHA активного релиза `ACTIVE` — пользователь присылает вывод `sudo grep -E '^[A-Z_]*SHA' /etc/adilbaga/release.env` с VPS; blob `SEED` = `git rev-parse ACTIVE:backend/prisma/seed.ts` (на 1cbd535 — `5a9debc5abe9ba91367e935dfe22662f849847e7`).
+- Consumes: SHA активного релиза `ACTIVE` — пользователь присылает вывод `sudo grep -E '^API_IMAGE=' /etc/adilbaga/release.env` с VPS (формат проверен 2026-11-08: `API_IMAGE=adilbaga-api:<40-символьный SHA>`, других SHA-строк в файле нет); `ACTIVE` — тег после `:`, должен совпадать с `^[a-f0-9]{40}$`; blob `SEED` = `git rev-parse ACTIVE:backend/prisma/seed.ts` (на 1cbd535 — `5a9debc5abe9ba91367e935dfe22662f849847e7`).
 
 - [ ] **Step 0: защищённые отличия до правок**
   Run: `git diff --name-only ACTIVE origin/main -- backend/prisma contracts deploy/compose.production.yml`
