@@ -85,10 +85,15 @@ func referenceBase(t *testing.T) string
 5. Ручные parity-режимы на клоне продовых данных (запись к ним неприменима — данные не фикстурные): у `smoke` удаляется параметр `parity` и ветка сравнения с эталоном, Go-проверки остаются. Далее:
    - `TestLocalCloneParity` удаляется — без эталона он совпадает с `TestProductionClone`;
    - `TestLiveReadOnlyParity` переименовывается в `TestLiveReadOnlySmoke`, требование `REFERENCE_API_BASE_URL` убирается, `LIVE_READONLY_CONFIRM=1` остаётся;
-   - `TestOperatorCloneParity` переименовывается в `TestOperatorCloneRuntime`, требование `REFERENCE_API_BASE_URL` убирается, проверки прав БД остаются.
+   - `TestOperatorCloneParity` переименовывается в `TestOperatorCloneRuntime`, требование `REFERENCE_API_BASE_URL` убирается, проверки прав БД остаются;
+   - `TestLiveVoiceParity` (voice на живых данных против эталона) удаляется — живого эталона больше нет, а Go-only live voice покрывают `voice_live_test.go`.
    Эти имена вызываются только из старых отчётов в `docs/`, скриптов с ними нет.
-6. Документация: `README.md` (бейдж NestJS, стек, раздел «База данных» — локальная БД через `backend-go/scripts/local-ingest-db.sh`, миграции через `pnpm exec prisma migrate deploy` в `backend/`), `backend-go/README.md` (reference = запись, процедура обновления), `contracts/README.md` (live-профиль против Go), `frontend/README.md`, `scripts/ci/README.md`, `docs/production/STAGING_PLAN.md`. Комментарии в `frontend/src/api/httpAdapter.ts` и его тесте: «NestJS» → «API v1» (формат ошибок тот же, его отдаёт Go). Комментарий в `pipeline/src/agent/gemini.ts` о `backend/src/voice` поправить на Go-реализацию. Отчёты в `docs/**/reports` и старые планы не трогаются.
+6. Документация: `README.md` (бейдж NestJS, стек, раздел «База данных» — локальная БД через `backend-go/scripts/local-ingest-db.sh`, миграции через `pnpm exec prisma migrate deploy` в `backend/`), `backend-go/README.md` (reference = запись, процедура обновления), `frontend/README.md`, `scripts/ci/README.md`, `docs/production/STAGING_PLAN.md`. Комментарии в `frontend/src/api/httpAdapter.ts` и его тесте: «NestJS» → «API v1» (формат ошибок тот же, его отдаёт Go). Комментарий в `pipeline/src/agent/gemini.ts` о `backend/src/voice` поправить на Go-реализацию. Отчёты в `docs/**/reports` и старые планы не трогаются.
 7. `.github/dependabot.yml`: запись для `/backend` остаётся (там Prisma).
+
+### Защищённые пути деплоя
+
+`auto-transport.mjs` сравнивает активный релиз (сейчас e50de25) и кандидат по `backend/prisma`, `contracts`, `deploy/compose.production.yml` и пропускает только перечисленные исключения. Между e50de25 и `main` уже есть непокрытые изменения (две миграции 2026-11-07 и `schema.prisma`), поэтому следующему автоматическому rollout'у в любом случае нужно новое исключение для e50de25. Шаг 1 добавляет к этому набору ровно одно: удаление `backend/prisma/seed.ts` (blob → null). `contracts/` в шаге 1 не меняется вовсе, включая устаревшие формулировки про NestJS в `contracts/README.md` и `openapi.yaml` — их правка откладывается до релиза, который и так будет менять контракт. Список путей для будущего исключения указывается в описании PR.
 
 ### Не меняется в шаге 1
 
@@ -108,7 +113,7 @@ func referenceBase(t *testing.T) string
 
 - Перед каждым push — локальный CI (`node C:/Development/AdilBaga-local-ci/run-local.mjs`), все группы.
 - Шаг 1, push 1: hosted CI 9/9, в Ephemeral Staging оба прогона parity (живой Nest и replay) PASS.
-- Шаг 1, push 2: hosted CI 9/9; в логе Staging нет запуска Nest; parity-тесты не `SKIP`, а `PASS` (проверка по `-v` выводу); `git grep -n -i nestjs -- ':!docs'` пуст (в том числе README, комментарии и имена тестов во фронтенде).
+- Шаг 1, push 2: hosted CI 9/9; в логе Staging нет запуска Nest; parity-тесты не `SKIP`, а `PASS` (проверка по `-v` выводу); `git grep -n -i nestjs -- ':!docs' ':!contracts'` пуст (в том числе README, комментарии и имена тестов во фронтенде).
 - Негативная проверка replay (локально, не в CI): ручная правка одного ответа в записи даёт падение соответствующего parity-теста; удалённый обмен даёт «missing», лишний — «stale».
 - Шаг 2: hosted CI 9/9 с джобой `DB Schema`; `node --test scripts/deploy/auto-gate.test.mjs` PASS; `node scripts/deploy/verify-auto-deploy.mjs` PASS.
 
