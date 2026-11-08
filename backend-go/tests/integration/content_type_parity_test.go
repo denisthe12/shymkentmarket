@@ -14,10 +14,10 @@ import (
 )
 
 func TestLocalContentTypeParity(t *testing.T) {
-	bases := []string{os.Getenv("GO_API_BASE_URL"), os.Getenv("REFERENCE_API_BASE_URL")}
-	if bases[0] == "" || bases[1] == "" || os.Getenv("HTTP_PARITY_CONFIRM") != "1" {
+	if os.Getenv("GO_API_BASE_URL") == "" || os.Getenv("HTTP_PARITY_CONFIRM") != "1" {
 		t.Skip("explicit LOCAL HTTP parity required")
 	}
+	bases := []string{os.Getenv("GO_API_BASE_URL"), referenceBase(t)}
 	for _, base := range bases {
 		u, err := url.Parse(base)
 		if err != nil || u.Scheme != "http" || !localHost(u.Hostname()) || u.User != nil || u.Path != "" || u.RawQuery != "" {

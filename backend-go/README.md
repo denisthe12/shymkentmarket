@@ -1,10 +1,31 @@
 # Go backend — local-only production candidate
 
-This is a separate Go service beside `backend/`, with frozen v1 catalog,
-dashboard and Voice business parity implemented. NestJS remains the reference
-until a separately reviewed cutover. Backend is currently local-only: Railway is
-retired; the future VPS and production domains are not provisioned. Health routes
+This is the production API (`backend/` now holds only the Prisma schema and
+migrations). Frozen v1 catalog, dashboard and Voice wire behavior is pinned by
+recorded reference responses, see "Recorded reference" below. Health routes
 are operational and intentionally outside the frozen OpenAPI.
+
+## Recorded reference (frozen v1 wire contract)
+
+The five Ephemeral Staging parity tests (`TestHTTPParity`,
+`TestLocalSecurityQueryParity`, `TestLocalContentTypeParity`,
+`TestLocalCategoryVisibilityParity`, `TestLocalVoiceParity`) compare Go with a
+reference API. Without `REFERENCE_API_BASE_URL` the reference is a replay of
+`tests/integration/testdata/reference/<TestName>.json` (`internal/testref`).
+Replay is strict: a request missing from the file, or a recorded request the test
+no longer sends, fails the test. The files were recorded from the legacy NestJS
+reference before it was removed and are the approved v1 snapshot.
+
+When an API change is intended, re-record from Go on the same disposable stack
+(local only; refused when `CI` is set):
+
+```bash
+REFERENCE_RECORD=1 node scripts/ci/run-ephemeral-staging.mjs
+```
+
+Review the diff of `testdata/reference` in the PR as a wire-contract change; if
+the v1 format changes, update `contracts/openapi.yaml` and `contracts/examples`
+too. Voice `sessionId` values are random and change on every recording.
 
 Part 04 added internal read-only catalog repositories and received external PASS
 after reviewed production security apply. The original clone failure and its
@@ -62,8 +83,7 @@ cd backend-go
 ```
 
 Configuration is read from the process environment, not automatically from .env.
-Do not load the NestJS production env into this foundation. Use only disposable
-local PostgreSQL in Part 03; do not connect to Supabase.
+Use only disposable local PostgreSQL for local runs; do not connect to Supabase.
 
 | Variable | Contract |
 | --- | --- |
@@ -116,10 +136,8 @@ rtk proxy go test -tags=integration ./...
 
 `SMOKE_DATABASE_URL` explicitly selects a loopback production clone for read-only
 smoke/local EXPLAIN ANALYZE; no production dump becomes a committed fixture.
-`REFERENCE_API_BASE_URL` can explicitly select a loopback NestJS pointed at the
-same local clone for complete paginated local HTTP parity. Future live smoke
-requires separate `LIVE_DATABASE_URL`, `LIVE_READONLY_CONFIRM=1` and reference
-GET API. **Phase A is live audit-only: do not run live repositories with the owner
+Live read-only smoke (`TestLiveReadOnlySmoke`) requires separate
+`LIVE_DATABASE_URL` and `LIVE_READONLY_CONFIRM=1`. **Phase A is live audit-only: do not run live repositories with the owner
 credential as least-privilege evidence. Production apply and live parity await
 separate Phase B approval.** No live DDL/grants/role creation/write tests allowed.
 

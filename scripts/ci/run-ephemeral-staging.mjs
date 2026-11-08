@@ -3,15 +3,21 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { root, temporary, env, httpEnv, run, wait, prepareBrowser } from './common.mjs';
 import { postgres } from './postgres.mjs';
+import { parityTests, assertParityPassed } from './parity-output.mjs';
+
+// REFERENCE_RECORD=1 rewrites backend-go/tests/integration/testdata/reference from the
+// local reference API and stops after the parity run. Never in hosted CI.
+const record = process.env.REFERENCE_RECORD === '1';
+// Windows needs the .exe suffix to spawn the binary (local runs only).
+const goAPI = join(temporary, process.platform === 'win32' ? 'api.exe' : 'api');
+if (record && process.env.CI) throw new Error('reference recording is local only');
 
 await postgres(async ({ name, url, sql, login, load, docker }) => {
   login('aktau_api_runtime', 'aktau_api_reader'); load('part04_fixture');
   sql('part04_fixture', readFileSync(join(root, 'scripts/ci/fixtures/voice-parity-overlay.sql')));
   console.log('CI-only Voice fixture overlay invariants: PASS');
-  run('Go API build', 'go', ['build', '-o', join(temporary, 'api'), './cmd/api'], { cwd: join(root, 'backend-go') });
+  run('Go API build', 'go', ['build', '-o', goAPI, './cmd/api'], { cwd: join(root, 'backend-go') });
   for (const directory of ['contracts', 'frontend']) run(`${directory} frozen install`, 'pnpm', ['install', '--frozen-lockfile'], { cwd: join(root, directory) });
-  run('Nest generate', 'pnpm', ['db:generate'], { cwd: join(root, 'backend') });
-  run('Nest build', 'pnpm', ['build'], { cwd: join(root, 'backend') });
   const processes = [];
   const start = (command, args, cwd, extra) => {
     const child = spawn(command, args, { cwd, env: { ...env, ...extra }, stdio: 'ignore' });
@@ -24,23 +30,31 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
   let apiContainer;
   let network;
   try {
-    start(join(temporary, 'api'), [], root, { APP_ENV: 'test', PORT: '18080',
+    start(goAPI, [], root, { APP_ENV: 'test', PORT: '18080',
       DATABASE_URL: url('part04_fixture', 'aktau_api_runtime'), CORS_ALLOWED_ORIGINS: 'http://localhost:3100,http://127.0.0.1:3100',
       RATE_LIMIT_RPS: '1000', RATE_LIMIT_BURST: '1000',
       VOICE_RATE_LIMIT_RPS: '1000', VOICE_RATE_LIMIT_BURST: '1000', LOG_LEVEL: 'error' });
     await wait('Go live', () => available('http://127.0.0.1:18080', '/health/live', 200));
     for (const path of ['/health/ready', '/api/categories', '/api/products', '/api/dashboard']) await wait(`Go ${path}`, () => available('http://127.0.0.1:18080', path, 200));
     if (!await available('http://127.0.0.1:18080', '/metrics', 404)) throw new Error('metrics must not be public');
-    start('node', ['dist/src/main.js'], join(root, 'backend'), { PORT: '13000', DATA_SOURCE: 'postgres',
-      DATABASE_URL: url('part04_fixture', 'part04_api_login'), DIRECT_URL: url('part04_fixture', 'part04_api_login'),
-      GEMINI_API_KEY: '', GEMINI_API_KEY2: '', GEMINI_API_KEY3: '', UPSTASH_REDIS_REST_URL: '', UPSTASH_REDIS_REST_TOKEN: '' });
-    await wait('Nest reference', () => available('http://127.0.0.1:13000', '/api/categories', 200));
-    console.log(run('small fixture GET/security parity', 'go', ['test', '-count=1', '-tags=integration', './tests/integration',
-      '-run', '^(TestHTTPParity|TestLocalSecurityQueryParity|TestLocalContentTypeParity|TestLocalCategoryVisibilityParity|TestLocalVoiceParity)$', '-v'], {
-      cwd: join(root, 'backend-go'), env: { ...env, HTTP_PARITY_CONFIRM: '1', TEST_DATABASE_URL: url('part04_fixture'), SMOKE_DATABASE_URL: url('part04_fixture', 'part04_api_login'), GO_API_BASE_URL: 'http://127.0.0.1:18080', REFERENCE_API_BASE_URL: 'http://127.0.0.1:13000' },
-    }));
-    for (const origin of ['http://127.0.0.1:18080', 'http://127.0.0.1:13000']) console.log(run('frozen GET contracts (local only)', 'pnpm', ['test:live'], {
-      cwd: join(root, 'contracts'), env: { ...env, CONTRACT_API_BASE_URL: origin },
+    // Small fixture GET/security parity against the recorded frozen v1 reference
+    // (backend-go/tests/integration/testdata/reference).
+    const parity = (label, extra) => {
+      const output = run(label, 'go', ['test', '-count=1', '-tags=integration', './tests/integration',
+        '-run', `^(${parityTests.join('|')})$`, '-v'], {
+        cwd: join(root, 'backend-go'), env: { ...env, HTTP_PARITY_CONFIRM: '1', TEST_DATABASE_URL: url('part04_fixture'), SMOKE_DATABASE_URL: url('part04_fixture', 'part04_api_login'), GO_API_BASE_URL: 'http://127.0.0.1:18080', ...extra },
+      });
+      console.log(output);
+      assertParityPassed(output); // go test exits 0 on SKIP; every parity test must actually pass
+    };
+    if (record) {
+      // An intended wire change: re-record from Go and review the diff as a contract change.
+      parity('record reference', { REFERENCE_API_BASE_URL: 'http://127.0.0.1:18080', REFERENCE_RECORD: '1' });
+      return;
+    }
+    parity('recorded reference parity', {});
+    console.log(run('frozen GET contracts (local only)', 'pnpm', ['test:live'], {
+      cwd: join(root, 'contracts'), env: { ...env, CONTRACT_API_BASE_URL: 'http://127.0.0.1:18080' },
     }));
     prepareBrowser();
     console.log(run('Next HTTP E2E against Go', 'pnpm', ['test:e2e'], { cwd: join(root, 'frontend'), env: { ...env, ...httpEnv, E2E_API: 'http' } }));

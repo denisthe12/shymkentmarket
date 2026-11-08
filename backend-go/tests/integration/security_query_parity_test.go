@@ -15,10 +15,10 @@ import (
 // Security probes are GET-only, synthetic, and restricted to explicit loopback
 // servers using the same disposable dataset. No production profile is inferred.
 func TestLocalSecurityQueryParity(t *testing.T) {
-	bases := []string{os.Getenv("REFERENCE_API_BASE_URL"), os.Getenv("GO_API_BASE_URL")}
-	if bases[0] == "" || bases[1] == "" || os.Getenv("HTTP_PARITY_CONFIRM") != "1" {
+	if os.Getenv("GO_API_BASE_URL") == "" || os.Getenv("HTTP_PARITY_CONFIRM") != "1" {
 		t.Skip("explicit LOCAL HTTP security parity required")
 	}
+	bases := []string{referenceBase(t), os.Getenv("GO_API_BASE_URL")}
 	for _, base := range bases {
 		u, err := url.Parse(base)
 		if err != nil || u.Scheme != "http" || !localHost(u.Hostname()) || u.User != nil || u.Path != "" || u.RawQuery != "" {

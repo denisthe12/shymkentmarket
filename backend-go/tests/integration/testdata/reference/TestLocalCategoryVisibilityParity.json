@@ -1,0 +1,20 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/categories",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"milk\",\"slug\":\"milk\",\"name\":\"Молоко\"},{\"id\":\"oil\",\"slug\":\"oil\",\"name\":\"Масло\"},{\"id\":\"scrum7-a\",\"slug\":\"scrum7-current-a\",\"name\":\"Current A\"},{\"id\":\"scrum7-z\",\"slug\":\"scrum7-current-z\",\"name\":\"Current Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/dashboard",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"summary\":{\"canonicalProducts\":6,\"stores\":3,\"matchedAcrossStores\":1,\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},\"priceSpreads\":[{\"productId\":\"p1\",\"name\":\"Молоко Альфа\",\"minPrice\":100,\"maxPrice\":120,\"differencePercent\":20}],\"locations\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"name\":\"Fixture Dina\",\"address\":\"Synthetic fixture address\",\"latitude\":43.6,\"longitude\":51.1},{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"name\":\"Fixture Dana\",\"address\":\"Synthetic fixture address\",\"latitude\":43.7,\"longitude\":51.2}],\"baskets\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"total\":120,\"items\":[{\"categorySlug\":\"basket-milk\",\"categoryName\":\"Молоко 1 л\",\"productId\":\"p1\",\"name\":\"Молоко Альфа\",\"price\":120},{\"categorySlug\":\"basket-pasta\",\"categoryName\":\"Макароны 400 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-rice\",\"categoryName\":\"Рис 800 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-yogurt\",\"categoryName\":\"Йогурт Fruttis 115 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-noodles\",\"categoryName\":\"Лапша Доширак 120 г\",\"productId\":null,\"name\":null,\"price\":null}]},{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"total\":100,\"items\":[{\"categorySlug\":\"basket-milk\",\"categoryName\":\"Молоко 1 л\",\"productId\":\"p1\",\"name\":\"Молоко Альфа\",\"price\":100},{\"categorySlug\":\"basket-pasta\",\"categoryName\":\"Макароны 400 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-rice\",\"categoryName\":\"Рис 800 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-yogurt\",\"categoryName\":\"Йогурт Fruttis 115 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-noodles\",\"categoryName\":\"Лапша Доширак 120 г\",\"productId\":null,\"name\":null,\"price\":null}]},{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"total\":0,\"items\":[{\"categorySlug\":\"basket-milk\",\"categoryName\":\"Молоко 1 л\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-pasta\",\"categoryName\":\"Макароны 400 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-rice\",\"categoryName\":\"Рис 800 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-yogurt\",\"categoryName\":\"Йогурт Fruttis 115 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-noodles\",\"categoryName\":\"Лапша Доширак 120 г\",\"productId\":null,\"name\":null,\"price\":null}]}]}"
+  }
+]

@@ -458,20 +458,16 @@ func TestReaderCreatorAnchorLifecycle(t *testing.T) {
 	t.Log("non-superuser CREATEROLE owner: bootstrap create/reverify, exact admin-only anchor, runtime MEMBER/USAGE true SET/ADMIN false, repositories/denials, forward→rollback→forward→rollback PASS; counts/managed ACL baseline exact")
 }
 
-// Read-only repository/Nest parity plus independent local write-denial checks
+// Read-only repository smoke plus independent local write-denial checks
 // for the already-provisioned runtime in the stopped-state deploy rehearsal.
-func TestOperatorCloneParity(t *testing.T) {
+func TestOperatorCloneRuntime(t *testing.T) {
 	value := os.Getenv("OPERATOR_API_DATABASE_URL")
 	if value == "" {
 		t.Skip("explicit local operator clone runtime URL required")
 	}
 	c, err := pgx.ParseConfig(value)
 	if !localURL(value) || err != nil || c.Database != "part04_security" || c.User != "aktau_api_runtime" {
-		t.Fatal("rehearsal denials/parity require isolated loopback clone runtime")
-	}
-	u, err := url.Parse(os.Getenv("REFERENCE_API_BASE_URL"))
-	if err != nil || !localHost(u.Hostname()) {
-		t.Fatal("rehearsal reference must use loopback")
+		t.Fatal("rehearsal denials/smoke require isolated loopback clone runtime")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -495,7 +491,7 @@ func TestOperatorCloneParity(t *testing.T) {
 		assertDenied(t, conn.Exec, ctx, sql, "42501")
 	}
 	_ = conn.Close(context.Background())
-	smoke(t, value, true)
+	smoke(t, value)
 }
 
 func assertOperatorAnchor(t *testing.T, ctx context.Context, conn *pgx.Conn) {

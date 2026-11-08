@@ -55,9 +55,9 @@ func (m *paritySessions) Delete(_ context.Context, id string) error {
 }
 
 func TestLocalVoiceParity(t *testing.T) {
-	target, reference := os.Getenv("SMOKE_DATABASE_URL"), os.Getenv("REFERENCE_API_BASE_URL")
-	if target == "" || reference == "" {
-		t.Skip("explicit local clone/reference required")
+	target := os.Getenv("SMOKE_DATABASE_URL")
+	if target == "" || os.Getenv("HTTP_PARITY_CONFIRM") != "1" {
+		t.Skip("explicit local clone and parity confirmation required")
 	}
 	if !localURL(target) {
 		t.Fatal("local voice requires loopback DB")
@@ -66,20 +66,9 @@ func TestLocalVoiceParity(t *testing.T) {
 	if err != nil || u.User == nil || u.User.Username() != "part04_api_login" {
 		t.Fatal("restricted local role required")
 	}
-	voiceParity(t, target, reference)
+	voiceParity(t, target, referenceBase(t))
 }
 
-func TestLiveVoiceParity(t *testing.T) {
-	if os.Getenv("LIVE_VOICE_CONFIRM") != "1" {
-		t.Skip("explicit read-only live voice parity opt-in required")
-	}
-	target := os.Getenv("LIVE_DATABASE_URL")
-	u, err := url.Parse(target)
-	if err != nil || u.User == nil || !strings.HasPrefix(u.User.Username(), "aktau_api_runtime.") {
-		t.Fatal("restricted live runtime credential required")
-	}
-	voiceParity(t, target, os.Getenv("REFERENCE_API_BASE_URL"))
-}
 func voiceParity(t *testing.T, target, reference string) {
 	t.Helper()
 	u, err := url.Parse(reference)

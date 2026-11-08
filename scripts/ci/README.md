@@ -10,6 +10,6 @@ node scripts/ci/run-db-integration.mjs
 node scripts/ci/run-checks.mjs go
 ```
 
-На Windows также работают группы `pipeline`, `contracts` и `frontend`. Группы `nest`, `security` и `ops` там пока не проходят, их проверяет только CI.
+На Windows также работают группы `pipeline`, `contracts`, `frontend` и `nest` (в ней остался только `prisma validate` схемы `backend/prisma`). Группы `security` и `ops` там пока не проходят, их проверяет только CI.
 
 На Windows тесты идут без `-race`: ему нужен компилятор C. Гонки проверяет только CI на Linux.

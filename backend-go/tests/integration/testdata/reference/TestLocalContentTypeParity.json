@@ -1,0 +1,56 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко 1 литр 3.2%\"}",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":[\"text must match /\\\\S/u regular expression\",\"text should not be empty\",\"text must be a string\",\"latitude must not be greater than 90\",\"latitude must not be less than -90\",\"latitude must be a number conforming to the specified constraints\",\"longitude must not be greater than 180\",\"longitude must not be less than -180\",\"longitude must be a number conforming to the specified constraints\"],\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "text/plain",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко 1 литр 3.2%\"}",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":[\"text must match /\\\\S/u regular expression\",\"text should not be empty\",\"text must be a string\",\"latitude must not be greater than 90\",\"latitude must not be less than -90\",\"latitude must be a number conforming to the specified constraints\",\"longitude must not be greater than 180\",\"longitude must not be less than -180\",\"longitude must be a number conforming to the specified constraints\"],\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/x-www-form-urlencoded",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко 1 литр 3.2%\"}",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":[\"property {\\\"latitude\\\":43.63798231415926,\\\"longitude\\\":51.16918027182818,\\\"text\\\":\\\"самое дешёвое молоко 1 литр 3.2%\\\"} should not exist\",\"text must match /\\\\S/u regular expression\",\"text should not be empty\",\"text must be a string\",\"latitude must not be greater than 90\",\"latitude must not be less than -90\",\"latitude must be a number conforming to the specified constraints\",\"longitude must not be greater than 180\",\"longitude must not be less than -180\",\"longitude must be a number conforming to the specified constraints\"],\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Expected property name or '}' in JSON at position 1 (line 1 column 2)\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко 1 литр 3.2%\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/x-www-form-urlencoded",
+    "body": "latitude=43.63798231415926\u0026longitude=51.16918027182818\u0026text=%D1%81%D0%B0%D0%BC%D0%BE%D0%B5+%D0%B4%D0%B5%D1%88%D1%91%D0%B2%D0%BE%D0%B5+%D0%BC%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE+1+%D0%BB%D0%B8%D1%82%D1%80+3.2%25",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+  }
+]

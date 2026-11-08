@@ -1,0 +1,380 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/categories",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"milk\",\"slug\":\"milk\",\"name\":\"Молоко\"},{\"id\":\"oil\",\"slug\":\"oil\",\"name\":\"Масло\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p4\",\"name\":\"Масло подсолнечное\",\"brand\":\"A\",\"category\":{\"slug\":\"oil\",\"name\":\"Масло\"},\"imageUrl\":null,\"attributes\":{\"volumeMl\":1000},\"minPrice\":50,\"offers\":[{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"price\":50,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=100",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p4\",\"name\":\"Масло подсолнечное\",\"brand\":\"A\",\"category\":{\"slug\":\"oil\",\"name\":\"Масло\"},\"imageUrl\":null,\"attributes\":{\"volumeMl\":1000},\"minPrice\":50,\"offers\":[{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"price\":50,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=24\u0026offset=1",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=100\u0026offset=0\u0026sort=price_asc",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p4\",\"name\":\"Масло подсолнечное\",\"brand\":\"A\",\"category\":{\"slug\":\"oil\",\"name\":\"Масло\"},\"imageUrl\":null,\"attributes\":{\"volumeMl\":1000},\"minPrice\":50,\"offers\":[{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"price\":50,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=100\u0026offset=0\u0026sort=price_desc",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p4\",\"name\":\"Масло подсолнечное\",\"brand\":\"A\",\"category\":{\"slug\":\"oil\",\"name\":\"Масло\"},\"imageUrl\":null,\"attributes\":{\"volumeMl\":1000},\"minPrice\":50,\"offers\":[{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"price\":50,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=100\u0026offset=0\u0026sort=name_asc",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p4\",\"name\":\"Масло подсолнечное\",\"brand\":\"A\",\"category\":{\"slug\":\"oil\",\"name\":\"Масло\"},\"imageUrl\":null,\"attributes\":{\"volumeMl\":1000},\"minPrice\":50,\"offers\":[{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"price\":50,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/categories/milk/filters",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"category\":\"milk\",\"filters\":[{\"key\":\"brand\",\"label\":\"Brand\",\"type\":\"multi-select\",\"options\":[\"A\",\"B\"]},{\"key\":\"volumeMl\",\"label\":\"Volume\",\"type\":\"multi-select\",\"options\":[500,1000,\"1000\"]},{\"key\":\"organic\",\"label\":\"Organic\",\"type\":\"boolean\"},{\"key\":\"fatPercent\",\"label\":\"Fat\",\"type\":\"multi-select\",\"options\":[3.2]}]}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?brand=A\u0026brand=B\u0026category=milk\u0026limit=100",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products/p1",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026brand=__invalid_option__",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Invalid brand value\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026limit=100\u0026volumeMl=500\u0026volumeMl=1000",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products/p1",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026volumeMl=__invalid_option__",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Invalid volumeMl value\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026limit=100\u0026organic=true\u0026organic=false",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products/p1",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026organic=__invalid_option__",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Invalid organic value\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026fatPercent=3.2\u0026limit=100",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products/p1",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026fatPercent=__invalid_option__",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Invalid fatPercent value\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?brand=A\u0026category=milk\u0026limit=100\u0026volumeMl=500",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/categories/oil/filters",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"category\":\"oil\",\"filters\":[]}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=oil",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p4\",\"name\":\"Масло подсолнечное\",\"brand\":\"A\",\"category\":{\"slug\":\"oil\",\"name\":\"Масло\"},\"imageUrl\":null,\"attributes\":{\"volumeMl\":1000},\"minPrice\":50,\"offers\":[{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"price\":50,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=100\u0026offset=0",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[{\"id\":\"p4\",\"name\":\"Масло подсолнечное\",\"brand\":\"A\",\"category\":{\"slug\":\"oil\",\"name\":\"Масло\"},\"imageUrl\":null,\"attributes\":{\"volumeMl\":1000},\"minPrice\":50,\"offers\":[{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"price\":50,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p1\",\"name\":\"Молоко Альфа\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"nil\":null,\"organic\":true,\"volumeMl\":1000,\"fatPercent\":3.2},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":100,\"oldPrice\":null},{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":120,\"oldPrice\":150}],\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},{\"id\":\"p2\",\"name\":\"МОЛОКО Бета\",\"brand\":\"B\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":false,\"volumeMl\":500},\"minPrice\":100,\"offers\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"price\":100,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"},{\"id\":\"p3\",\"name\":\"Молоко Ёж\",\"brand\":\"A\",\"category\":{\"slug\":\"milk\",\"name\":\"Молоко\"},\"imageUrl\":null,\"attributes\":{\"organic\":true,\"volumeMl\":\"1000\"},\"minPrice\":200,\"offers\":[{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"price\":200,\"oldPrice\":null}],\"snapshotAt\":\"2026-10-01T10:00:00.000Z\"}]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=101",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"limit must be \u003c= 100\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=0",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"limit must be an integer \u003e= 1\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=1.5",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"limit must be an integer\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?offset=-1",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"offset must be an integer\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?offset=9007199254740992",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"offset must be an integer \u003e= 0\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?sort=invalid",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Invalid sort\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=1\u0026limit=2",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"limit must be a single string\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026category=milk",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"category must be a single string\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?search=a\u0026search=b",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"search must be a single string\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?sort=price_asc\u0026sort=price_desc",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"sort must be a single string\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?offset=0\u0026offset=1",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"offset must be a single string\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026unknownFilter=1",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Unknown filter: unknownFilter\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?volumeMl=1000",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Dynamic filters require a category\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=unknown\u0026someDynamicKey=1",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Unknown filter: someDynamicKey\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products/opaque-unknown-http-parity",
+    "contentType": "",
+    "body": "",
+    "status": 404,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Product not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/categories/unknown-http-parity/filters",
+    "contentType": "",
+    "body": "",
+    "status": 404,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Category filter schema not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/dashboard",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"summary\":{\"canonicalProducts\":4,\"stores\":3,\"matchedAcrossStores\":1,\"snapshotAt\":\"2026-10-02T11:00:00.000Z\"},\"priceSpreads\":[{\"productId\":\"p1\",\"name\":\"Молоко Альфа\",\"minPrice\":100,\"maxPrice\":120,\"differencePercent\":20}],\"locations\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"name\":\"Fixture Dina\",\"address\":\"Synthetic fixture address\",\"latitude\":43.6,\"longitude\":51.1},{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"name\":\"Fixture Dana\",\"address\":\"Synthetic fixture address\",\"latitude\":43.7,\"longitude\":51.2}],\"baskets\":[{\"storeCode\":\"DINA\",\"storeName\":\"Dina\",\"total\":120,\"items\":[{\"categorySlug\":\"basket-milk\",\"categoryName\":\"Молоко 1 л\",\"productId\":\"p1\",\"name\":\"Молоко Альфа\",\"price\":120},{\"categorySlug\":\"basket-pasta\",\"categoryName\":\"Макароны 400 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-rice\",\"categoryName\":\"Рис 800 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-yogurt\",\"categoryName\":\"Йогурт Fruttis 115 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-noodles\",\"categoryName\":\"Лапша Доширак 120 г\",\"productId\":null,\"name\":null,\"price\":null}]},{\"storeCode\":\"DANA\",\"storeName\":\"Dana\",\"total\":100,\"items\":[{\"categorySlug\":\"basket-milk\",\"categoryName\":\"Молоко 1 л\",\"productId\":\"p1\",\"name\":\"Молоко Альфа\",\"price\":100},{\"categorySlug\":\"basket-pasta\",\"categoryName\":\"Макароны 400 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-rice\",\"categoryName\":\"Рис 800 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-yogurt\",\"categoryName\":\"Йогурт Fruttis 115 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-noodles\",\"categoryName\":\"Лапша Доширак 120 г\",\"productId\":null,\"name\":null,\"price\":null}]},{\"storeCode\":\"FIX_PRICE\",\"storeName\":\"Fix Price\",\"total\":0,\"items\":[{\"categorySlug\":\"basket-milk\",\"categoryName\":\"Молоко 1 л\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-pasta\",\"categoryName\":\"Макароны 400 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-rice\",\"categoryName\":\"Рис 800 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-yogurt\",\"categoryName\":\"Йогурт Fruttis 115 г\",\"productId\":null,\"name\":null,\"price\":null},{\"categorySlug\":\"basket-noodles\",\"categoryName\":\"Лапша Доширак 120 г\",\"productId\":null,\"name\":null,\"price\":null}]}]}"
+  }
+]
