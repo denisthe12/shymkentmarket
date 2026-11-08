@@ -5,12 +5,10 @@ package integration
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"os"
 	"reflect"
 	"sort"
-	"strconv"
 	"testing"
 	"time"
 
@@ -30,25 +28,9 @@ func TestProductionClone(t *testing.T) {
 	if u.User.Username() != "part04_api_login" {
 		t.Fatal("clone repository must use restricted login")
 	}
-	smoke(t, target, false)
+	smoke(t, target)
 }
-func TestLocalCloneParity(t *testing.T) {
-	target := os.Getenv("SMOKE_DATABASE_URL")
-	reference := os.Getenv("REFERENCE_API_BASE_URL")
-	if target == "" || reference == "" {
-		t.Skip("explicit local clone and reference API required")
-	}
-	u, err := url.Parse(reference)
-	if err != nil || !localHost(u.Hostname()) || !localURL(target) {
-		t.Fatal("local parity must use loopback DB/reference")
-	}
-	dbURL, _ := url.Parse(target)
-	if dbURL.User.Username() != "part04_api_login" {
-		t.Fatal("parity requires restricted login")
-	}
-	smoke(t, target, true)
-}
-func TestLiveReadOnlyParity(t *testing.T) {
+func TestLiveReadOnlySmoke(t *testing.T) {
 	target := os.Getenv("LIVE_DATABASE_URL")
 	if target == "" {
 		t.Skip("explicit live read-only profile required")
@@ -56,12 +38,9 @@ func TestLiveReadOnlyParity(t *testing.T) {
 	if os.Getenv("LIVE_READONLY_CONFIRM") != "1" {
 		t.Fatal("explicit LIVE_READONLY_CONFIRM=1 required")
 	}
-	if os.Getenv("REFERENCE_API_BASE_URL") == "" {
-		t.Fatal("reference GET API required")
-	}
-	smoke(t, target, true)
+	smoke(t, target)
 }
-func smoke(t *testing.T, target string, parity bool) {
+func smoke(t *testing.T, target string) {
 	t.Helper()
 	// No shared workflow deadline: each DB/HTTP operation has its own budget.
 	ctx := t.Context()
@@ -95,13 +74,6 @@ func smoke(t *testing.T, target string, parity bool) {
 				t.Fatal("category order")
 			}
 		}
-		if parity {
-			var actual []catalog.Category
-			getJSON(t, ctx, "/api/categories", nil, &actual)
-			if !reflect.DeepEqual(categories, actual) {
-				t.Fatal("category parity")
-			}
-		}
 	})
 	observedTotal := 0
 	for _, order := range []catalog.Sort{catalog.PriceAsc, catalog.PriceDesc, catalog.NameAsc} {
@@ -125,11 +97,6 @@ func smoke(t *testing.T, target string, parity bool) {
 				if len(page) > 100 || db.count > 3 {
 					t.Fatal("page bound/N+1")
 				}
-				if parity {
-					var actual []catalog.Product
-					getJSON(t, ctx, "/api/products", url.Values{"sort": {string(order)}, "limit": {"100"}, "offset": {strconv.FormatInt(offset, 10)}}, &actual)
-					compareProducts(t, page, actual, order, offset)
-				}
 				for _, p := range page {
 					if seen[p.ID] {
 						t.Fatal("duplicate across pages")
@@ -150,11 +117,6 @@ func smoke(t *testing.T, target string, parity bool) {
 						t.Fatal(err)
 					}
 					compareProducts(t, []catalog.Product{detail}, page[:1], order, 0)
-					if parity {
-						var actual catalog.Product
-						getJSON(t, ctx, "/api/products/"+url.PathEscape(detail.ID), nil, &actual)
-						compareProducts(t, []catalog.Product{detail}, []catalog.Product{actual}, order, 0)
-					}
 				}
 				total += len(page)
 				if len(page) < 100 {
@@ -168,7 +130,7 @@ func smoke(t *testing.T, target string, parity bool) {
 				t.Fatal("sort total mismatch")
 			}
 			observedTotal = total
-			t.Logf("sort=%s all products=%d exact parity=%t", order, total, parity)
+			t.Logf("sort=%s all products=%d", order, total)
 		})
 	}
 	runPhase(t, "filters", func(t *testing.T) {
@@ -179,13 +141,6 @@ func smoke(t *testing.T, target string, parity bool) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if parity {
-					var actual catalog.FilterSchema
-					getJSON(t, ctx, "/api/categories/"+url.PathEscape(c.Slug)+"/filters", nil, &actual)
-					if !sameJSON(schema, actual) {
-						t.Fatal("filter schema parity for " + c.Slug)
-					}
-				}
 				var filter *catalog.FilterDefinition
 				for i := range schema.Filters {
 					if schema.Filters[i].Type == "multi-select" && len(schema.Filters[i].Options) > 0 {
@@ -194,12 +149,8 @@ func smoke(t *testing.T, target string, parity bool) {
 					}
 				}
 				query := catalog.ProductQuery{Category: c.Slug, Limit: 100}
-				params := url.Values{"category": {c.Slug}, "limit": {"100"}}
 				if filter != nil {
 					query.Filters = catalog.DynamicFilter{filter.Key: []json.RawMessage{filter.Options[0]}}
-					var value any
-					_ = json.Unmarshal(filter.Options[0], &value)
-					params.Set(filter.Key, fmt.Sprint(value))
 				}
 				products, err := boundedCall(ctx, func(op context.Context) ([]catalog.Product, error) { return repo.ListProducts(op, query) })
 				if err != nil {
@@ -221,67 +172,50 @@ func smoke(t *testing.T, target string, parity bool) {
 						}
 					}
 				}
-				if parity {
-					var actual []catalog.Product
-					getJSON(t, ctx, "/api/products", params, &actual)
-					compareProducts(t, products, actual, catalog.PriceAsc, 0)
-				}
 			})
 		}
 	})
-	if parity {
-		for _, testCase := range []struct{ name, search string }{
-			{"milk", "МОЛОКО"}, {"percent", "%"}, {"underscore", "_"}, {"backslash", `\`}, {"milk_percent", `Молок%`}, {"milk_underscore", `Молок_`}, {"escaped_percent", `\%`}, {"escaped_underscore", `\_`}, {"absent_literal", `literal%_\not-present`}, {"injection_shaped", `' OR true --`},
-		} {
-			runPhase(t, "search_"+testCase.name, func(t *testing.T) {
-				ctx := t.Context()
-				search := testCase.search
-				seen := map[string]bool{}
-				total := 0
-				for pageNumber := 0; ; pageNumber++ {
-					if pageNumber >= pageCeiling(observedTotal) {
-						t.Fatal("pagination safety ceiling exceeded")
-					}
-					offset := int64(pageNumber * 100)
-					products, err := boundedCall(ctx, func(op context.Context) ([]catalog.Product, error) {
-						return repo.ListProducts(op, catalog.ProductQuery{Search: search, Limit: 100, Offset: offset})
-					})
-					if err != nil {
-						t.Fatal(err)
-					}
-					if len(products) > 100 {
-						t.Fatal("search page bound")
-					}
-					for _, p := range products {
-						if seen[p.ID] {
-							t.Fatal("duplicate across search pages")
-						}
-						seen[p.ID] = true
-					}
-					var actual []catalog.Product
-					getJSON(t, ctx, "/api/products", url.Values{"search": {search}, "limit": {"100"}, "offset": {strconv.FormatInt(offset, 10)}}, &actual)
-					compareProducts(t, products, actual, catalog.PriceAsc, offset)
-					total += len(products)
-					if len(products) < 100 {
-						break
-					}
+	for _, testCase := range []struct{ name, search string }{
+		{"milk", "МОЛОКО"}, {"percent", "%"}, {"underscore", "_"}, {"backslash", `\`}, {"milk_percent", `Молок%`}, {"milk_underscore", `Молок_`}, {"escaped_percent", `\%`}, {"escaped_underscore", `\_`}, {"absent_literal", `literal%_\not-present`}, {"injection_shaped", `' OR true --`},
+	} {
+		runPhase(t, "search_"+testCase.name, func(t *testing.T) {
+			ctx := t.Context()
+			search := testCase.search
+			seen := map[string]bool{}
+			total := 0
+			for pageNumber := 0; ; pageNumber++ {
+				if pageNumber >= pageCeiling(observedTotal) {
+					t.Fatal("pagination safety ceiling exceeded")
 				}
-				t.Logf("search=%q exact reference parity products=%d", search, total)
-			})
-		}
+				offset := int64(pageNumber * 100)
+				products, err := boundedCall(ctx, func(op context.Context) ([]catalog.Product, error) {
+					return repo.ListProducts(op, catalog.ProductQuery{Search: search, Limit: 100, Offset: offset})
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(products) > 100 {
+					t.Fatal("search page bound")
+				}
+				for _, p := range products {
+					if seen[p.ID] {
+						t.Fatal("duplicate across search pages")
+					}
+					seen[p.ID] = true
+				}
+				total += len(products)
+				if len(products) < 100 {
+					break
+				}
+			}
+			t.Logf("search=%q products=%d", search, total)
+		})
 	}
 }
 func runPhase(t *testing.T, name string, phase func(*testing.T)) {
 	t.Helper()
 	if !t.Run(name, phase) {
 		t.FailNow()
-	}
-}
-
-func getJSON(t *testing.T, ctx context.Context, path string, params url.Values, out any) {
-	t.Helper()
-	if err := referenceJSON(ctx, os.Getenv("REFERENCE_API_BASE_URL"), path, params, out); err != nil {
-		t.Fatal(err)
 	}
 }
 

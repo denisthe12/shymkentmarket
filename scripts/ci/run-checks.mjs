@@ -24,9 +24,8 @@ if (group === 'contracts') {
     ['tool', 'govulncheck', './...']]) console.log(go(args));
   for (const name of ['api', 'ingest', 'prune']) go(['build', '-o', join(temporary, name), `./cmd/${name}`]);
 } else if (group === 'nest') {
-  install('backend'); pnpm('backend', ['db:generate']); pnpm('backend', ['build']);
-  console.log(pnpm('backend', ['test']).split('\n').slice(-10).join('\n'));
-  console.log(pnpm('backend', ['audit', '--prod']));
+  // backend/ keeps only the Prisma schema and migrations; env carries placeholder DB URLs.
+  install('backend'); console.log(pnpm('backend', ['exec', 'prisma', 'validate']));
 } else if (group === 'frontend') {
   install('frontend'); pnpm('frontend', ['typecheck'], httpEnv); pnpm('frontend', ['lint'], httpEnv);
   console.log(pnpm('frontend', ['test', '--pool=forks', '--maxWorkers=1', '--no-isolate'], {

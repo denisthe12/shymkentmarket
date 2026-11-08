@@ -69,17 +69,6 @@ func TestLocalVoiceParity(t *testing.T) {
 	voiceParity(t, target, referenceBase(t))
 }
 
-func TestLiveVoiceParity(t *testing.T) {
-	if os.Getenv("LIVE_VOICE_CONFIRM") != "1" {
-		t.Skip("explicit read-only live voice parity opt-in required")
-	}
-	target := os.Getenv("LIVE_DATABASE_URL")
-	u, err := url.Parse(target)
-	if err != nil || u.User == nil || !strings.HasPrefix(u.User.Username(), "aktau_api_runtime.") {
-		t.Fatal("restricted live runtime credential required")
-	}
-	voiceParity(t, target, os.Getenv("REFERENCE_API_BASE_URL"))
-}
 func voiceParity(t *testing.T, target, reference string) {
 	t.Helper()
 	u, err := url.Parse(reference)
