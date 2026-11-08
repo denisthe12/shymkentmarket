@@ -23,7 +23,7 @@ if (group === 'contracts') {
     ['vet', './...'], ['tool', 'staticcheck', './...'], ['tool', 'staticcheck', '-tags=integration', './...'],
     ['tool', 'govulncheck', './...']]) console.log(go(args));
   for (const name of ['api', 'ingest', 'prune']) go(['build', '-o', join(temporary, name), `./cmd/${name}`]);
-} else if (group === 'nest') {
+} else if (group === 'schema') {
   // backend/ keeps only the Prisma schema and migrations; env carries placeholder DB URLs.
   install('backend'); console.log(pnpm('backend', ['exec', 'prisma', 'validate']));
 } else if (group === 'frontend') {

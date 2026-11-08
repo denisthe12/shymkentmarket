@@ -28,6 +28,12 @@ const protectedPaths=['backend/prisma','contracts','deploy/compose.production.ym
 // between that release and any candidate, with the Git blob expected in the active tree and in the candidate
 // tree. A null blob means the path must be absent from that tree (an addition).
 const approvedExceptions=[
+  // Legacy NestJS seed removal (step 2 of the Nest decommission): the dead seed script only;
+  // no DB/schema/migration change. Active release 1cbd535 (release.env API_IMAGE, 2026-11-08).
+  {active:'1cbd535562cca1852942683a3c0f0f717db181b3',blobs:[
+    ['backend/prisma/seed.ts','5a9debc5abe9ba91367e935dfe22662f849847e7',null],
+  ]},
+
   // PR103 schema delta: Backend2 reports applied migrations, checksums/RLS/SELECT PASS.
   // Candidate is additionally bound by exact-main CI/artifact and independent root approval.
   // This entry authorizes no migration execution or unknown protected object.
