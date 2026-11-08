@@ -17,10 +17,11 @@ import (
 
 // Explicit GET-only origins. No inferred endpoint, credentials or DB connection.
 func TestHTTPParity(t *testing.T) {
-	goBase, reference := os.Getenv("GO_API_BASE_URL"), os.Getenv("REFERENCE_API_BASE_URL")
-	if goBase == "" || reference == "" || os.Getenv("HTTP_PARITY_CONFIRM") != "1" {
+	goBase := os.Getenv("GO_API_BASE_URL")
+	if goBase == "" || os.Getenv("HTTP_PARITY_CONFIRM") != "1" {
 		t.Skip("explicit HTTP parity origins/confirmation required")
 	}
+	reference := referenceBase(t)
 	for _, base := range []string{goBase, reference} {
 		u, err := url.Parse(base)
 		if err != nil || u.Scheme != "http" || !localHost(u.Hostname()) || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
@@ -172,7 +173,7 @@ func TestHTTPParity(t *testing.T) {
 			}
 		})
 	}
-	// Nest retains legacy wildcard/phrase semantics. Build an independent literal
+	// The reference retains legacy wildcard/phrase semantics. Build an independent literal
 	// AND-token oracle from its unsearched catalog rather than copying that bug.
 	catalogItems := []any{}
 	for page := 0; page < pageCeiling(total); page++ {

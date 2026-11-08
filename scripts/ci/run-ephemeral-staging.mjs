@@ -4,6 +4,11 @@ import { join } from 'node:path';
 import { root, temporary, env, httpEnv, run, wait, prepareBrowser } from './common.mjs';
 import { postgres } from './postgres.mjs';
 
+// REFERENCE_RECORD=1 rewrites backend-go/tests/integration/testdata/reference from the
+// local reference API and stops after the parity run. Never in hosted CI.
+const record = process.env.REFERENCE_RECORD === '1';
+if (record && process.env.CI) throw new Error('reference recording is local only');
+
 await postgres(async ({ name, url, sql, login, load, docker }) => {
   login('aktau_api_runtime', 'aktau_api_reader'); load('part04_fixture');
   sql('part04_fixture', readFileSync(join(root, 'scripts/ci/fixtures/voice-parity-overlay.sql')));
@@ -35,10 +40,17 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
       DATABASE_URL: url('part04_fixture', 'part04_api_login'), DIRECT_URL: url('part04_fixture', 'part04_api_login'),
       GEMINI_API_KEY: '', GEMINI_API_KEY2: '', GEMINI_API_KEY3: '', UPSTASH_REDIS_REST_URL: '', UPSTASH_REDIS_REST_TOKEN: '' });
     await wait('Nest reference', () => available('http://127.0.0.1:13000', '/api/categories', 200));
-    console.log(run('small fixture GET/security parity', 'go', ['test', '-count=1', '-tags=integration', './tests/integration',
+    // Small fixture GET/security parity; without REFERENCE_API_BASE_URL the tests replay the recorded reference.
+    const parity = (label, extra) => console.log(run(label, 'go', ['test', '-count=1', '-tags=integration', './tests/integration',
       '-run', '^(TestHTTPParity|TestLocalSecurityQueryParity|TestLocalContentTypeParity|TestLocalCategoryVisibilityParity|TestLocalVoiceParity)$', '-v'], {
-      cwd: join(root, 'backend-go'), env: { ...env, HTTP_PARITY_CONFIRM: '1', TEST_DATABASE_URL: url('part04_fixture'), SMOKE_DATABASE_URL: url('part04_fixture', 'part04_api_login'), GO_API_BASE_URL: 'http://127.0.0.1:18080', REFERENCE_API_BASE_URL: 'http://127.0.0.1:13000' },
+      cwd: join(root, 'backend-go'), env: { ...env, HTTP_PARITY_CONFIRM: '1', TEST_DATABASE_URL: url('part04_fixture'), SMOKE_DATABASE_URL: url('part04_fixture', 'part04_api_login'), GO_API_BASE_URL: 'http://127.0.0.1:18080', ...extra },
     }));
+    if (record) {
+      parity('record reference', { REFERENCE_API_BASE_URL: 'http://127.0.0.1:13000', REFERENCE_RECORD: '1' });
+      return;
+    }
+    parity('live reference parity', { REFERENCE_API_BASE_URL: 'http://127.0.0.1:13000' });
+    parity('recorded reference parity', {});
     for (const origin of ['http://127.0.0.1:18080', 'http://127.0.0.1:13000']) console.log(run('frozen GET contracts (local only)', 'pnpm', ['test:live'], {
       cwd: join(root, 'contracts'), env: { ...env, CONTRACT_API_BASE_URL: origin },
     }));

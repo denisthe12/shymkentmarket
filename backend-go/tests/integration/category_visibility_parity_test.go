@@ -27,7 +27,7 @@ func TestLocalCategoryVisibilityParity(t *testing.T) {
 	if err != nil || !localURL(value) || u.Path != "/part04_fixture" || u.User == nil || u.User.Username() != "postgres" {
 		t.Fatal("dedicated loopback fixture owner required")
 	}
-	origins := []string{os.Getenv("GO_API_BASE_URL"), os.Getenv("REFERENCE_API_BASE_URL")}
+	origins := []string{os.Getenv("GO_API_BASE_URL"), referenceBase(t)}
 	for _, origin := range origins {
 		o, err := url.Parse(origin)
 		if err != nil || o.Scheme != "http" || !localHost(o.Hostname()) || o.User != nil || o.Path != "" || o.RawQuery != "" || o.Fragment != "" {
@@ -118,5 +118,5 @@ COMMIT;`)
 	if admin.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM categories WHERE id='scrum7-other' AND slug='other')`).Scan(&retained) != nil || !retained {
 		t.Fatal("legacy empty category was deleted instead of filtered")
 	}
-	t.Log("LOCAL Go/Nest PASS: current usable visible; old-only/out-of-stock/zero/negative/unpublished/empty-other hidden; slug ASC; demo basket labels")
+	t.Log("LOCAL Go/reference PASS: current usable visible; old-only/out-of-stock/zero/negative/unpublished/empty-other hidden; slug ASC; demo basket labels")
 }
