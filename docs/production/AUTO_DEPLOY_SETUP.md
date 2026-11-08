@@ -278,3 +278,82 @@ by these instructions. Enable the existing flag only in a reviewed maintenance
 window with main fixed; disable again after the separately approved manual run.
 Variant A never enables unattended main-push rollout. Existing physical Siri PASS
 is Owner evidence, not something this source task repeats or claims to execute.
+
+
+## Private repository main lookup — source candidate, admin activation required
+
+The broker's `Host.fresh_main` uses a fixed SSH reference lookup instead of an
+unauthenticated GitHub REST GET (private repositories return HTTP404 to that GET).
+Runner CI/artifact API authentication is unchanged. The Owner confirmed the
+following **source credential contract on 2026-11-08**, including explicit approval
+of the public root-owned `/etc/ssh` trust path after disposable integration; this is neither permission
+to install root bytes nor an exact-artifact release authorization:
+
+- Fixed account `deploy`, UID1000/GID1000, home `/home/deploy`; no supplementary
+  groups in the lookup child (in particular no sudo/docker group inheritance).
+- Existing repository-scoped **read-only** key
+  `/home/deploy/.ssh/adilbaga_github_readonly`, UID/GID1000, regular0600/single-link;
+  `.ssh`0700. Root inspects metadata with O_PATH and never reads/copies the key.
+- NEW public trust file `/etc/ssh/adilbaga-github-known-hosts`, root:root0644,
+  single-link regular file, 1..16384bytes, no symlink/writable/non-root ancestors.
+  This file must be independently authenticated and installed by the admin.
+  The operator-writable `/home/deploy/.ssh/known_hosts` is NOT broker trust.
+- Only `/usr/bin/git ... ls-remote --exit-code
+  git@github.com:kiratonine/AdilBaga.git refs/heads/main`; no input URL/ref/account,
+  no dynamic config or fallback to another account/HTTP transport.
+- Fixed SSH executable, `-F /dev/null`, explicit key/known_hosts, strict host-key
+  checking, no agent/password/keyboard authentication, forwarding/proxy disabled.
+  Clean environment, working directory `/`, global/system Git config disabled,
+  SSH-only Git protocol, no hooks, no inherited credential helpers/settings.
+- One process group, 15-second total lookup deadline, stdout1024/stderr4096byte
+  bounds checked while streaming; TERM/KILL/reap and pipe cleanup even on failure.
+  Only one lowercase40hex+TAB+`refs/heads/main`+LF record is accepted. Stale SHA
+  returns false; malformed/failing lookup BLOCKED before load/approval consumption.
+  Raw SSH/Git stderr never reaches diagnostics. No live TLS/HTTP policy is relaxed.
+
+Trust boundary: approved root/admin and reviewed system Git/OpenSSH executables
+are trusted. The credential-owning `deploy` operator is the approved authentication
+principal; its key is data consumed only by the unprivileged SSH child. Metadata
+checks cannot prove GitHub's read-only deploy-key setting: the admin must check
+that setting independently. Host trust is root-controlled; only trusted root can
+replace its parent/file after validation. This is not protection against a
+compromised root, compromised system binaries or a compromised approved operator.
+No new sudo rule, credential provisioning, key copy or production path mutation is
+performed by the source implementation. Missing trust file/account/key blocks.
+
+### Activation/release gate (not performed by the source PR)
+
+1. Independent review of exact source bytes and credential custody; admin verifies
+   repo-scoped read-only key and GitHub host fingerprint through a trusted channel.
+2. Admin installs the public known_hosts file at the fixed path with no-clobber,
+   root custody and fsync; never use unauthenticated ssh-keyscan as approval.
+3. Separately authorize root module upgrade: verify current installed hash,
+   root-private no-clobber backup, locks/idle state, atomic CAS replacement and
+   old/new hash/mode/owner readback. The source agent must not overwrite root code.
+4. Fresh read-only lookup must match the independently admitted final main SHA.
+   Compatibility still blocks the e50de253→ffc0bc44 protected Prisma delta:
+   Backend2's DB confirmation is supporting evidence, NOT an approved exception.
+   Any exception requires independent review of the exact final SHA pair/blobs;
+   no broad migration/Prisma exception is introduced in this PR.
+5. Merge/new source requires new exact-main CI/build/artifact/root authorization;
+   old artifact13588533054 belongs only to ffc0bc44, never relabel it. Independent
+   approval schema/consumption, sealed memfd, provenance, lock and rollback remain
+   unchanged. A new absolute UTC release window is required (old window expired).
+
+### Disposable real Git/OpenSSH qualification
+
+`private-main-integration.py` is an explicitly selected root **test fixture**,
+never a VPS tool. It refuses existing fixed fixture paths and requires
+`DISPOSABLE_PRIVATE_MAIN_TEST=1`. Run only inside an ephemeral Ubuntu24.04 container,
+with no host mounts, no host networking and no production credentials. Prepare an
+image containing Python3, git, openssh-server/client and passwd; remove Ubuntu's
+pre-existing UID1000 user before the fixture creates synthetic deploy/git users.
+Copy only `auto_broker.py` and `private-main-integration.py` into `/fixture`.
+Run `docker run --rm --network none <fixture-image> python3 -B
+/fixture/private-main-integration.py -v` with that explicit environment marker.
+It generates disposable keys, root host trust and a synthetic private bare repo,
+serves it via loopback SSH, and executes the actual lookup as UID/GID1000.
+No key is exported or included in review archives. This proves Linux transport
+behavior, not production installation, real GitHub key permissions or C2 acceptance.
+The normal Security CI job additionally runs existing Python broker/smoke and Node
+transport regressions. Real SSH qualification is a separate explicit fixture run.

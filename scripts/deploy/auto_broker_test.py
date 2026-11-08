@@ -100,7 +100,113 @@ class FakeHost:
         self.active = True
 
 
+class PrivateMainTests(unittest.TestCase):
+    def test_account_uid_gid_home_and_absence_fail_closed(self):
+        import auto_broker as broker
+        for uid, gid, home in ((0, 1000, '/home/deploy'), (1000, 0, '/home/deploy'),
+                               (1001, 1000, '/home/deploy'), (1000, 1000, '/root')):
+            account = types.SimpleNamespace(pw_uid=uid, pw_gid=gid, pw_dir=home)
+            with patch.object(broker.os, 'geteuid', return_value=0), \
+                 patch.object(broker.pwd, 'getpwnam', return_value=account), patch.object(broker.os, 'open') as opening:
+                with self.assertRaisesRegex(Blocked, '^github_identity$'): broker.github_identity()
+                opening.assert_not_called()
+        with patch.object(broker.os, 'geteuid', return_value=0), \
+             patch.object(broker.pwd, 'getpwnam', side_effect=KeyError()):
+            with self.assertRaisesRegex(Blocked, '^github_identity_unavailable$'): broker.github_identity()
+
+    def test_strict_ref_and_no_https_fallback(self):
+        import auto_broker as broker
+        valid = (SHA + '\trefs/heads/main\n').encode()
+        for raw in (b'', valid * 2, valid + b'notice', valid.replace(b'main', b'other'),
+                    valid.replace(b'a', b'A', 1), valid[:-1], b' ' + valid,
+                    b'\xff' + valid, b'x' * 5000):
+            with self.subTest(raw=raw[:10]), patch.object(broker, 'github_identity'), \
+                 patch.object(broker, 'github_lookup', return_value=raw), patch.object(broker, 'http') as http_call:
+                with self.assertRaisesRegex(Blocked, '^github_ref_format$'): Host().fresh_main(SHA)
+                http_call.assert_not_called()
+        with patch.object(broker, 'github_identity'), patch.object(broker, 'github_lookup', return_value=valid):
+            self.assertTrue(Host().fresh_main(SHA))
+            self.assertFalse(Host().fresh_main('b' * 40))
+        for candidate in (None, True, SHA + ';id', SHA.upper(), ''):
+            with patch.object(broker, 'private_main') as lookup:
+                with self.assertRaisesRegex(Blocked, '^github_candidate$'): Host().fresh_main(candidate)
+                lookup.assert_not_called()
+
+    def test_credential_failure_precedes_load_and_consumption(self):
+        import auto_broker as broker
+        for reason in ('github_custody', 'github_identity_unavailable', 'github_lookup_failed',
+                       'github_timeout', 'github_output_limit', 'github_ref_format'):
+            host = FakeHost()
+            host.fresh_main = Host().fresh_main
+            with patch.object(broker, 'private_main', side_effect=Blocked(reason)), \
+                 patch.object(broker, 'consume_authorization') as consume, patch.object(broker, 'command') as command_call:
+                with self.assertRaisesRegex(Blocked, '^' + reason + '$'): rollout(host, manifest(), None)
+                self.assertEqual(host.calls, ['preflight'])
+                consume.assert_not_called()
+                command_call.assert_not_called()
+
+    def test_fixed_argv_identity_and_environment_with_real_processes(self):
+        import auto_broker as broker
+        import sys
+        real_popen = subprocess.Popen
+        captured = []
+        def fixture_popen(args, **kwargs):
+            captured.append((args, dict(kwargs)))
+            # Harness only: run a synthetic child under this test runner's UID.
+            # The separate root/OpenSSH integration proves the actual drop.
+            for field in ('user', 'group', 'extra_groups'): kwargs.pop(field)
+            return real_popen([sys.executable, '-c', "import sys;sys.stdout.write('" + SHA + "\\trefs/heads/main\\n')"], **kwargs)
+        with patch.dict(os.environ, {'GIT_SSH_COMMAND': 'injected', 'GIT_CONFIG_COUNT': '1',
+                                     'SSH_AUTH_SOCK': '/untrusted', 'LD_PRELOAD': '/untrusted'}), \
+             patch.object(broker.subprocess, 'Popen', side_effect=fixture_popen):
+            self.assertEqual(broker.github_lookup(), (SHA + '\trefs/heads/main\n').encode())
+        args, options = captured[0]
+        self.assertEqual(args[-4:], ['ls-remote', '--exit-code',
+                                    'git@github.com:kiratonine/AdilBaga.git', 'refs/heads/main'])
+        self.assertEqual(args[0], '/usr/bin/git')
+        self.assertEqual((options['user'], options['group'], options['extra_groups']), (1000, 1000, []))
+        self.assertTrue(options['start_new_session'])
+        self.assertNotIn('shell', options)
+        self.assertEqual(options['cwd'], '/')
+        self.assertEqual(set(options['env']), {'PATH', 'HOME', 'LANG', 'GIT_CONFIG_NOSYSTEM',
+                                             'GIT_CONFIG_GLOBAL', 'GIT_TERMINAL_PROMPT', 'GIT_NO_LAZY_FETCH'})
+        for option in ('-F /dev/null', '-i /home/deploy/.ssh/adilbaga_github_readonly',
+                       'IdentityAgent=none', 'StrictHostKeyChecking=yes', 'ForwardAgent=no',
+                       'UserKnownHostsFile=/etc/ssh/adilbaga-github-known-hosts'):
+            self.assertIn(option, broker.GITHUB_SSH)
+
+    def test_real_output_bounds_nonzero_timeout_and_process_cleanup(self):
+        import auto_broker as broker
+        import sys
+        real_popen = subprocess.Popen
+        for script, reason in (("import sys;sys.stdout.write('x'*20000)", 'github_output_limit'),
+                               ("import sys;sys.stderr.write('sensitive'*20000)", 'github_output_limit'),
+                               ("import sys;sys.stderr.write('sensitive');sys.exit(128)", 'github_lookup_failed'),
+                               ("import time;time.sleep(60)", 'github_timeout')):
+            children = []
+            def fixture_popen(args, **kwargs):
+                for field in ('user', 'group', 'extra_groups'): kwargs.pop(field)
+                child = real_popen([sys.executable, '-c', script], **kwargs)
+                children.append(child)
+                return child
+            # Accelerate only the deadline clock; the real process/pipes/kill/reap remain.
+            ticks = iter((0, 16)) if reason == 'github_timeout' else None
+            clock = patch.object(broker.time, 'monotonic', side_effect=lambda: next(ticks)) if ticks else contextlib.nullcontext()
+            with clock, patch.object(broker.subprocess, 'Popen', side_effect=fixture_popen):
+                with self.assertRaisesRegex(Blocked, '^' + reason + '$'): broker.github_lookup()
+            self.assertIsNotNone(children[0].poll())
+            self.assertTrue(children[0].stdout.closed)
+            self.assertTrue(children[0].stderr.closed)
+            with self.assertRaises(ProcessLookupError): os.killpg(children[0].pid, 0)
+
+
 class BrokerTests(unittest.TestCase):
+    def test_private_main_uses_fixed_readonly_lookup(self):
+        with patch('auto_broker.private_main', return_value=SHA) as lookup:
+            self.assertTrue(Host().fresh_main(SHA))
+            self.assertFalse(Host().fresh_main('b' * 40))
+        self.assertEqual(lookup.call_count, 2)
+
     def test_github_main_hsts_is_metadata_not_api_hsts_activation(self):
         response = io.BytesIO(json.dumps({'object': {'sha': SHA}}).encode())
         response.status = 200
@@ -111,7 +217,7 @@ class BrokerTests(unittest.TestCase):
             calls.append((request.full_url, request.get_method(), request.data, timeout))
             return response
         with patch('auto_broker.urllib.request.build_opener', return_value=types.SimpleNamespace(open=open_request)):
-            self.assertTrue(Host().fresh_main(SHA))
+            self.assertEqual(http('https://api.github.com/repos/kiratonine/AdilBaga/git/ref/heads/main')[0]['object']['sha'], SHA)
         self.assertEqual(calls, [('https://api.github.com/repos/kiratonine/AdilBaga/git/ref/heads/main', 'GET', None, 18)])
 
     def test_api_and_lookalike_urls_still_reject_hsts(self):
