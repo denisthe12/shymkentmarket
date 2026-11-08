@@ -28,6 +28,15 @@ const protectedPaths=['backend/prisma','contracts','deploy/compose.production.ym
 // between that release and any candidate, with the Git blob expected in the active tree and in the candidate
 // tree. A null blob means the path must be absent from that tree (an addition).
 const approvedExceptions=[
+  // PR103 schema delta: Backend2 reports applied migrations, checksums/RLS/SELECT PASS.
+  // Candidate is additionally bound by exact-main CI/artifact and independent root approval.
+  // This entry authorizes no migration execution or unknown protected object.
+  {active:'e50de2532259ab477e8491c4bddc2e6120ef3da0',blobs:[
+    ['backend/prisma/migrations/20261107000000_price_history/migration.sql',null,'2863a1d1d060d9f62e14d51187d7bb21a3e8c580'],
+    ['backend/prisma/migrations/20261107000100_product_identities/migration.sql',null,'d8f8e9c551c68b6a901d17f56db16523ad35344e'],
+    ['backend/prisma/schema.prisma','2f270ddd9e1aa24683fc15766d67c1b88d1251fe','00315ade499cc561f0731ae0875b1b46643dac11'],
+  ]},
+
   // Contract tooling pair reviewed against the Part15 release.
   {active:'438ecdfa3d386a186dcd8b73c3c10aef5e79dc82',blobs:[
     ['contracts/package.json','ee97d962531376e81a0b9175d8eef2aaa36a7c9c','48a7866b9084cbc25b2dafc1089713eb555e0a38'],

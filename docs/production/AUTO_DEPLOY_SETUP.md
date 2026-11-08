@@ -357,3 +357,18 @@ No key is exported or included in review archives. This proves Linux transport
 behavior, not production installation, real GitHub key permissions or C2 acceptance.
 The normal Security CI job additionally runs existing Python broker/smoke and Node
 transport regressions. Real SSH qualification is a separate explicit fixture run.
+
+
+## PR103 three-blob compatibility proposal (independent review required)
+
+The new source candidate limits the exception to active e50de253 and the complete
+price_history/product_identities/schema Git blob triple in approvedExceptions.
+It permits no other protected delta. Backend2 confirms applied checksums/schema/
+RLS/SQL/grants; actual API-role execution remains NOT_VERIFIED until HTTP smoke.
+Final candidate binding is the composition of current main + authenticated CI,
+immutable artifact and independent exact-artifact schema1 root authorization.
+The transport exception alone grants no release authority. A different candidate
+with matching blobs still needs its own matching root authorization; missing,
+expired, used or mismatched approval cannot reach Docker. Do not embed a future
+self-referential merge SHA. This policy proposal requires independent Code Review
+before merge; no root installer or deployment is authorized by source publication.
