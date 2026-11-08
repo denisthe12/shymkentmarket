@@ -11,6 +11,8 @@ import ipaddress
 import json
 import os
 import re
+import pwd
+import selectors
 import signal
 import stat
 import subprocess
@@ -52,6 +54,118 @@ def command(args, timeout=30, pass_fds=()):
         return r.stdout
     except (OSError, subprocess.TimeoutExpired):
         raise Blocked('command_timeout_or_start') from None
+
+
+# Source-reviewed, fixed credential contract. Installing this source does NOT
+# provision host trust, delegate key use or create release authorization.
+GITHUB_KEY = Path('/home/deploy/.ssh/adilbaga_github_readonly')
+GITHUB_HOSTS = Path('/etc/ssh/adilbaga-github-known-hosts')
+GITHUB_SSH = ('/usr/bin/ssh -F /dev/null -i ' + str(GITHUB_KEY) +
+              ' -o IdentitiesOnly=yes -o IdentityAgent=none -o BatchMode=yes'
+              ' -o StrictHostKeyChecking=yes -o ForwardAgent=no'
+              ' -o UserKnownHostsFile=' + str(GITHUB_HOSTS) +
+              ' -o GlobalKnownHostsFile=/dev/null -o ProxyCommand=none'
+              ' -o ProxyJump=none -o PasswordAuthentication=no'
+              ' -o KbdInteractiveAuthentication=no -o ConnectionAttempts=1'
+              ' -o ConnectTimeout=8 -o ServerAliveInterval=3 -o ServerAliveCountMax=2')
+GITHUB_ARGV = ['/usr/bin/git', '--no-replace-objects', '-c', 'core.sshCommand=' + GITHUB_SSH,
+               '-c', 'core.hooksPath=/dev/null', '-c', 'protocol.allow=never',
+               '-c', 'protocol.ssh.allow=always', 'ls-remote', '--exit-code',
+               'git@github.com:kiratonine/AdilBaga.git', 'refs/heads/main']
+GITHUB_ENV = {'PATH': '/usr/bin:/bin', 'HOME': '/nonexistent', 'LANG': 'C',
+              'GIT_CONFIG_NOSYSTEM': '1', 'GIT_CONFIG_GLOBAL': '/dev/null',
+              'GIT_TERMINAL_PROMPT': '0', 'GIT_NO_LAZY_FETCH': '1'}
+
+
+def github_identity():
+    # Key bytes are never opened/read by root. O_PATH checks metadata only.
+    # Only these exact paths may have a delegated (UID/GID1000) ancestor.
+    require(os.geteuid() == 0, 'github_root_required')
+    try:
+        account = pwd.getpwnam('deploy')
+        require((account.pw_uid, account.pw_gid, account.pw_dir) ==
+                (1000, 1000, '/home/deploy'), 'github_identity')
+        for path in (GITHUB_KEY, GITHUB_HOSTS):
+            fd = os.open('/', os.O_PATH | os.O_DIRECTORY | os.O_CLOEXEC)
+            try:
+                for part in path.parts[1:]:
+                    child = os.open(part, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=fd)
+                    os.close(fd)
+                    fd = child
+                    st = os.fstat(fd)
+                    actual = Path(os.readlink('/proc/self/fd/' + str(fd)))
+                    delegated = actual in (Path('/home/deploy'), Path('/home/deploy/.ssh'), GITHUB_KEY)
+                    owner = 1000 if delegated else 0
+                    require(st.st_uid == owner and st.st_gid == owner and not st.st_mode & 0o022,
+                            'github_custody')
+                    if part != path.name:
+                        require(stat.S_ISDIR(st.st_mode), 'github_custody')
+                        if actual == Path('/home/deploy/.ssh'):
+                            require(stat.S_IMODE(st.st_mode) == 0o700, 'github_custody')
+                    else:
+                        mode = 0o600 if path == GITHUB_KEY else 0o644
+                        require(stat.S_ISREG(st.st_mode) and stat.S_IMODE(st.st_mode) == mode
+                                and st.st_nlink == 1 and 0 < st.st_size <= 16384, 'github_custody')
+            finally:
+                os.close(fd)
+    except (OSError, KeyError):
+        raise Blocked('github_identity_unavailable') from None
+
+
+def github_lookup():
+    # A separate process group bounds Git AND SSH. Never buffer unbounded output,
+    # inherit caller configuration/agent, print stderr or execute a shell script.
+    process = None
+    try:
+        process = subprocess.Popen(GITHUB_ARGV, stdin=subprocess.DEVNULL,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   cwd='/', env=GITHUB_ENV, start_new_session=True, close_fds=True,
+                                   user=1000, group=1000, extra_groups=[], umask=0o077)
+        buffers = {process.stdout: bytearray(), process.stderr: bytearray()}
+        deadline = time.monotonic() + 15
+        with selectors.DefaultSelector() as selector:
+            for stream in buffers:
+                os.set_blocking(stream.fileno(), False)
+                selector.register(stream, selectors.EVENT_READ)
+            while selector.get_map():
+                remaining = deadline - time.monotonic()
+                require(remaining > 0, 'github_timeout')
+                for key, _ in selector.select(min(remaining, 0.1)):
+                    data = os.read(key.fd, 1024)
+                    if not data:
+                        selector.unregister(key.fileobj)
+                        continue
+                    buffers[key.fileobj].extend(data)
+                    limit = 1024 if key.fileobj is process.stdout else 4096
+                    require(len(buffers[key.fileobj]) <= limit, 'github_output_limit')
+            remaining = deadline - time.monotonic()
+            require(remaining > 0, 'github_timeout')
+            require(process.wait(timeout=remaining) == 0, 'github_lookup_failed')
+        return bytes(buffers[process.stdout])
+    except subprocess.TimeoutExpired:
+        raise Blocked('github_timeout') from None
+    except OSError:
+        raise Blocked('github_lookup_unavailable') from None
+    finally:
+        if process is not None:
+            # Also remove descendants if Git exited while SSH kept running.
+            for sig in (signal.SIGTERM, signal.SIGKILL):
+                with contextlib.suppress(ProcessLookupError):
+                    os.killpg(process.pid, sig)
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                raise Blocked('github_cleanup') from None
+            finally:
+                process.stdout.close()
+                process.stderr.close()
+
+
+def private_main():
+    github_identity()
+    raw = github_lookup()
+    require(re.fullmatch(rb'[a-f0-9]{40}\trefs/heads/main\n', raw) is not None, 'github_ref_format')
+    return raw[:40].decode('ascii')
 
 
 def secure_file(path, mode):
@@ -349,8 +463,8 @@ class Host:
         self.hardening()
 
     def fresh_main(self, sha):
-        main, _ = http('https://api.github.com/repos/kiratonine/AdilBaga/git/ref/heads/main')
-        return main['object']['sha'] == sha
+        require(isinstance(sha, str) and SHA.fullmatch(sha), 'github_candidate')
+        return private_main() == sha
 
     def identity(self, m, archive):
         with approved_archive(m, archive) as (fd, raw, a, source_identity):
