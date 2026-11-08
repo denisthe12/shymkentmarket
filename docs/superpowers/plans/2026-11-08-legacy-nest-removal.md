@@ -12,7 +12,8 @@
 
 ## Global Constraints
 
-- Путь `backend/prisma/**` и содержимое миграций не меняются; единственное изменение под защищёнными путями деплоя — удаление `backend/prisma/seed.ts`. `contracts/` не меняется вовсе. `scripts/ci/postgres.mjs`, `check-source.mjs`, `auto-transport.mjs` в шаге 1 не трогаются.
+- В шаге 1 под защищёнными путями деплоя (`backend/prisma`, `contracts`, `deploy/compose.production.yml`) не меняется ни один файл: активный релиз 1cbd535 совпадает с `main` в этих путях, и так должно остаться. `backend/prisma/seed.ts` удаляется только в шаге 2. `scripts/ci/postgres.mjs`, `check-source.mjs`, `auto-transport.mjs` в шаге 1 не трогаются.
+- База веток: `origin/main` 1cbd535 или новее; перед каждым push — `git fetch && git rebase origin/main`.
 - Prisma остаётся 5.22.0.
 - В шаге 1 не меняются `.github/workflows/ci.yml`, `scripts/deploy/**`, локальный CI вне репозитория; имя джобы `Nest Reference` и группа `nest` сохраняются.
 - В CI 9 джоб в обоих шагах; CI Gate проверяет 8 needs.
@@ -159,7 +160,7 @@
 ### Task 4: удалить Nest-приложение
 
 **Files:**
-- Delete: `backend/src/`, `backend/test/`, `backend/scripts/`, `backend/prisma/seed.ts`, `backend/tsconfig.json`
+- Delete: `backend/src/`, `backend/test/`, `backend/scripts/`, `backend/tsconfig.json` (не `backend/prisma/seed.ts` — он в Task 6)
 - Modify: `backend/package.json`, `backend/pnpm-lock.yaml`, `backend/.env.example`
 - Modify: `scripts/ci/run-checks.mjs:26-29`, `scripts/ci/run-ephemeral-staging.mjs`
 - Modify: `backend-go/tests/integration/smoke_test.go`, `rollout_test.go`, `voice_parity_test.go`
@@ -201,7 +202,7 @@
   Run: `git grep -n -i nestjs -- ':!docs' ':!contracts'`
   Expected: пустой вывод.
   Run: `git diff --name-only main -- backend/prisma contracts deploy/compose.production.yml`
-  Expected: ровно `backend/prisma/seed.ts`.
+  Expected: пустой вывод.
   Run: `cd frontend && pnpm test src/api/httpAdapter.test.ts`
   Expected: PASS.
 - [ ] **Step 5: commit, локальный CI, push 2**
@@ -211,7 +212,7 @@
   node C:/Development/AdilBaga-local-ci/run-local.mjs
   git push
   ```
-  Expected: `ALL PASSED`; hosted CI 9/9; PR переведён из draft в ready; в описании — run push 1 (эквивалентность), run push 2 и строка: «защищённый путь деплоя: удалён `backend/prisma/seed.ts`; следующему rollout'у от e50de25 нужно исключение, включающее его вместе с миграциями 2026-11-07 и `schema.prisma`».
+  Expected: `ALL PASSED`; hosted CI 9/9; PR переведён из draft в ready; в описании — run push 1 (эквивалентность), run push 2 и строка: «защищённые пути деплоя не изменены; release из `main` проходит transport от 1cbd535 без нового исключения».
 
 ---
 
@@ -224,20 +225,31 @@
 - Modify: `scripts/ci/run-checks.mjs` (группа `nest` → `schema`)
 - Modify: `scripts/deploy/auto-gate.mjs:6`, `scripts/deploy/auto-gate.test.mjs`
 - Modify: `docs/production/GITHUB_BRANCH_PROTECTION.md:24`
+- Modify: `scripts/deploy/auto-transport.mjs` (`approvedExceptions`)
+- Delete: `backend/prisma/seed.ts`
 - Modify (вне репозитория): `C:\Development\AdilBaga-local-ci\run-local.mjs:4,14,28`, `C:\Development\AdilBaga-local-ci\inside.sh` (`ALL`)
 
+**Interfaces:**
+- Consumes: SHA активного релиза `ACTIVE` — пользователь присылает вывод `sudo grep -E '^[A-Z_]*SHA' /etc/adilbaga/release.env` с VPS; blob `SEED` = `git rev-parse ACTIVE:backend/prisma/seed.ts` (на 1cbd535 — `5a9debc5abe9ba91367e935dfe22662f849847e7`).
+
+- [ ] **Step 0: защищённые отличия до правок**
+  Run: `git diff --name-only ACTIVE origin/main -- backend/prisma contracts deploy/compose.production.yml`
+  Expected: пусто. Иначе остановиться: эти отличия не входят в этот PR и оформляются отдельно.
+
 - [ ] **Step 1: падающий тест** — в `auto-gate.test.mjs` добавить проверку `assert.ok(mandatory.includes('DB Schema') && !mandatory.includes('Nest Reference'))`.
+  В том же файле — тест `seed removal delta requires exact protected inventory and blob` по образцу `searchBlobs` (PR #105): `seedBlobs={'backend/prisma/seed.ts':[SEED,null]}`; полный набор проходит `verifyCompatibility(ACTIVE, reviewed)`; без пути, с чужим blob в любом из деревьев, с лишним `contracts/openapi.yaml`, с mode `120000` и при `fail:true` — `assert.throws`.
   Run: `node --test scripts/deploy/auto-gate.test.mjs`
-  Expected: FAIL на новой проверке.
-- [ ] **Step 2: переименование** — `mandatory`: `'Nest Reference'` → `'DB Schema'`; `ci.yml`: job id `schema`, `name: DB Schema`, шаг `node scripts/ci/run-checks.mjs schema`, `needs: [go, schema, contracts, security]` у `postgres`, `schema` вместо `nest` у `gate`; `run-checks.mjs`: `group === 'schema'`; branch-protection doc; локальный CI: `nest` → `schema` в `known`, `expected`, примере использования и `ALL`.
-- [ ] **Step 3: проверки**
+  Expected: FAIL на обеих новых проверках.
+- [ ] **Step 2: исключение и удаление seed** — в `approvedExceptions` первой записью `{active: ACTIVE, blobs: [['backend/prisma/seed.ts', SEED, null]]}` с комментарием «legacy Nest seed removal; no DB/schema change»; `git rm backend/prisma/seed.ts`.
+- [ ] **Step 3: переименование** — `mandatory`: `'Nest Reference'` → `'DB Schema'`; `ci.yml`: job id `schema`, `name: DB Schema`, шаг `node scripts/ci/run-checks.mjs schema`, `needs: [go, schema, contracts, security]` у `postgres`, `schema` вместо `nest` у `gate`; `run-checks.mjs`: `group === 'schema'`; branch-protection doc; локальный CI: `nest` → `schema` в `known`, `expected`, примере использования и `ALL`.
+- [ ] **Step 4: проверки**
   Run: `node --test scripts/deploy/auto-gate.test.mjs && node scripts/deploy/verify-auto-deploy.mjs && node scripts/ci/check-source.mjs`
-  Expected: все PASS. `git grep -n "Nest Reference\|run-checks.mjs nest" -- ':!docs/**/reports' ':!docs/superpowers'` пуст.
-- [ ] **Step 4: commit, локальный CI, PR**
+  Expected: все PASS (эти же тесты гоняет группа `security` в CI). `git grep -n "Nest Reference\|run-checks.mjs nest" -- ':!docs/**/reports' ':!docs/superpowers'` пуст. `git diff --name-only ACTIVE -- backend/prisma contracts deploy/compose.production.yml` — ровно `backend/prisma/seed.ts`.
+- [ ] **Step 5: commit, локальный CI, PR**
   ```bash
-  git add .github/workflows/ci.yml scripts docs/production/GITHUB_BRANCH_PROTECTION.md
-  git commit -m "ci: rename Nest Reference job to DB Schema"
+  git add -A .github/workflows/ci.yml scripts backend/prisma docs/production/GITHUB_BRANCH_PROTECTION.md
+  git commit -m "ci: rename Nest Reference job to DB Schema; drop legacy seed"
   node C:/Development/AdilBaga-local-ci/run-local.mjs
   git push -u origin <branch>
   ```
-  Expected: `ALL PASSED`; hosted CI 9 джоб, среди них `DB Schema`, все success. В описании PR: `build` для SHA до этого PR больше не проходит `verifyCI`; откат — через образы на VPS.
+  Expected: `ALL PASSED`; hosted CI 9 джоб, среди них `DB Schema`, все success. В описании PR: `build` для SHA до этого PR больше не проходит `verifyCI`; откат — через образы на VPS (e50de25 и старше); transport-исключение покрывает только удаление `seed.ts` от `ACTIVE`.

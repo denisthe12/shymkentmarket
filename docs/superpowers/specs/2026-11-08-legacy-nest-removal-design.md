@@ -1,6 +1,6 @@
 # Вывод legacy NestJS из репозитория и CI — дизайн
 
-Дата: 2026-11-08. База: `main` ffc0bc4. Решение о подходе: вариант B, два шага; согласование шага 2 — за Backend 2 (root на VPS, отдельное согласование не требуется).
+Дата: 2026-11-08. База: `main` 1cbd535 (перепроверено после PR #104, #105). Решение о подходе: вариант B, два шага; согласование шага 2 — за Backend 2 (root на VPS, отдельное согласование не требуется).
 
 ## 1. Зачем
 
@@ -19,7 +19,7 @@
 
 Проверено 2026-11-08 (репозиторий и вывод с VPS):
 
-- На VPS нет node/pm2-процессов; единственный API — контейнер `adilbaga-api:e50de25` на `127.0.0.1:8080`, cloudflared отправляет `api.aktau.market` туда. `/opt/aktau-sync/backend` — только исходники в checkout'е (688K, без `node_modules`, `dist`, `.env`).
+- На VPS нет node/pm2-процессов; единственный API — контейнер `adilbaga-api` на `127.0.0.1:8080` (на момент проверки e50de25, с 2026-11-08 15:24Z — 1cbd535), cloudflared отправляет `api.aktau.market` туда. `/opt/aktau-sync/backend` — только исходники в checkout'е (688K, без `node_modules`, `dist`, `.env`).
 - Продовые миграции применяются `pnpm exec prisma migrate deploy` из `backend/` с машины разработчика (на VPS для этого нет `node_modules`, в истории shell нет prisma).
 - `backend/prisma` используется: `scripts/ci/postgres.mjs` (migrate deploy в 7 БД, точная цепочка миграций), `scripts/ci/check-source.mjs` (неизменяемость миграций), `scripts/deploy/auto-transport.mjs` (protected path и хэши), `pipeline/` тесты, `backend-go/scripts/local-ingest-db.sh`, perf-скрипты, `ops/` документация.
 - Nest-приложение используется только: джобой `Nest Reference` (`run-checks.mjs nest`) и Ephemeral Staging (сборка, запуск на `:13000`, `REFERENCE_API_BASE_URL` для пяти parity-тестов, `contracts test:live` по обоим origin).
@@ -78,7 +78,7 @@ func referenceBase(t *testing.T) string
 
 ### Push 2: удалить Nest
 
-1. Удалить `backend/src`, `backend/test`, `backend/scripts`, `backend/prisma/seed.ts`, `backend/tsconfig.json`.
+1. Удалить `backend/src`, `backend/test`, `backend/scripts`, `backend/tsconfig.json` (`backend/prisma/seed.ts` — в шаге 2, см. «Защищённые пути деплоя»).
 2. `backend/package.json`: единственная зависимость — `prisma` 5.22.0 (devDependency, версия не меняется); единственный скрипт — `db:migrate` (`prisma migrate dev`, для создания новых миграций). Остальные команды вызываются напрямую, как в текущих планах: `pnpm exec prisma migrate deploy|status|diff|validate`. Удаляются `@prisma/client` и `db:generate` (клиент нужен был только Nest и `seed.ts`), Nest/express/axios/cheerio/redis/class-*/rxjs/dotenv/tsx/typescript/@types/node и все `pnpm.overrides`; `pnpm-lock.yaml` перегенерируется. В `backend/.env.example` остаются только `DATABASE_URL` и `DIRECT_URL`.
 3. `scripts/ci/run-checks.mjs` группа `nest`: `pnpm install --frozen-lockfile` + `pnpm exec prisma validate` с фиктивными loopback `DATABASE_URL`/`DIRECT_URL` (`postgres://ci@127.0.0.1:1/none`), без `pnpm audit` (prod-зависимостей не остаётся). Имя группы и имя джобы `Nest Reference` не меняются.
 4. `scripts/ci/run-ephemeral-staging.mjs`: убрать сборку и запуск Nest, второй прогон parity с живым эталоном и `contracts test:live` по `:13000`; parity идёт только в replay-режиме, `contracts test:live` — только по Go.
@@ -93,7 +93,12 @@ func referenceBase(t *testing.T) string
 
 ### Защищённые пути деплоя
 
-`auto-transport.mjs` сравнивает активный релиз (сейчас e50de25) и кандидат по `backend/prisma`, `contracts`, `deploy/compose.production.yml` и пропускает только перечисленные исключения. Между e50de25 и `main` уже есть непокрытые изменения (две миграции 2026-11-07 и `schema.prisma`), поэтому следующему автоматическому rollout'у в любом случае нужно новое исключение для e50de25. Шаг 1 добавляет к этому набору ровно одно: удаление `backend/prisma/seed.ts` (blob → null). `contracts/` в шаге 1 не меняется вовсе, включая устаревшие формулировки про NestJS в `contracts/README.md` и `openapi.yaml` — их правка откладывается до релиза, который и так будет менять контракт. Список путей для будущего исключения указывается в описании PR.
+`auto-transport.mjs` сравнивает активный релиз и кандидат по `backend/prisma`, `contracts`, `deploy/compose.production.yml` и пропускает только перечисленные исключения. С 2026-11-08 15:24Z активный релиз — 1cbd535 (= `main` после PR #105), и между ним и `main` в этих путях **нет ни одного отличия**. Шаг 1 сохраняет это: под защищёнными путями он не меняет ничего, поэтому любой следующий релиз из `main` проходит transport без нового исключения.
+
+Отсюда два следствия:
+
+- `backend/prisma/seed.ts` в шаге 1 **не удаляется** (после удаления `@prisma/client` он просто мёртвый файл, его никто не запускает и не компилирует). Удаляется в шаге 2 вместе с исключением в `auto-transport.mjs` (раздел 5).
+- `contracts/` в шаге 1 не меняется вовсе, включая устаревшие формулировки про NestJS в `contracts/README.md` и `openapi.yaml`; их правка откладывается до релиза, который и так будет менять контракт.
 
 ### Не меняется в шаге 1
 
@@ -106,8 +111,9 @@ func referenceBase(t *testing.T) string
 3. `scripts/deploy/auto-gate.mjs`: в `mandatory` `Nest Reference` → `DB Schema`; `auto-gate.test.mjs` обновить. `jobs.length === 9` не меняется.
 4. `docs/production/GITHUB_BRANCH_PROTECTION.md`: список джоб.
 5. Локальный CI вне репозитория (`C:\Development\AdilBaga-local-ci\run-local.mjs`): `known` и `expected` — `nest` → `schema`.
+6. Удалить `backend/prisma/seed.ts` и добавить в `approvedExceptions` (`auto-transport.mjs`) запись для **активного на момент шага 2 релиза** (SHA берётся из `/etc/adilbaga/release.env` на VPS, вывод присылает пользователь): единственный путь `backend/prisma/seed.ts`, blob активного дерева → `null` в кандидате. Тест в `auto-gate.test.mjs` по образцу `searchBlobs` (PR #105): полный набор проходит; без пути, с чужим blob, с лишним `contracts/openapi.yaml`, с mode `120000` и при ошибке git — `throws`. Если к моменту шага 2 между активным релизом и `main` появятся другие защищённые отличия, исключение их не покрывает и они оформляются своим PR.
 
-Последствие: `verifyCI` для CI-прогонов SHA до шага 2 перестаёт проходить (в них джоба называется `Nest Reference`), значит режим `build` в `deploy-production.yml` для таких SHA не работает. Откат продакшена делается переключением на уже имеющийся на VPS образ (на 2026-11-08 их 8, включая 49f6823 и b4f4b88), пересборка старых SHA не нужна. `AUTO_DEPLOY_ENABLED` сейчас `false`, автодеплой это не затрагивает.
+Последствие: `verifyCI` для CI-прогонов SHA до шага 2 перестаёт проходить (в них джоба называется `Nest Reference`), значит режим `build` в `deploy-production.yml` для таких SHA не работает. Откат продакшена делается переключением на уже имеющийся на VPS образ (откат 1cbd535 → e50de25 и более старые образы лежат там же), пересборка старых SHA не нужна. Брокер (`auto_broker.py`, 7b8f5320 на VPS) имена CI-джоб не проверяет.
 
 ## 6. Проверка
 
