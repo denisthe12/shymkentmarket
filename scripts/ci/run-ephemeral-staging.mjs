@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { root, temporary, env, httpEnv, run, wait, prepareBrowser } from './common.mjs';
 import { postgres } from './postgres.mjs';
+import { parityTests, assertParityPassed } from './parity-output.mjs';
 
 // REFERENCE_RECORD=1 rewrites backend-go/tests/integration/testdata/reference from the
 // local reference API and stops after the parity run. Never in hosted CI.
@@ -38,10 +39,14 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
     if (!await available('http://127.0.0.1:18080', '/metrics', 404)) throw new Error('metrics must not be public');
     // Small fixture GET/security parity against the recorded frozen v1 reference
     // (backend-go/tests/integration/testdata/reference).
-    const parity = (label, extra) => console.log(run(label, 'go', ['test', '-count=1', '-tags=integration', './tests/integration',
-      '-run', '^(TestHTTPParity|TestLocalSecurityQueryParity|TestLocalContentTypeParity|TestLocalCategoryVisibilityParity|TestLocalVoiceParity)$', '-v'], {
-      cwd: join(root, 'backend-go'), env: { ...env, HTTP_PARITY_CONFIRM: '1', TEST_DATABASE_URL: url('part04_fixture'), SMOKE_DATABASE_URL: url('part04_fixture', 'part04_api_login'), GO_API_BASE_URL: 'http://127.0.0.1:18080', ...extra },
-    }));
+    const parity = (label, extra) => {
+      const output = run(label, 'go', ['test', '-count=1', '-tags=integration', './tests/integration',
+        '-run', `^(${parityTests.join('|')})$`, '-v'], {
+        cwd: join(root, 'backend-go'), env: { ...env, HTTP_PARITY_CONFIRM: '1', TEST_DATABASE_URL: url('part04_fixture'), SMOKE_DATABASE_URL: url('part04_fixture', 'part04_api_login'), GO_API_BASE_URL: 'http://127.0.0.1:18080', ...extra },
+      });
+      console.log(output);
+      assertParityPassed(output); // go test exits 0 on SKIP; every parity test must actually pass
+    };
     if (record) {
       // An intended wire change: re-record from Go and review the diff as a contract change.
       parity('record reference', { REFERENCE_API_BASE_URL: 'http://127.0.0.1:18080', REFERENCE_RECORD: '1' });

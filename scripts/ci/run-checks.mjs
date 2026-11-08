@@ -54,6 +54,7 @@ if (group === 'contracts') {
   console.log(run('release broker regressions', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'scripts/deploy', '-p', 'auto_*_test.py']));
   console.log(run('release transport guards', 'node', ['--test', 'scripts/deploy/auto-gate.test.mjs']));
   console.log(run('disposable CI database guards', 'node', ['--test', 'scripts/ci/guard.test.mjs']));
+  console.log(run('staging parity no-skip guard', 'node', ['--test', 'scripts/ci/parity-output.test.mjs']).split('\n').slice(-8).join('\n'));
   run('tracked secrets / workflow policy', 'node', ['scripts/ci/check-source.mjs']);
   console.log(run('backup synthetic guards', 'node', ['--test', 'ops/postgres/backup.test.mjs']).split('\n').slice(-10).join('\n'));
 } else throw new Error('unknown CI group');
