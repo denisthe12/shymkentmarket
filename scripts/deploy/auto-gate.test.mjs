@@ -371,3 +371,23 @@ test('search delta requires complete exact protected inventory and blobs',()=>{
   withGit({...config,mode:'120000'},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
   withGit({...config,fail:true},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
 });
+
+test('the schema-only CI job is mandatory under its new name',()=>{
+  assert.ok(mandatory.includes('DB Schema'));
+  assert.ok(!mandatory.includes('Nest Reference'));
+  assert.equal(mandatory.length,9);
+});
+
+const seedActive='1cbd535562cca1852942683a3c0f0f717db181b3';
+const seedBlobs={'backend/prisma/seed.ts':['5a9debc5abe9ba91367e935dfe22662f849847e7',null]};
+test('legacy seed removal delta requires the exact active blob and an absent candidate file',()=>{
+  const path='backend/prisma/seed.ts';
+  const config={old:seedActive,next:reviewed,table:seedBlobs,paths:[path]};
+  withGit(config,()=>transport.verifyCompatibility(seedActive,reviewed));
+  for(const ref of [seedActive,reviewed])
+    withGit({...config,change:{[ref+':'+path]:'f'.repeat(40)}},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  withGit({...config,paths:[path,'contracts/openapi.yaml']},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  withGit({...config,paths:[path,'backend/prisma/schema.prisma']},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  withGit({...config,mode:'120000'},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  withGit({...config,fail:true},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+});

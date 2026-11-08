@@ -3,7 +3,7 @@ import {readFileSync, appendFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 
 export const repository = 'kiratonine/AdilBaga';
-export const mandatory = ['Contracts', 'Frontend', 'Go Quality', 'Security', 'Nest Reference',
+export const mandatory = ['Contracts', 'Frontend', 'Go Quality', 'Security', 'DB Schema',
   'Pipeline Quality', 'PostgreSQL Integration', 'Ephemeral Staging', 'CI Gate'];
 export const shaPattern = /^[a-f0-9]{40}$/;
 export function eventCandidate(event, name, enabled, ref) {

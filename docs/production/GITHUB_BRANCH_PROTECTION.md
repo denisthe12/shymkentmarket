@@ -21,6 +21,6 @@ force push and require CI Gate for reviewed merges when the team is ready. Revie
 bypass/admin policy separately; avoid locking the owner out during activation.
 
 `CI Gate` must run with `always()` and reject failure/cancellation/skipping of any
-mandatory dependency. Workflow: Contracts, Go Quality, Nest Reference, Frontend,
+mandatory dependency. Workflow: Contracts, Go Quality, DB Schema, Frontend,
 Security, PostgreSQL Integration, Ephemeral Staging. No path-filter skip loophole.
 No repository settings changed in Phase A; GitHub execution **NOT RUN**.

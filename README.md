@@ -353,7 +353,8 @@ http://localhost:3100/ru/catalog
 
 Для runtime используется PostgreSQL snapshot.
 
-Схема и миграции живут в `backend/prisma` (в `backend/` больше ничего нет).
+Схема и миграции живут в `backend/prisma`; кроме них в `backend/` только
+Prisma-пакет (`package.json`, lockfile, `.env.example`).
 Применить миграции к базе:
 
 ```bash

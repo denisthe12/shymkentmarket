@@ -17,7 +17,8 @@ no longer sends, fails the test. The files were recorded from the legacy NestJS
 reference before it was removed and are the approved v1 snapshot.
 
 When an API change is intended, re-record from Go on the same disposable stack
-(local only; refused when `CI` is set):
+(local only, refused when `CI` is set; run from the repository root, Docker must
+be running):
 
 ```bash
 REFERENCE_RECORD=1 node scripts/ci/run-ephemeral-staging.mjs
