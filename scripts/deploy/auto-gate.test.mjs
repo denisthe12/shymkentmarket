@@ -352,3 +352,22 @@ for(const path of Object.keys(anvarBlobs))test(`Anvar exception rejects a change
     assert.throws(()=>transport.verifyCompatibility(anvarActive,anvarCandidate));
   });
 });
+
+const searchActive='e50de2532259ab477e8491c4bddc2e6120ef3da0';
+const searchBlobs={
+  'backend/prisma/migrations/20261107000000_price_history/migration.sql':[null,'2863a1d1d060d9f62e14d51187d7bb21a3e8c580'],
+  'backend/prisma/migrations/20261107000100_product_identities/migration.sql':[null,'d8f8e9c551c68b6a901d17f56db16523ad35344e'],
+  'backend/prisma/schema.prisma':['2f270ddd9e1aa24683fc15766d67c1b88d1251fe','00315ade499cc561f0731ae0875b1b46643dac11'],
+};
+test('search delta requires complete exact protected inventory and blobs',()=>{
+  const config={old:searchActive,next:reviewed,table:searchBlobs,paths:Object.keys(searchBlobs)};
+  withGit(config,()=>transport.verifyCompatibility(searchActive,reviewed));
+  for(const path of Object.keys(searchBlobs)) {
+    withGit({...config,paths:config.paths.filter(p=>p!==path)},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
+    for(const ref of [searchActive,reviewed])
+      withGit({...config,change:{[ref+':'+path]:'f'.repeat(40)}},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
+  }
+  withGit({...config,paths:[...config.paths,'contracts/openapi.yaml']},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
+  withGit({...config,mode:'120000'},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
+  withGit({...config,fail:true},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
+});

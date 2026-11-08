@@ -538,3 +538,100 @@ Prisma/migration exception is implemented, no checker disabled.
 No merge/root install/approval/newapplicationartifact/deploy/rollback attempted.
 Production stays olde50de253healthy. PostgreSQL, Frontend, sync/timers, C2/G3 and
 recovery backups unchanged. Stop for independent review/administrative gates.
+
+
+### ONE_PASS recovery — publication and exact-head hosted qualification
+
+UTC 2026-11-08T12:32:02.166178+00:00. **Final release status: BLOCKED; source remediation ready for independent Code Review.**
+
+Draft PR https://github.com/kiratonine/AdilBaga/pull/104; branch fix/broker-private-main-ssh; exactHEAD **0b492bc1b0f88c0bb805736dd24df258c48a8748**. One ordinary scoped commit/push, no force/merge/root install. Final currentmain ffc0bc44dfef3e11399a01cb509a1268cf87c683.
+
+Exact-head hostedCI https://github.com/kiratonine/AdilBaga/actions/runs/42479860177 attempt1, pull_request, **9/9SUCCESS**:
+
+| Job | ID | Result |
+|---|---:|---|
+| Contracts | 128729243335 | SUCCESS |
+| Go Quality | 128729243409 | SUCCESS |
+| Pipeline Quality | 128729243420 | SUCCESS |
+| Frontend | 128729243444 | SUCCESS |
+| Nest Reference | 128729243473 | SUCCESS |
+| Security | 128729243486 | SUCCESS |
+| PostgreSQL Integration | 128729853081 | SUCCESS |
+| Ephemeral Staging | 128730211608 | SUCCESS |
+| CI Gate | 128730905430 | SUCCESS |
+
+All nine job conclusions are real SUCCESS; this does not claim every optional test case ran. Existing conditional/optional skips in full suites remain as logged. New focused Python56/56, transport104/104, real SSH8/8 and ops176/176 have no skips. PG17 and Ephemeral Staging succeeded in hosted CI; local Go full quality and PG17 also passed.
+
+Full sanitized hosted log: `/home/denis/tmp/aktau-go-search-word-order/artifacts/search-production-preflight/one-pass-recovery/hosted-ci-sanitized.log`; bytes480707, SHA25682e1916c4d3a1b5634937f924db20bf15b1ecf5b985bdd6cc3dbaa8845579df9. Download/sanitization exit0. No raw production log/credential output.
+
+Public BEFORE (old API) HTTP checks: live200/2.209624s, ready200/0.529155s, categories200/0.750954s, dashboard200/0.913370s; all curl exit0. Search-summary probe used the wrong DTO shape and remains NOT_VERIFIED, not a search failure or PASS. No new-release E2E/Voice/observation/rollback attempted; historical search asymmetry remains BEFORE evidence.
+
+Public Deploy Key fingerprint from existing .pub only: SHA256:pdAiduPfCeqEfnCxxt4aBLpgeN0ZbyFuDFIYvXyfwq4. Read-only scope remains Owner-reported: repository Deploy Keys API unavailable to current tooling (exit1), so independent scope verification NOT_VERIFIED. Admin can verify this exact fingerprint and read-only scope in repository Settings→Deploy Keys; no new credential or permission request made.
+
+Candidate broker SHA256 **7b8f532015506e90fd1ce34d7f4b6df181bec17774d142ff69cdbc8406be0a6f**. Installed remains **2dd252eed4e0c634e908acd33135d61dd02b8d9595911708f459e50efa62406c** at last read-only VPS snapshot; new fixed host trust absent. Approval/compatibility gates not changed. Production image remains observedold e50de253..., retainedIDsha256:a5f4b2733b6e9fb8a3b62e88e869fdcce80d59928fd504b4503a210fa4822ea7; no image loaded/started, no newapplicationartifact. Build42408917107/artifact13588533054 remain tied only toffc0bc44.
+
+Clean source archive: `/home/denis/tmp/aktau-pr103-private-main-review-20261108/PR103_PRIVATE_MAIN_BROKER_CHANGED_FILES.tar.gz`; 58182bytes,6regular0644members; SHA256 **d43700af6d503e84c909bf20825699055bb29a44dd5e955e35e9c59f1fc8b905**. .sha256 and ARCHIVE_VERIFICATION.json sidecars provided. Independent GitHEAD+working-tree byte-match, exact6paths, unique safe relative paths/no links and privacy/source audit PASS.
+
+Archive contains the **immutable committed report freeze** (including historical sections and source qualification), where new hosted CI correctly read NOT_RUN at that time. This later CI-execution follow-up is append-only in the original local release report, not silently substituted into the frozen commit/archive. Source worktree remains CLEAN; PR body carries actual CI result. No archive/evidence/Owner TODO files committed.
+
+Remaining single administrator/reviewer packet is unchanged: review PR104; verify public fingerprint/read-only key and host trust; independently approve exact final candidate/active/three migration-schema blobs against attributed Backend2 evidence; authorize exact root broker+known_hosts installation/backup/CAS/readback. After reviewed merge obtain new exact-main CI/new immutable build/artifact and genuine independent exact-artifact root approval, then a NEW absolute UTC window and fresh rollback/global-lock/admission preflight. Until all pass **BLOCKED**, no cutover retry or historical exception reuse. No PostgreSQL/Frontend/sync/C2/G3/timer/credential/flag/settings changes.
+
+Tooling correction: old gh pr edit GraphQL projectCards endpoint failed (deprecation); REST PATCH of the same PR body exit0, independently rechecked exactHEAD/draft/CI9 text. No extra commit/push/source modification. Final diff/status clean; archive independently rechecked6/6 against commit and SHA sidecar.
+
+
+## PR104_CODE_REVIEW_AND_CONDITIONAL_RELEASE_20261108
+
+UTC 2026-11-08T13:39:31.613984+00:00. Status **BLOCKED_ADMIN_ACTION_REQUIRED**. Read Owner TASK completely. Independent supplied review SOURCE_REVIEW_PASS_WITH_RELEASE_GATES applies to exact0b492bc1b0f88c0bb805736dd24df258c48a8748, not a root approval. Fresh authenticated GitHub PR/head checks and run42479860177 attempt1 verified all9SUCCESS; unchanged reviewed commit. `gh pr ready104` exit0; ordinary `gh pr merge104 --merge --match-head-commit 0b492bc1b0f88c0bb805736dd24df258c48a8748` exit0, no admin/force. Actual merge/current candidate **32b8a3556296039b49d88d161c06fbec3a14d20e**.
+
+Exact-main push CI **42485936039**, current status in_progress, conclusion None. This is **not CI9 PASS**; new official build-only/artifact NOT_RUN pending successful exact-main qualification. Old artifact13588533054 remains bound only toffc0bc44; no relabeling.
+
+### Consolidated independent administrative/review packet
+
+1. Administrator independently verifies repository read-only deploy-key fingerprint SHA256:pdAiduPfCeqEfnCxxt4aBLpgeN0ZbyFuDFIYvXyfwq4 and authentic GitHub host keys; installs only `/etc/ssh/adilbaga-github-known-hosts` root:root0644 through existing administrative channel. No ssh-keyscan/TOFU, no copied private key or changed sudoers. Agent does not perform this installation.
+2. Administrator qualifies old installed broker SHA2562dd252eed4e0c634e908acd33135d61dd02b8d9595911708f459e50efa62406c, no-clobber root-private backup and idle/global lock, atomically installs reviewed source broker SHA2567b8f532015506e90fd1ce34d7f4b6df181bec17774d142ff69cdbc8406be0a6f with custody/CAS/fsync/readback. Fixed wrapper unchanged. Independent root-component installation is mandatory; agent is not that independent administrator.
+3. Independent compatibility review must bind activee50de2532259ab477e8491c4bddc2e6120ef3da0 and actual candidate32b8a3556296039b49d88d161c06fbec3a14d20e, only these blobs: price_history absent→2863a1d1d060d9f62e14d51187d7bb21a3e8c580; product_identities absent→d8f8e9c551c68b6a901d17f56db16523ad35344e; schema2f270ddd9e1aa24683fc15766d67c1b88d1251fe→00315ade499cc561f0731ae0875b1b46643dac11. Backend2 DB/SQL/grants confirmation is Owner-relayed supporting evidence; execution under aktau_api_runtime remainsNOT_VERIFIED. No exception is installed or broad policy bypass introduced. A subsequent policy-source merge changes candidateSHA again and needs exact final identity review; do not silently inherit this binding.
+4. After final reviewed policy/main and actual CI9SUCCESS, official build-only produces NEW artifact. Administrator independently verifies final source/CI/build/run-attempt/artifact/name/original ZIP/image.tar/layers/binary and installs genuine unused schema1 exact-artifact root authorization. None is generated by this agent.
+5. Owner supplies NEW absolute UTC maintenance interval. Old Nov7window expired. Only after installed lookup, compatibility, root approval and rollback/global-lock/health gates pass may one official broker cutover proceed. No direct SSH Docker bypass.
+
+No VPS mutation, root installation, DB/schema/Frontend/sync/C2/G3/scheduler/backup/credential changes, flag modification, Docker load, cutover or rollback in this continuation. Production last independently observede50de253healthy; no new production E2E or current Voice claim. Prior source tests remain valid for unchanged source; exact-main CI is separately pending, not substituted with PR CI. Stop at genuine independent administrative gates.
+
+
+## Administrator source preparation — 2026-11-08T13:51:59.973680+00:00
+
+# PR104 administrative preparation — review gate
+
+Status: BLOCKED_ADMIN_ACTION_REQUIRED. No production mutation.
+
+Current qualified main:32b8a3556296039b49d88d161c06fbec3a14d20e.
+Main CI42485936039 attempt1 SUCCESS (fresh run metadata); preceding exact PR CI9 already verified. Root broker expected old SHA2562dd252eed4e0c634e908acd33135d61dd02b8d9595911708f459e50efa62406c; reviewed replacement SHA2567b8f532015506e90fd1ce34d7f4b6df181bec17774d142ff69cdbc8406be0a6f.
+
+Administrator confirms fixed /etc/ssh/adilbaga-github-known-hosts and deploy read-only identity. No agent installation performed. Installer implementation/qualification NOT_RUN; no untested root script offered for execution.
+
+## Compatibility design issue requiring independent decision
+
+A candidate mirroring existing approvedExceptions was locally tested:105 Node tests PASS, exit0. It limits active e50de253 and the complete three-path blob inventory but accepts any candidate carrying those blobs. That is NOT the requested explicit final-candidate restriction. Candidate diff preserved as UNAPPROVED_POLICY_CANDIDATE.diff, not committed/pushed/applied; working source restored to exact HEAD without reset or deleting Owner work.
+
+Hardcoding a future merge commit SHA into the same commit's own source is self-referential: adding that SHA changes the commit. Do not claim this can pin its own final merge SHA. Independent review must choose a non-self-referential binding. Proposed existing-contract composition: exact active + three blob pins in reviewed transport; final candidate separately bound to exact-main CI/artifact and independently installed schema1 root authorization, with administrator explicitly reviewing this exact compatibility delta for that final release. This is a proposal, not approval or implemented policy. Alternatively a separately reviewed external exact-pair policy would be a new trust contract; do not invent it silently.
+
+## Root installer requirements before execution
+
+Fixed target /usr/local/lib/adilbaga-deploy/auto_broker.py only; reviewed source bytes from qualified Git commit, never execute uploaded Python as installer trust. Root trusted installer must pin parent descriptors/custody, acquire existing global deployment lock and require idle/no RUNNING journal, CAS exact old hash/device/inode/mode/owner, root-private exclusive/fsynced backup plus durable intent, stage exclusive0600 then approved0644 and fsync, recheck target identity before atomic replacement, fsync parent, exact new hash/owner/mode readback. Unknown/crash state blocks rerun; no automatic rollback or deletion of foreign files. Known_hosts is separately authenticated admin input, never copied automatically from writable user known_hosts or ssh-keyscan. Root upgrade itself requires independently reviewed installer and actual disposable filesystem/crash qualification; NOT claimed complete here.
+
+## Next one review packet
+
+Independent reviewer decides exact final-SHA compatibility binding above and reviews forthcoming root installer before root execution. Then source implementation/tests/PR/CI, final merge/exact-main CI/new official build-only and immutable artifact verification. Only after final artifact exists can administrator independently issue exact-artifact schema1 approval. New absolute UTC window and rollback preflight remain mandatory. Old artifact13588533054 cannot be relabeled. No database/frontend/sync/C2/G3/timer changes.
+
+
+
+## FINAL_PR104_RELEASE_EXECUTION — compatibility source review gate
+
+UTC 2026-11-08T14:06:39.952535+00:00. Status REVIEW_REQUIRED / BLOCKED before merge or production mutation.
+Main32b8a3556296039b49d88d161c06fbec3a14d20e; run42485936039 attempt1 independently verified9/9SUCCESS. All three old/new Prisma blobs independently re-read from actual Git objects and match TASK. Owner accepts gate composition as proposal; independent policy review still REQUIRED.
+
+Source candidate uses the existing approvedExceptions mechanism: exact activee50de2532259ab477e8491c4bddc2e6120ef3da0 and ONLY the complete three-path/old-new-blob inventory. Unknown protected path/missing delta/wrong mode/changed blob/Git failure rejects. No DB or broad Prisma bypass. Final candidate is bound by authenticated exact-main CI, immutable producer/download validation and independent schema1 authorization, not embedded future self SHA. Transport calls compatibility only after CI/artifact/status admission; broker performs fresh-main check then exact independent approval+archive validation before load, consumes single-use marker before load, rechecks approval and fresh main before cutover. No order change introduced.
+
+Tests: transport105/105PASS exit0; ops176PASS exit0; security including Python57PASS and transport105PASS exit0; Go full quality/race/vet/staticcheck/govulncheck/build exit0; disposable PG17 integration/cleanup exit0. Additional precise test constructs another self-consistent candidate manifest and requires authorization_unavailable BEFORE any Docker command; candidate artifact name is updated to exclude unrelated invalid-manifest rejection. Existing expired/used/provenance/stale tests preserved. Logs /tmp/pr103-final-policy-*.log and /tmp/pr103-policy-approved-design.log. Focused strengthened test exit0. No production SQL tests; Backend2 role execution remainsNOT_VERIFIED.
+
+Read-only SSH metadata: /etc/ssh/adilbaga-github-known-hosts root:root0644 regular/single-link confirmed, exit0. Installed broker stillSHA2562dd252eed4e0c634e908acd33135d61dd02b8d9595911708f459e50efa62406c. No root installation or known_hosts modification. Owner independently reports host authentication; metadata alone is not an independent fingerprint proof.
+
+Phase A independent policy Code Review is the next mandatory gate. Do not self-approve, merge policy, install root code or create new final artifact before that review. Phase B installer implementation/qualification and exact executable admin commands NOT_RUN; no untested installer offered. Continue the SAME task from this policy review checkpoint after reviewerPASS, then exact-mainCI, disposable installer qualification/admin install, new official artifact/admin approval and new UTCwindow. Existing broker source bytes7b8f... unchanged. No PostgreSQL, Frontend, publisher, C2/G3, timer, backup, credential or flag changes. No deployment/E2E/rollback success claimed.

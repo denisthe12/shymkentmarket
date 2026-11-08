@@ -201,6 +201,14 @@ class PrivateMainTests(unittest.TestCase):
 
 
 class BrokerTests(unittest.TestCase):
+    def test_another_candidate_requires_its_own_exact_approval_before_docker(self):
+        with approved_fixture() as (m, archive, record, record_path, control):
+            m['sha'] = m['revision'] = 'b' * 40
+            m['provenance']['artifactIdentity']['name'] = 'adilbaga-api-' + m['sha'] + '-43-1'
+            with patch('auto_broker.command', side_effect=AssertionError('Docker before exact approval')) as docker:
+                with self.assertRaisesRegex(Blocked, '^authorization_unavailable$'): Host().identity(m, archive)
+                docker.assert_not_called()
+
     def test_private_main_uses_fixed_readonly_lookup(self):
         with patch('auto_broker.private_main', return_value=SHA) as lookup:
             self.assertTrue(Host().fresh_main(SHA))
