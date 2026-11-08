@@ -12,7 +12,7 @@ type FilterDefinition = { key: string; label: string; type: 'multi-select'; opti
 const compare = (a: Primitive, b: Primitive) => (typeof a === 'number' && typeof b === 'number' ? a - b : String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0)
 
 /**
- * Go и Nest трактуют `categories.filterSchema` как allowlist: multi-select без непустого `options` отбрасывается,
+ * Go трактует `categories.filterSchema` как allowlist: multi-select без непустого `options` отбрасывается,
  * а в запросе принимаются только перечисленные значения. Поэтому options берутся из закоммиченного словаря
  * (значения, реально существующие у карточек категории); API дополнительно пересекает их с текущим snapshot.
  * Категория карточки считается через refineCategory (SCRUM-19); фильтр с `allow` дополнительно ограничен курированным списком.
@@ -34,7 +34,7 @@ export function filterSchemaFor(dict: Dictionary, slug: CategorySlug): { filters
   return { filters }
 }
 
-/** Тот же allowlist-контракт, что в Go (`definitions`) и Nest: multi-select без непустого массива примитивов не будет отдан API */
+/** Тот же allowlist-контракт, что в Go (`definitions`): multi-select без непустого массива примитивов не будет отдан API */
 export function assertServableSchema(slug: string, schema: { filters: { key: string; type: string; options?: unknown }[] }): void {
   for (const f of schema.filters) {
     if (f.type !== 'multi-select') continue

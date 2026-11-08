@@ -27,7 +27,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16" />
-  <img src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white" alt="NestJS 11" />
+  <img src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" alt="Go 1.27" />
   <img src="https://img.shields.io/badge/PostgreSQL-Supabase-3ECF8E?logo=postgresql&logoColor=white" alt="PostgreSQL / Supabase" />
 </p>
 
@@ -205,8 +205,8 @@ PostgreSQL
 Production frontend: `main` → Vercel → **https://aktau.market**.
 Production API: immutable Go container на VPS → Cloudflare Tunnel →
 **https://api.aktau.market**; PostgreSQL остаётся Supabase. Railway retired.
-NestJS `backend/` остаётся reference для frozen v1 parity, не production traffic
-owner. Запуск и проверки: [backend-go/README.md](backend-go/README.md).
+Frozen v1 wire-контракт закреплён записанными ответами в
+`backend-go/tests/integration/testdata/reference`. Запуск и проверки: [backend-go/README.md](backend-go/README.md).
 Это документирование принятого deployment, не новая проверка VPS.
 
 ```text
@@ -225,7 +225,7 @@ Nearest Store / Haversine
 Siri speech + notification
 ```
 
-> **Важно:** Gemini не сравнивает цены, не выбирает магазин и не определяет самый дешёвый товар. Эти решения выполняются детерминированно в Go/PostgreSQL; NestJS сохранён как reference.
+> **Важно:** Gemini не сравнивает цены, не выбирает магазин и не определяет самый дешёвый товар. Эти решения выполняются детерминированно в Go/PostgreSQL.
 
 ---
 
@@ -237,9 +237,9 @@ Siri speech + notification
 | UI / routing | Tailwind CSS, Next.js routing, ru/kk URL prefixes |
 | Data fetching | TanStack Query |
 | Карта | Leaflet / React Leaflet |
-| Backend | Go — production API с frozen v1 parity; NestJS 11 / TypeScript — reference |
+| Backend | Go — production API (frozen v1 wire-контракт) |
 | Database | PostgreSQL / Supabase |
-| DB tooling / reference ORM | Prisma; Go runtime — pgx |
+| DB schema / migrations | Prisma (`backend/prisma`); Go runtime — pgx |
 | Voice NLP | Gemini API |
 | Voice sessions | Upstash Redis |
 | Geolocation | Haversine distance |
@@ -284,6 +284,7 @@ Wire contract v1: [OpenAPI](contracts/openapi.yaml),
 ### Требования
 
 - Git;
+- Go 1.27;
 - Node.js 24;
 - pnpm 10;
 - PostgreSQL / Supabase.
@@ -297,41 +298,18 @@ cd AdilBaga
 
 ### 2. Backend
 
-```bash
-cd backend
-pnpm install
-cp .env.example .env
-```
-
-Заполните `backend/.env`:
-
-```env
-DATABASE_URL=
-DIRECT_URL=
-
-GEMINI_API_KEY=
-GEMINI_API_KEY2=
-GEMINI_API_KEY3=
-GEMINI_MODEL=gemini-3.1-flash-lite
-
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
-```
-
-Подготовьте Prisma client и соберите backend:
+Production API — Go-сервис в `backend-go/`. Конфигурация читается только из
+переменных окружения; полный список и ограничения — в
+[backend-go/README.md](backend-go/README.md).
 
 ```bash
-pnpm db:generate
-pnpm build
+cd backend-go
+APP_ENV=development DATABASE_URL=<локальная БД> \
+  CORS_ALLOWED_ORIGINS=http://localhost:3100 PORT=3000 go run ./cmd/api
 ```
 
-Запуск:
-
-```bash
-node --env-file=.env dist/src/main.js
-```
-
-Backend по умолчанию доступен на:
+Voice дополнительно читает `GEMINI_API_KEY*` и `UPSTASH_REDIS_REST_*`
+(см. `backend-go/.env.example`). Backend доступен на:
 
 ```text
 http://localhost:3000
@@ -375,16 +353,17 @@ http://localhost:3100/ru/catalog
 
 Для runtime используется PostgreSQL snapshot.
 
-Если поднимается новая локальная база:
+Схема и миграции живут в `backend/prisma` (в `backend/` больше ничего нет).
+Применить миграции к базе:
 
 ```bash
 cd backend
-
-pnpm db:generate
-pnpm exec prisma migrate deploy
-pnpm db:seed
-pnpm db:verify
+pnpm install
+DATABASE_URL=... DIRECT_URL=... pnpm exec prisma migrate deploy
 ```
+
+Локальная база со схемой и ролями как в production —
+`backend-go/scripts/local-ingest-db.sh` (с дампом каталога или `SKIP_DUMP=1`).
 
 > Для обычного runtime и live demo повторный парсинг сайтов магазинов не требуется.
 
@@ -395,13 +374,13 @@ pnpm db:verify
 ### Backend
 
 ```bash
-cd backend
-
-pnpm build
-pnpm test
-pnpm test:matching
-pnpm test:audit
+cd backend-go
+go test ./...
+go vet ./...
 ```
+
+CI-группы локально: `node scripts/ci/run-checks.mjs <group>`
+(см. [scripts/ci/README.md](scripts/ci/README.md)).
 
 ### Frontend (единственный frontend — Next.js в `frontend/`)
 
@@ -461,12 +440,9 @@ AdilBaga/
 │       └── siri.png
 │
 ├── backend/
-│   ├── prisma/                 # Prisma schema, migration, seed
-│   ├── scripts/                # audit / verification utilities
-│   └── src/
-│       ├── database/           # PostgreSQL adapters
-│       ├── modules/            # import / normalization / matching
-│       └── voice/              # Gemini, sessions, voice flow
+│   └── prisma/                 # Prisma schema, migrations, security SQL
+│
+├── backend-go/                 # production Go API, ingest, retention
 │
 ├── data/
 │   └── snapshots/              # frozen dataset used by the MVP

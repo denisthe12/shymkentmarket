@@ -23,7 +23,7 @@ export function createHttpAdapter(baseUrl: string, isServer = false): CatalogApi
       throw new ApiError(0, 'Network error')
     }
     if (!response.ok) {
-      // NestJS: { statusCode, message, error }
+      // API v1 error envelope: { statusCode, message, error }
       const body = await response.json().catch(() => null)
       const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message
       throw new ApiError(response.status, message ?? response.statusText)

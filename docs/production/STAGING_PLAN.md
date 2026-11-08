@@ -10,7 +10,8 @@ API and local Next HTTP Playwright suite. Each DB helper owns its container and
 derives a literal loopback port; no caller-supplied production target or URL fallback.
 Readiness polls the final TCP server and verifies TCP SELECT 1 before bootstrap;
 resources are namespaced. Local Phase A rehearsal is PASS: HTTP/security/Content-Type
-parity, frozen GET contracts on Go/Nest, HTTP Playwright and Docker outage/recovery.
+parity against the recorded frozen v1 reference (`backend-go/tests/integration/testdata/reference`),
+frozen GET contracts on Go, HTTP Playwright and Docker outage/recovery.
 This is not a persistent staging deployment or GitHub Actions PASS claim.
 
 Only ephemeral staging applies `scripts/ci/fixtures/voice-parity-overlay.sql` through
@@ -25,7 +26,7 @@ All earlier blockers and actual rerun results remain in the Part12 report.
 Go runs a test profile for staging GET flows with real local SQL and no configured
 external Gemini/Upstash. Production validation is not weakened. Existing Go unit
 fakes cover Voice/provider/session/privacy/outage/abuse; real provider calls never
-belong in PR CI. The small SQL fixture is not the Nest contract example fixture
+belong in PR CI. The small SQL fixture is not the `contracts/examples` fixture
 or the 849-product production dataset. Local GET contract profile uses the existing
 `test:live` name but connects **only to loopback CI APIs**.
 

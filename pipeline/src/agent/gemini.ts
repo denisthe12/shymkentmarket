@@ -27,7 +27,7 @@ function waitMs(res: Response, attempt: number, base: number): number {
 }
 
 /**
- * Failover по ключам как в backend/src/voice/nlp/gemini-nlp-parser.ts + дисковый кэш для воспроизводимости и экономии.
+ * Failover по ключам как в backend-go/internal/gemini/client.go + дисковый кэш для воспроизводимости и экономии.
  * Запросы разносятся по времени (throttle), на 429/5xx — повтор с паузой на том же ключе, затем следующий ключ.
  */
 export function createGemini(opts: GeminiOptions = {}): LlmCall {

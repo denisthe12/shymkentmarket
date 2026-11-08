@@ -101,7 +101,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3100 PW_CHANNEL=chrome pnpm test:e2e
 ```
 
 Этот режим запускает только data-agnostic `e2e/http.spec.ts` против отдельного
-реального NestJS, без fixture assumptions. Production API failure не переключает
+реального Go API, без fixture assumptions. Production API failure не переключает
 адаптер на mock. Каталог/Dashboard/sitemap строятся в runtime, server GET cache
 ограничен 3600 s и помечен `catalog-data`; build не требует запущенного API.
 

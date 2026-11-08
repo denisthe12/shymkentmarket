@@ -41,14 +41,14 @@ describe('http adapter', () => {
     await expect(createHttpAdapter('http://api.test', true).getCategories()).rejects.toMatchObject({ status: 503 })
   })
 
-  it('joins NestJS validation messages', async () => {
+  it('joins API v1 validation messages', async () => {
     const body = { statusCode: 400, message: ['sort must be one of price_asc, price_desc, name_asc'], error: 'Bad Request' }
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 400 })))
     const error = await createHttpAdapter('http://api.test').getCategories().catch((e) => e)
     expect(error).toMatchObject({ status: 400, message: body.message[0] })
   })
 
-  it('maps NestJS errors to ApiError', async () => {
+  it('maps API v1 errors to ApiError', async () => {
     const body = { statusCode: 404, message: 'Product not found', error: 'Not Found' }
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 404 })))
     const error = await createHttpAdapter('http://api.test').getProduct('1').catch((e) => e)
