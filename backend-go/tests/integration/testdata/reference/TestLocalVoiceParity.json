@@ -1,0 +1,182 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"найди молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":\" 43.63798231415926 \",\"longitude\":\"5.116918027182818e+01\",\"text\":\"самое дешёвое молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"needs_clarification\",\"sessionId\":\"1377161d-108d-47d3-bb65-74fd5a38f2b8\",\"question\":\"Какой объём и жирность молока вам нужны?\",\"missingFields\":[\"volumeMl\",\"fatPercent\"]}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"1377161d-108d-47d3-bb65-74fd5a38f2b8\",\"text\":\"1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"1377161d-108d-47d3-bb65-74fd5a38f2b8\",\"text\":\"ещё privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 404,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Voice session not found or expired\",\"error\":\"Not Found\",\"statusCode\":404}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"молоко privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"needs_clarification\",\"sessionId\":\"bf290937-42a4-4dd8-bf0d-500621b33263\",\"question\":\"Что нужно сделать: найти цены или самый дешёвый товар?\",\"missingFields\":[\"intent\",\"volumeMl\",\"fatPercent\"]}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"bf290937-42a4-4dd8-bf0d-500621b33263\",\"text\":\"найди 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"bf290937-42a4-4dd8-bf0d-500621b33263\",\"text\":\"ещё privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 404,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Voice session not found or expired\",\"error\":\"Not Found\",\"statusCode\":404}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"найди privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"needs_clarification\",\"sessionId\":\"60cf8eb4-8f4a-4d8b-8da2-f0b41e73dee8\",\"question\":\"Какой товар вы ищете?\",\"missingFields\":[\"category\"]}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"60cf8eb4-8f4a-4d8b-8da2-f0b41e73dee8\",\"text\":\"молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"60cf8eb4-8f4a-4d8b-8da2-f0b41e73dee8\",\"text\":\"ещё privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 404,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Voice session not found or expired\",\"error\":\"Not Found\",\"statusCode\":404}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"найди молоко 1 литр privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"needs_clarification\",\"sessionId\":\"bdb89c4e-1266-4e52-b1c6-07b434d27ad1\",\"question\":\"Какая жирность молока вам нужна?\",\"missingFields\":[\"fatPercent\"]}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"bdb89c4e-1266-4e52-b1c6-07b434d27ad1\",\"text\":\"3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"bdb89c4e-1266-4e52-b1c6-07b434d27ad1\",\"text\":\"ещё privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 404,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Voice session not found or expired\",\"error\":\"Not Found\",\"statusCode\":404}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко 500 мл 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 201,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[],\"speech\":\"Подходящих товаров не найдено.\"}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/continue",
+    "contentType": "application/json",
+    "body": "{\"sessionId\":\"unknown opaque session\",\"text\":\"литр privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 404,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Voice session not found or expired\",\"error\":\"Not Found\",\"statusCode\":404}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\" \"}",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":[\"text must match /\\\\S/u regular expression\"],\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":91.63798231415926,\"longitude\":51.16918027182818,\"text\":\"privacyprobeqzrvnxtkmwbdjlf privacyprobeqzrvnxtkmwbdjlf\"}",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":[\"latitude must not be greater than 90\"],\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "POST",
+    "path": "/api/voice/start",
+    "contentType": "application/json",
+    "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"privacyprobeqzrvnxtkmwbdjlf privacyprobeqzrvnxtkmwbdjlf\",\"unknown\":true}",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":[\"property unknown should not exist\"],\"error\":\"Bad Request\",\"statusCode\":400}"
+  }
+]

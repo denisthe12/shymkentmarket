@@ -7,13 +7,15 @@ import { postgres } from './postgres.mjs';
 // REFERENCE_RECORD=1 rewrites backend-go/tests/integration/testdata/reference from the
 // local reference API and stops after the parity run. Never in hosted CI.
 const record = process.env.REFERENCE_RECORD === '1';
+// Windows needs the .exe suffix to spawn the binary (local runs only).
+const goAPI = join(temporary, process.platform === 'win32' ? 'api.exe' : 'api');
 if (record && process.env.CI) throw new Error('reference recording is local only');
 
 await postgres(async ({ name, url, sql, login, load, docker }) => {
   login('aktau_api_runtime', 'aktau_api_reader'); load('part04_fixture');
   sql('part04_fixture', readFileSync(join(root, 'scripts/ci/fixtures/voice-parity-overlay.sql')));
   console.log('CI-only Voice fixture overlay invariants: PASS');
-  run('Go API build', 'go', ['build', '-o', join(temporary, 'api'), './cmd/api'], { cwd: join(root, 'backend-go') });
+  run('Go API build', 'go', ['build', '-o', goAPI, './cmd/api'], { cwd: join(root, 'backend-go') });
   for (const directory of ['contracts', 'frontend']) run(`${directory} frozen install`, 'pnpm', ['install', '--frozen-lockfile'], { cwd: join(root, directory) });
   run('Nest generate', 'pnpm', ['db:generate'], { cwd: join(root, 'backend') });
   run('Nest build', 'pnpm', ['build'], { cwd: join(root, 'backend') });
@@ -29,7 +31,7 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
   let apiContainer;
   let network;
   try {
-    start(join(temporary, 'api'), [], root, { APP_ENV: 'test', PORT: '18080',
+    start(goAPI, [], root, { APP_ENV: 'test', PORT: '18080',
       DATABASE_URL: url('part04_fixture', 'aktau_api_runtime'), CORS_ALLOWED_ORIGINS: 'http://localhost:3100,http://127.0.0.1:3100',
       RATE_LIMIT_RPS: '1000', RATE_LIMIT_BURST: '1000',
       VOICE_RATE_LIMIT_RPS: '1000', VOICE_RATE_LIMIT_BURST: '1000', LOG_LEVEL: 'error' });

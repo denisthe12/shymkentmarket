@@ -1,0 +1,56 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/products?search=%27+OR+true+--",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?search=%27%3B+SELECT+pg_sleep%281%29%3B+--",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?search=%2F%2A+harmless+%2A%2F",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[]"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?category=milk\u0026unknownKey=1",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"Unknown filter: unknownKey\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?limit=1\u0026limit=2",
+    "contentType": "",
+    "body": "",
+    "status": 400,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "{\"message\":\"limit must be a single string\",\"error\":\"Bad Request\",\"statusCode\":400}"
+  },
+  {
+    "method": "GET",
+    "path": "/api/products?search=a%3Bb",
+    "contentType": "",
+    "body": "",
+    "status": 200,
+    "responseContentType": "application/json; charset=utf-8",
+    "response": "[]"
+  }
+]
