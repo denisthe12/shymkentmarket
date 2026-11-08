@@ -685,3 +685,12 @@ Operator: Backend 2 (VPS commands typed by the operator as `b2admin`; Claude Cod
 - No PostgreSQL, migration, sync, parser, Frontend, scheduler, credential or flag change.
 
 Rollback if needed: stop cloudflared, set `/etc/adilbaga/release.env` to `API_IMAGE=adilbaga-api:e50de2532259ab477e8491c4bddc2e6120ef3da0`, `docker compose --env-file /etc/adilbaga/release.env -f /opt/adilbaga/compose.production.yml up -d --force-recreate`, local health + smoke, start cloudflared.
+
+### Post-release cleanup and broker upgrade — 2026-11-08T15:38Z
+
+Decided by the Backend 2 operator. One script run as `b2admin`, each step gated on the previous one; both parts tested first in a disposable `python:3.12-slim` container (10/10 cases: refusals on RUNNING present, lock held, release.env on old SHA, unexpected hash, wrong mode; pass; idempotent re-runs).
+
+- Cleanup `CLEANUP_PASS`: under the broker lock, `1cbd535….json` (`RUNNING`) and `1cbd535….emergency-1794148631/` moved (not deleted) to `/var/lib/adilbaga/evidence/2026-11-08-search-release/` (root 0700). No `*.json` left in the state directory. Old broker `status` via the fixed wrapper: `{"active": "1cbd535…", "available": true}`.
+- Broker upgrade `INSTALL_PASS`: compare-and-swap `2dd252eed4e0…` (`9a3556c`) → `7b8f532015506e90fd1ce34d7f4b6df181bec17774d142ff69cdbc8406be0a6f` (`0b492bc`, PR #104) under the lock; no-clobber backup `/var/lib/adilbaga/broker-backup/auto_broker.py.2dd252eed4e0.20261108T153815Z` (0600); readback mode 0644, owner 0:0. `auto_smoke.py` `3f7a22c2…` and wrapper `f7bcc5a0…` unchanged (both equal main).
+- New broker `status` via wrapper: `{"active": "1cbd535…", "available": true}`. Read-only `private_main()` through the fixed SSH identity: `1cbd535…`. API stayed on `1cbd535`, healthy, restarts 0.
+- Unchanged: sudoers, keys, known_hosts, approval records, `AUTO_DEPLOY_ENABLED`. The next broker release still needs a new exact-artifact root approval.
