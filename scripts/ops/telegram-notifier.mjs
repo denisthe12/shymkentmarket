@@ -1,8 +1,6 @@
 // Outbound only. No discovery, logging, retries, polling or incoming bot server.
 import https from 'node:https';
 
-const telegram = new WeakSet();
-export const isTelegramNotifier = value => telegram.has(value);
 export function validateTelegramConfig({ token, admin } = {}) {
   if (typeof token !== 'string' || !/^[1-9][0-9]{0,15}:[A-Za-z0-9_-]{35}$/.test(token) || /\s/.test(token)
     || typeof admin !== 'string' || !/^[1-9][0-9]{0,15}$/.test(admin) || /\s/.test(admin)
@@ -69,6 +67,5 @@ export function createTelegramSender(config, { request = https.request, timeoutM
 }
 export function createTelegramNotifier(config, opts) {
   const send = createTelegramSender(config, opts);
-  const notify = (event, signal) => validEvent(event) ? send(formatEventText(event), signal) : Promise.resolve(false);
-  telegram.add(notify); return notify;
+  return (event, signal) => validEvent(event) ? send(formatEventText(event), signal) : Promise.resolve(false);
 }
