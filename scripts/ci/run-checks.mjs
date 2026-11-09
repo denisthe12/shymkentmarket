@@ -49,7 +49,7 @@ if (group === 'contracts') {
     'scripts/ops/check-go-release.test.mjs', 'scripts/ops/monitor-lifecycle.test.mjs',
     'scripts/ops/telegram-notifier.test.mjs', 'scripts/ops/telegram-lifecycle.test.mjs',
     'scripts/ops/prepare-recovery-operator.test.mjs', 'scripts/ops/daily-sync.test.mjs',
-    'scripts/ops/monitor-state.test.mjs',
+    'scripts/ops/monitor-state.test.mjs', 'scripts/ops/sync-report.test.mjs',
     ]));
 } else if (group === 'security') {
   console.log(run('release broker regressions', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'scripts/deploy', '-p', 'auto_*_test.py']));
