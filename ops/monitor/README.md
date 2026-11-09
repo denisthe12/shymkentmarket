@@ -205,10 +205,12 @@ sudo journalctl -u aktau-sync-report.service -n 10 --no-pager -o cat
 The repository is **private** (since 2026-11-06): `git fetch https://github.com/...`
 on the VPS asks for credentials and must not be used; never put tokens on the VPS.
 Code travels as a git bundle built on a workstation:
-`git bundle create aktau-<sha7>.bundle <prev-sha>..<new-sha>` (or add a temporary
-ref such as `refs/tmp/release`), `scp` it, then on the VPS as `aktau-sync`:
-`git -C /opt/aktau-sync fetch /path/aktau-<sha7>.bundle <ref>` and
-`checkout --detach <full sha>`.
+a named ref is mandatory (bare SHAs give an empty bundle, and `git fetch` needs a ref):
+`git update-ref refs/tmp/release <new-sha>`, then
+`git bundle create aktau-<sha7>.bundle <prev-sha>..refs/tmp/release`, `scp` it, then on
+the VPS as `aktau-sync`:
+`git -C /opt/aktau-sync fetch /path/aktau-<sha7>.bundle refs/tmp/release` and
+`checkout --detach <full sha>`. Afterwards `git update-ref -d refs/tmp/release` on the workstation.
 
 Order matters: sync starts writing run files first, then the report is installed.
 
@@ -342,9 +344,9 @@ sudo systemctl start aktau-go-monitor.service
 sudo journalctl -u aktau-go-monitor.service -n 10 --no-pager -o cat
 ```
 
-First one-shot must yield complete OK, not pending/blocked; do not manufacture
+First one-shot must yield complete OK, not DEGRADED/INCIDENT/BLOCKED; do not manufacture
 an outage of the Go API. Inspect only sanitized monitor outcomes. Exit1 is a
-completed unhealthy/pending observation, not success evidence or a restart.
+completed unhealthy observation, not success evidence or a restart.
 
 Bounded synthetic open/recovery acceptance uses the **test receiver only**,
 its separate environment file and fresh acceptance state. This future transient

@@ -49,7 +49,9 @@ sudo systemctl enable --now aktau-sync.timer aktau-sync-full.timer
 
 ```bash
 # на рабочей станции, в checkout репозитория
-git bundle create aktau-<sha7>.bundle <прежний SHA>..<новый SHA>   # либо с временным ref, например refs/tmp/release
+git update-ref refs/tmp/release <новый SHA>                        # ref обязателен: с голыми SHA bundle пустой
+git bundle create aktau-<sha7>.bundle <прежний SHA>..refs/tmp/release
+git update-ref -d refs/tmp/release
 scp aktau-<sha7>.bundle <vps>:/tmp/
 ```
 
@@ -57,7 +59,7 @@ scp aktau-<sha7>.bundle <vps>:/tmp/
 systemctl is-active aktau-sync aktau-sync-full        # оба inactive
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync rev-parse HEAD   # записать для отката
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync status --porcelain=v1   # пусто
-sudo -n -u aktau-sync -H git -C /opt/aktau-sync fetch /tmp/aktau-<sha7>.bundle <ref>   # <ref> — ветка или временный ref из bundle
+sudo -n -u aktau-sync -H git -C /opt/aktau-sync fetch /tmp/aktau-<sha7>.bundle refs/tmp/release
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync checkout --detach <полный SHA>
 cd /opt/aktau-sync/pipeline && sudo -n -u aktau-sync -H env PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin pnpm install --frozen-lockfile
 ```
