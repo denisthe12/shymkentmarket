@@ -9,8 +9,8 @@ Type=oneshot
 User=@MONITOR_USER@
 WorkingDirectory=@SOURCE_DIR@
 EnvironmentFile=@ENV_FILE@
-ExecStart=@NODE24@ @SOURCE_DIR@/scripts/ops/monitor-go-production.mjs --run
-TimeoutStartSec=70s
+ExecStart=@NODE24@ --network-family-autoselection-attempt-timeout=2000 @SOURCE_DIR@/scripts/ops/monitor-go-production.mjs --run
+TimeoutStartSec=90s
 TimeoutStopSec=5s
 KillMode=control-group
 SendSIGKILL=yes

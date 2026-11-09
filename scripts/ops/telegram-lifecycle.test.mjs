@@ -107,7 +107,7 @@ test('v1 latched state upgrades and is resent',{timeout:15000},async t=>{
   assert.match(lines(receipts[0])[0],/\(повтор, попытка 2\)$/);assert.equal(eventTag(receipts[0]),'aaaa');
   assert.doesNotMatch(lines(receipts[1])[0],/повтор/);
 });
-test('Telegram env selection is explicit and both inactive templates pass systemd verification',t=>{
+test('Telegram env selection is explicit and all four inactive templates pass systemd verification',t=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aktau-telegram-units-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
   const units=path.join(dir,'etc/systemd/system');fs.mkdirSync(units,{recursive:true});fs.mkdirSync(path.join(dir,'usr/bin'),{recursive:true});
   fs.copyFileSync(process.execPath,path.join(dir,'usr/bin/node'));fs.chmodSync(path.join(dir,'usr/bin/node'),0o555);
@@ -116,7 +116,7 @@ test('Telegram env selection is explicit and both inactive templates pass system
   for(const delivery of ['https','telegram']){
     const rendered=renderUnits({...p,delivery});assert.match(rendered['aktau-go-monitor.service'],new RegExp('EnvironmentFile=/etc/aktau-monitor/'+(delivery==='telegram'?'telegram':'receiver')+'\\.env'));
     for(const [name,value]of Object.entries(rendered))fs.writeFileSync(path.join(units,name),value);
-    execFileSync('systemd-analyze',['verify','--root='+dir,'--man=no','aktau-go-monitor.service','aktau-go-monitor.timer'],{env,stdio:['ignore','pipe','pipe'],timeout:10000});
+    execFileSync('systemd-analyze',['verify','--root='+dir,'--man=no','aktau-go-monitor.service','aktau-go-monitor.timer','aktau-sync-report.service','aktau-sync-report.timer'],{env,stdio:['ignore','pipe','pipe'],timeout:10000});
   }
   assert.throws(()=>renderUnits({...p,delivery:'../../secret'}));
 });

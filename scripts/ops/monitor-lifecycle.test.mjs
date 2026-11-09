@@ -212,7 +212,13 @@ test('inactive units render privately and systemd-analyze verifies expanded synt
   const parameters = { user: 'monitor-fixture', node: '/usr/bin/node', source: '/opt/aktau-monitor/releases/' + 'a'.repeat(40) };
   writeUnits(dir, parameters);
   const service = fs.readFileSync(path.join(dir, 'aktau-go-monitor.service'), 'utf8'), timer = fs.readFileSync(path.join(dir, 'aktau-go-monitor.timer'), 'utf8');
-  assert.match(service, /^User=monitor-fixture$/m); assert.match(service, /^TimeoutStartSec=70s$/m);
+  assert.match(service, /^User=monitor-fixture$/m); assert.match(service, /^TimeoutStartSec=90s$/m);
+  assert.match(service, /^ExecStart=\S+ --network-family-autoselection-attempt-timeout=2000 \S+monitor-go-production\.mjs --run$/m);
+  assert.deepEqual(fs.readdirSync(dir).sort(), ['aktau-go-monitor.service','aktau-go-monitor.timer','aktau-sync-report.service','aktau-sync-report.timer']);
+  const report = fs.readFileSync(path.join(dir, 'aktau-sync-report.service'), 'utf8'), reportTimer = fs.readFileSync(path.join(dir, 'aktau-sync-report.timer'), 'utf8');
+  assert.match(report, /^ExecStart=\S+ --network-family-autoselection-attempt-timeout=2000 \S+sync-report\.mjs --run$/m); assert.match(report, /^User=monitor-fixture$/m);
+  assert.ok(!/ReadWritePaths|SuccessExitStatus/.test(report)); assert.ok(!/@[A-Z_]+@/.test(report));
+  assert.match(reportTimer, /^OnCalendar=\*-\*-\* 13:30:00 UTC$/m); assert.match(reportTimer, /^Persistent=true$/m); assert.match(reportTimer, /^Unit=aktau-sync-report\.service$/m);
   assert.match(service, /^KillMode=control-group$/m); assert.match(service, /^NoNewPrivileges=yes$/m);
   assert.match(service, /^ProtectSystem=strict$/m); assert.match(service, /^Restart=no$/m);
   assert.match(timer, /^Persistent=false$/m); assert.match(timer, /^OnUnitInactiveSec=5min$/m);
@@ -226,7 +232,7 @@ test('inactive units render privately and systemd-analyze verifies expanded synt
   fs.copyFileSync(process.execPath, path.join(virtual, 'usr/bin/node')); fs.chmodSync(path.join(virtual, 'usr/bin/node'), 0o555);
   for (const [name, text] of Object.entries(renderUnits(parameters))) fs.writeFileSync(path.join(units, name), text);
   for (const name of ['basic','sysinit','shutdown','network-online','timers']) fs.writeFileSync(path.join(units, name + '.target'), '[Unit]\nDescription=Synthetic local verification target\nDefaultDependencies=no\n');
-  execFileSync('systemd-analyze', ['verify','--root=' + virtual,'--man=no','aktau-go-monitor.service','aktau-go-monitor.timer'],
+  execFileSync('systemd-analyze', ['verify','--root=' + virtual,'--man=no','aktau-go-monitor.service','aktau-go-monitor.timer','aktau-sync-report.service','aktau-sync-report.timer'],
     { env: cleanEnv, timeout: 10000, maxBuffer: 16384, stdio: ['ignore','pipe','pipe'] });
   // This validates syntax/dependencies, not actual sandbox/user provisioning.
   assert.throws(() => writeUnits(dir, parameters));

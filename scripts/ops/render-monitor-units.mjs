@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const names = ['aktau-go-monitor.service', 'aktau-go-monitor.timer'];
+const names = ['aktau-go-monitor.service', 'aktau-go-monitor.timer', 'aktau-sync-report.service', 'aktau-sync-report.timer'];
 export function renderUnits({ user, node, source, delivery = 'https' } = {}) {
   if (typeof user !== 'string' || !/^[a-z_][a-z0-9_-]{0,30}$/.test(user) || user === 'root'
     || typeof node !== 'string' || !/^\/(?:usr|opt)\/[A-Za-z0-9_./-]+\/node$/.test(node) || path.normalize(node) !== node
@@ -50,7 +50,7 @@ export function writeUnits(directory, parameters) {
 export function main(args, write = s => process.stdout.write(s + '\n')) {
   if (args.length === 0 || (args.length === 1 && args[0] === '--offline')) { write('{"status":"OFFLINE","installed":false}'); return 0; }
   if (![5,6].includes(args.length) || args[0] !== '--render') { write('{"status":"BLOCKED","reason":"arguments"}'); return 2; }
-  try { writeUnits(args[1], { user: args[2], node: args[3], source: args[4], delivery: args[5] }); write('{"status":"RENDERED_NOT_INSTALLED","files":2}'); return 0; }
+  try { writeUnits(args[1], { user: args[2], node: args[3], source: args[4], delivery: args[5] }); write('{"status":"RENDERED_NOT_INSTALLED","files":4}'); return 0; }
   catch { write('{"status":"BLOCKED","reason":"unit_parameters_or_output"}'); return 1; }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = main(process.argv.slice(2));
