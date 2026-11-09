@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto';
 const exact = (v, keys) => v && typeof v === 'object' && !Array.isArray(v)
   && Object.keys(v).sort().join() === [...keys].sort().join();
 const time = v => Number.isSafeInteger(v) && v >= 0 && v < 8640000000000000;
-export function validateState(s) {
+function validateV1(s) {
   if (!exact(s, ['version','phase','failures','lastUTC','pending']) || s.version !== 1
     || !['OK','DEGRADED','INCIDENT'].includes(s.phase) || s.failures !== { OK: 0, DEGRADED: 1, INCIDENT: 2 }[s.phase]
     || !(s.lastUTC === null || time(s.lastUTC)) || (s.lastUTC === null && s.phase !== 'OK')) throw Error('state_invalid');
@@ -19,6 +19,35 @@ export function validateState(s) {
     || (p.attempts === 0 ? p.nextAttemptUTC !== p.atUTC : p.nextAttemptUTC !== s.lastUTC + 60000)
     || (p.type === 'incident_opened' ? s.phase !== 'INCIDENT' : s.phase !== 'OK'))) throw Error('state_invalid');
   return s;
+}
+const phases = ['OK','DEGRADED','INCIDENT'], types = ['incident_opened','incident_recovered'];
+export function validateState(s) {
+  if (!exact(s, ['version','phase','failures','lastUTC','queue']) || s.version !== 2
+    || !phases.includes(s.phase) || s.failures !== { OK: 0, DEGRADED: 1, INCIDENT: 2 }[s.phase]
+    || !(s.lastUTC === null || time(s.lastUTC)) || (s.lastUTC === null && s.phase !== 'OK')
+    || !Array.isArray(s.queue) || s.queue.length > 10 || (s.lastUTC === null && s.queue.length > 0)) throw Error('state_invalid');
+  s.queue.forEach((q, i) => {
+    if (!exact(q, ['id','type','atUTC','attempts']) || !/^[a-f0-9]{32}$/.test(q.id) || !types.includes(q.type)
+      || !time(q.atUTC) || q.atUTC > s.lastUTC || !Number.isInteger(q.attempts) || q.attempts < 0 || q.attempts > 1000000
+      || (i > 0 && (q.type === s.queue[i - 1].type || q.atUTC < s.queue[i - 1].atUTC))) throw Error('state_invalid');
+  });
+  const last = s.queue.at(-1);
+  if (last && (last.type === 'incident_opened' ? s.phase !== 'INCIDENT' : s.phase === 'INCIDENT')) throw Error('state_invalid');
+  return s;
+}
+export function upgradeState(s) {
+  if (s && s.version === 1) {
+    validateV1(s);
+    const p = s.pending;
+    return validateState({ version: 2, phase: s.phase, failures: s.failures, lastUTC: s.lastUTC,
+      queue: p === null ? [] : [{ id: p.id, type: p.type, atUTC: p.atUTC, attempts: p.attempts }] });
+  }
+  return validateState(s);
+}
+export function parseStateText(text) {
+  const parsed = JSON.parse(text), value = upgradeState(parsed);
+  if (text !== JSON.stringify(parsed) + '\n') throw Error('state_noncanonical');
+  return value;
 }
 export function openState(directory, io = fs) {
   const sourceRoot = path.resolve(import.meta.dirname, '../..');
@@ -52,12 +81,11 @@ export function openState(directory, io = fs) {
         const bytes = Buffer.alloc(16385), n = io.readSync(fd, bytes, 0, bytes.length, 0);
         if (n !== s.size || n > 16384) throw Error('state_file');
         const raw = new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, n));
-        value = validateState(JSON.parse(raw));
-        if (raw !== JSON.stringify(value) + '\n') throw Error('state_noncanonical');
+        value = parseStateText(raw);
       } finally { io.closeSync(fd); }
     } catch (e) {
       if (e.code !== 'ENOENT') throw e;
-      value = { version: 1, phase: 'OK', failures: 0, lastUTC: null, pending: null };
+      value = { version: 2, phase: 'OK', failures: 0, lastUTC: null, queue: [] };
     }
     return {
       get value() { return structuredClone(value); },
