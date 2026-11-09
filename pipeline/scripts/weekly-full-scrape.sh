@@ -54,16 +54,29 @@ run_status_write() {
     chmod 0644 "$tmp" && mv -f "$tmp" "$RUN_DIR/$RUN_NAME"
 }
 
+run_signaled=0
 run_status_final() {
   set +e
-  run_status_write finished "$1" || true
-  if [ -n "$RUN_DIR" ]; then
-    ls -1t "$RUN_DIR"/daily-*.json "$RUN_DIR"/weekly-*.json 2>/dev/null | tail -n +61 | xargs -r rm -f || true
+  # Остановка по сигналу: файл остаётся running (как у убитого прогона), $? в EXIT-ловушке тут недостоверен
+  if [ "$run_signaled" -eq 0 ]; then
+    run_status_write finished "$1" || true
+    if [ -n "$RUN_DIR" ]; then
+      ls -1t "$RUN_DIR"/daily-*.json "$RUN_DIR"/weekly-*.json 2>/dev/null | tail -n +61 | xargs -r rm -f || true
+    fi
   fi
   [ -z "$CODES_DIR" ] || rm -rf "$CODES_DIR" || true
   return 0
 }
 trap 'run_status_final $?' EXIT
+# TERM/INT/HUP: пометить, снять ловушку и повторить сигнал, чтобы код выхода остался 128+N
+run_on_signal() {
+  run_signaled=1
+  trap - "$1"
+  kill -s "$1" $$
+}
+trap 'run_on_signal TERM' TERM
+trap 'run_on_signal INT' INT
+trap 'run_on_signal HUP' HUP
 run_status_write running || true
 
 # Скраперы параллельно, тем же приёмом, что в daily-sync.sh
@@ -74,7 +87,7 @@ for s in "${STORES[@]}"; do
     code=0
     pnpm "scrape:$s" 2>&1 | sed -u "s/^/[$s] /" || code=$?
     echo "[full] $s exit=$code took=$((SECONDS - t0))s"
-    if [ -n "$CODES_DIR" ]; then echo "$code" >"$CODES_DIR/$s.code"; fi
+    if [ -n "$CODES_DIR" ]; then echo "$code" >"$CODES_DIR/$s.code" || true; fi
     exit "$code"
   ) &
   pids+=("$!")

@@ -134,3 +134,27 @@ test('killed run leaves status running',async()=>{
     assert.deepEqual(st.stores,{dina:null,dana:null,fixprice:null,anvar:null});
   }finally{try{process.kill(-child.pid,'SIGKILL')}catch{}fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+for(const sig of ['SIGTERM','SIGINT','SIGHUP']) test(`${sig} to the process group leaves status running and dies by the signal`,async()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aktau-daily-sig-'));
+  const runDir=path.join(dir,'runs');
+  let child;
+  try{
+    fakeBins(dir,'sleep 30\n');
+    child=spawn('bash',['pipeline/scripts/daily-sync.sh'],{detached:true,stdio:'ignore',
+      env:{...process.env,PATH:dir+':'+process.env.PATH,RETENTION_DATABASE_URL:'',RUN_STATUS_DIR:runDir}});
+    const exited=new Promise(r=>child.on('exit',(code,signal)=>r({code,signal})));
+    const read=()=>{try{const f=fs.readdirSync(runDir).filter(x=>x.endsWith('.json'));return f.length?fs.readFileSync(path.join(runDir,f[0]),'utf8'):''}catch{return ''}};
+    const deadline=Date.now()+4000;
+    while(!read().includes('"status":"running"')&&Date.now()<deadline) await new Promise(r=>setTimeout(r,50));
+    assert.match(read(),/"status":"running"/);
+    await new Promise(r=>setTimeout(r,200));
+    process.kill(-child.pid,sig);
+    const res=await Promise.race([exited,new Promise(r=>setTimeout(()=>r('timeout'),5000))]);
+    assert.notEqual(res,'timeout');
+    const n={SIGTERM:15,SIGINT:2,SIGHUP:1}[sig];
+    assert.ok(res.signal===sig||res.code===128+n,JSON.stringify(res));
+    const st=JSON.parse(read());
+    assert.equal(st.status,'running');assert.equal(st.finishedAt,null);assert.equal(st.exitCode,null);
+  }finally{try{process.kill(-child.pid,'SIGKILL')}catch{}fs.rmSync(dir,{recursive:true,force:true})}
+});
