@@ -19,6 +19,8 @@
 #       (в журнале строка "[sync] stale stores: <list>");
 #   4 — snapshot опубликован, но очистка старых snapshot упала (в stderr строка "[sync] retention failed");
 #       приоритет кодов: 3 важнее 4, 4 важнее 0.
+# RUN_STATUS_DIR — каталог файлов прогонов: скрипт пишет туда daily-<UTC>.json (status running при старте, итог по выходу;
+#   убитый прогон остаётся running), хранит 60 самых новых daily-/weekly-файлов. Пусто или не задано — ничего не пишется.
 
 # Без -e на этапе скрапа: упавший скрапер не должен останавливать скрипт до pnpm sync
 set -uo pipefail
@@ -36,6 +38,60 @@ BUNDLE="$SYNC_OUT/bundle.json"
 
 STORES=(dina dana fixprice anvar)
 started=$SECONDS
+failed=()
+
+# Файл прогона для ежедневного отчёта (no-op при пустом RUN_STATUS_DIR)
+RUN_DIR="${RUN_STATUS_DIR:-}"
+CODES_DIR=""
+published=false
+retention_state=null
+if [ -n "$RUN_DIR" ]; then
+  if mkdir -p -m 0755 "$RUN_DIR" 2>/dev/null; then
+    CODES_DIR="$(mktemp -d 2>/dev/null)" || CODES_DIR=""
+  else
+    echo "[sync] cannot create RUN_STATUS_DIR, run file disabled" >&2
+    RUN_DIR=""
+  fi
+fi
+RUN_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+RUN_NAME="daily-$RUN_STAMP.json"
+RUN_STARTED="${RUN_STAMP:0:4}-${RUN_STAMP:4:2}-${RUN_STAMP:6:2}T${RUN_STAMP:9:2}:${RUN_STAMP:11:2}:${RUN_STAMP:13:2}Z"
+
+# $1 — running|finished, $2 — код выхода (для finished). Ошибка записи не влияет на код выхода скрипта.
+run_status_write() {
+  [ -n "$RUN_DIR" ] || return 0
+  local st=$1 code=${2:-} fin=null ec=null s c i list="" stale="" tmp
+  if [ "$st" = finished ]; then
+    fin="\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
+    ec=$code
+  fi
+  for s in "${STORES[@]}"; do
+    c=null
+    if [ -n "$CODES_DIR" ] && [ -s "$CODES_DIR/$s.code" ]; then c="$(<"$CODES_DIR/$s.code")"; fi
+    list="$list${list:+,}\"$s\":$c"
+  done
+  if [ "$published" = true ]; then
+    for ((i = 0; i < ${#failed[@]}; i++)); do
+      stale="$stale${stale:+,}\"${failed[$i]}\""
+    done
+  fi
+  tmp="$RUN_DIR/.tmp-$RUN_NAME"
+  printf '{"version":1,"kind":"daily","startedAt":"%s","finishedAt":%s,"status":"%s","exitCode":%s,"published":%s,"stores":{%s},"stale":[%s],"retention":%s}\n' \
+    "$RUN_STARTED" "$fin" "$st" "$ec" "$published" "$list" "$stale" "$retention_state" >"$tmp" &&
+    chmod 0644 "$tmp" && mv -f "$tmp" "$RUN_DIR/$RUN_NAME"
+}
+
+run_status_final() {
+  set +e
+  run_status_write finished "$1" || true
+  if [ -n "$RUN_DIR" ]; then
+    ls -1t "$RUN_DIR"/daily-*.json "$RUN_DIR"/weekly-*.json 2>/dev/null | tail -n +61 | xargs -r rm -f || true
+  fi
+  [ -z "$CODES_DIR" ] || rm -rf "$CODES_DIR" || true
+  return 0
+}
+trap 'run_status_final $?' EXIT
+run_status_write running || true
 
 # Лимит на один скрапер: TERM по истечении, через 30 с принудительный KILL (код выхода 124 / 137).
 # Должен быть заметно меньше TimeoutStartSec юнита (20 мин), чтобы остались время на sync и ingest.
@@ -55,6 +111,7 @@ for s in "${STORES[@]}"; do
     timeout --kill-after=30s "${SCRAPE_TIMEOUT}s" pnpm "scrape:$s" 2>&1 | sed -u "s/^/[$s] /"
     code=$?
     echo "[sync] $s exit=$code took=$((SECONDS - t0))s"
+    if [ -n "$CODES_DIR" ]; then echo "$code" >"$CODES_DIR/$s.code"; fi
     if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
       echo "[sync] $s timed out after ${SCRAPE_TIMEOUT}s, treating as failed" >&2
     fi
@@ -63,7 +120,6 @@ for s in "${STORES[@]}"; do
   pids+=("$!")
 done
 
-failed=()
 for i in "${!STORES[@]}"; do
   if ! wait "${pids[$i]}"; then
     failed+=("${STORES[$i]}")
@@ -84,6 +140,7 @@ cd "$REPO_ROOT/backend-go"
 export GOTOOLCHAIN=local
 go run ./cmd/ingest -bundle "$BUNDLE"
 go run ./cmd/ingest -bundle "$BUNDLE" -apply
+published=true
 
 trap - ERR
 set +e
@@ -94,8 +151,12 @@ if [ -n "${RETENTION_DATABASE_URL:-}" ]; then
   if ! go run ./cmd/prune -keep "${RETENTION_KEEP_SNAPSHOTS:-14}" -apply; then
     echo "[sync] retention failed" >&2
     prune_failed=1
+    retention_state='"failed"'
+  else
+    retention_state='"ok"'
   fi
 else
+  retention_state='"skipped"'
   echo "[sync] retention skipped"
 fi
 
