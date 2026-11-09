@@ -1,24 +1,38 @@
 # Observability alert policy — local foundation
 
-No monitoring provider/exporter or public /metrics is activated. **External alert
-delivery NOT CONFIGURED**; the private operator monitor and inactive activation
-kit are source candidates, not running alarms (see [monitor runbook](../../ops/monitor/README.md)).
-The old local-only / unprovisioned-VPS statement is superseded by the dated
-[Part19 production observations](reports/PART_19_BACKEND1_RELEASE_INTEGRATION_REPORT.md):
-Go API/VPS/domain/Cloudflare existed and API health was verified then. This is
-not a fresh production observation or proof of active monitoring. Conditions
-below remain policy, not claims of active alarms.
+No monitoring provider/exporter or public /metrics is activated. **Alert delivery
+is configured: Telegram** (direct Bot API sendMessage, no webhook/server). The
+private operator monitor has been **active on the production VPS since
+2026-10-20**: a systemd timer probes the Go API every 5 minutes and sends ALERT
+and RECOVERED messages to the Owner's private chat (see the
+[monitor runbook](../../ops/monitor/README.md)). Of the conditions in the table below only
+API availability is covered by this running monitor; the others remain policy until
+separately activated.
+Dated [Part19 production observations](reports/PART_19_BACKEND1_RELEASE_INTEGRATION_REPORT.md)
+are not a fresh observation.
 
-Part22 adds an explicit direct Telegram source transport (no webhook/server),
-not active alerts. Real receipt is NOT_VERIFIED; credential staging was blocked
-by a missing approved private parent directory. Unconfirmed Telegram sends stop
-for manual reconciliation (no idempotency guarantee); legacy HTTPS delivery
-retains its existing bounded policy. See the monitor runbook's Part22 section.
-Same-VPS monitoring cannot notify through a total host/network outage.
+**Delivery policy.** Alert events go through an ordered queue (at most 10
+events). Every run probes the API regardless of the queue; up to 2 events are sent
+per run, ALERT always before RECOVERED, and an unconfirmed send is retried on
+every run until Telegram confirms. There is no retry limit, cooldown or manual
+reconciliation latch. Telegram has no idempotency key, so a rare duplicate is
+accepted and marked: every text carries `· событие #xxxx` and a retry adds
+`(повтор, попытка N)`. The previous policy (one attempt, then manual
+reconciliation) silently stopped monitoring from 2026-10-24 to 2026-11-09 after a
+single timed-out send; the unit hides exit code 1 (`SuccessExitStatus=1`), so a
+stuck monitor does not show up as a failed unit.
+
+**Detection of a silent monitor.** A daily Telegram report at 13:30 UTC (18:30
+Aktau) lists the sync runs of the last 24 hours and a monitor line: OK only if the
+last probe is under 15 minutes old, the queue is empty and the phase is OK;
+unsent alerts, a stale last probe or an unreadable state show as a warning or
+error. A missing report at 18:30 is itself the signal that the VPS (or its
+network) is down. Same-VPS monitoring cannot notify through a total host/network
+outage; an external watchdog is not part of this policy.
 
 | Alert | Signal / condition class | Source / severity | First action / recovery | Deployment dependency / runbook |
 | --- | --- | --- | --- | --- |
-| API unavailable | live probe fails N consecutive checks | private operator probe / critical | inspect process; recover live and ready | probe cadence, N and delivery after staging; [api-down](../runbooks/api-down.md) |
+| API unavailable | live probe fails N consecutive checks | private operator probe / critical | inspect process; recover live and ready | running: 5-minute cadence, N=2, Telegram delivery; [api-down](../runbooks/api-down.md) |
 | 5xx spike | 5xx fraction above configured threshold/minimum sample count in rolling window | fixed HTTP counters / high | request_id + route/error_code; return to measured baseline | exporter/window/threshold from Part13; [api-down](../runbooks/api-down.md) |
 | DB unavailable | ready503 with live200; query failures/pool saturation persist | readiness + numeric pool/query counters / critical | check availability/restricted identity; ready200 and reads recover | collector, consecutive checks; [db-down](../runbooks/db-down.md) |
 | Ingestion failed | operator CLI failure or failed staged source/snapshot | safe completion/phase counters + operator history / high | inspect validation/lock; preserve previous published snapshot | separately approved ingestion activation; [ingestion-failed](../runbooks/ingestion-failed.md) |
@@ -53,6 +67,6 @@ request IDs are correlation metadata, not metric labels.
 Part12: reviewed CI/staging and synthetic/restore automation; no scheduler here.
 Part13: measure windows, thresholds, minimum samples and ingestion cadence SLA.
 Part14: choose private network/exporter/domain/TLS probe topology.
-Part15: host monitoring, actual alert delivery, backup timer, independent storage
+Part15: host monitoring, backup timer, independent storage
 and key custody. Select severity routing/dedup/recovery notifications then.
 No arbitrary permanent numeric threshold or vendor choice is introduced now.
