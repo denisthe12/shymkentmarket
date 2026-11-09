@@ -21,15 +21,20 @@ export function parseTelegramEntries(lines) {
   }
   return validateTelegramConfig({ token: entries.BOT_TOKEN, admin: entries.ADMIN_ID });
 }
-export function createTelegramNotifier(config, { request = https.request, timeoutMs = 5000 } = {}) {
+const validEvent = event => event && ['incident_opened','incident_recovered'].includes(event.type) && typeof event.id === 'string'
+  && /^[a-f0-9]{32}$/.test(event.id) && Number.isSafeInteger(event.atUTC) && event.atUTC >= 0 && event.atUTC < 8640000000000000
+  && Number.isInteger(event.attempts) && event.attempts >= 1;
+export function formatEventText(event) {
+  const retry = event.attempts > 1 ? ` (повтор, попытка ${event.attempts})` : '';
+  const iso = new Date(event.atUTC).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  return (event.type === 'incident_opened' ? 'ALERT — Aktau Market Go API' + retry + '\nСервис недоступен'
+    : 'RECOVERED — Aktau Market Go API' + retry + '\nРабота восстановлена') + '\nUTC ' + iso + ' · событие #' + event.id.slice(0, 4);
+}
+export function createTelegramSender(config, { request = https.request, timeoutMs = 10000 } = {}) {
   const { token, admin } = validateTelegramConfig(config);
-  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 5000) throw Error('telegram_configuration');
-  const notify = (event, signal) => new Promise(resolve => {
-    if (!event || !['incident_opened','incident_recovered'].includes(event.type) || typeof event.id !== 'string'
-      || !/^[a-f0-9]{32}$/.test(event.id) || event.id.length !== 32 || !Number.isSafeInteger(event.atUTC)
-      || event.atUTC < 0 || event.atUTC >= 8640000000000000 || signal?.aborted) return resolve(false);
-    const text = (event.type === 'incident_opened' ? 'ALERT — Aktau Market Go API\nСервис недоступен'
-      : 'RECOVERED — Aktau Market Go API\nРабота восстановлена') + '\nUTC ' + new Date(event.atUTC).toISOString();
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 10000) throw Error('telegram_configuration');
+  return (text, signal) => new Promise(resolve => {
+    if (typeof text !== 'string' || text.length < 1 || text.length > 4096 || signal?.aborted) return resolve(false);
     const body = JSON.stringify({ chat_id: admin, text });
     let req, res, timer, done = false;
     const finish = ok => { if (done) return; done = true; clearTimeout(timer); signal?.removeEventListener('abort', cancel); res?.destroy(); req?.destroy(); resolve(ok === true); };
@@ -61,5 +66,9 @@ export function createTelegramNotifier(config, { request = https.request, timeou
       req.on('error', cancel); req.end(body);
     } catch { finish(false); }
   });
+}
+export function createTelegramNotifier(config, opts) {
+  const send = createTelegramSender(config, opts);
+  const notify = (event, signal) => validEvent(event) ? send(formatEventText(event), signal) : Promise.resolve(false);
   telegram.add(notify); return notify;
 }
