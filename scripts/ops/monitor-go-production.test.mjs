@@ -166,6 +166,18 @@ test('actual CLI exit codes and stderr are bounded with synthetic missing config
     assert.equal(r.status, exit); assert.equal(r.stderr, ''); assert.ok(r.stdout.length < 512);
   }
 });
+test('main maps outcomes to exit codes: INCIDENT/DEGRADED 1, RECOVERED/OK 0', async t => {
+  const f = fixture(t); let time = 100000;
+  const env = { AKTAU_MONITOR_STATE_DIR: f.dir, AKTAU_MONITOR_RECEIVER_URL: 'https://alerts.example.invalid/', AKTAU_MONITOR_RECEIVER_TOKEN: 'synthetic-token-123456' };
+  const step = async check => { const out = []; const code = await main(['--run'], env, x => out.push(x), { check, now: () => (time += 60000) }); return [JSON.parse(out[0]).outcome, code]; };
+  const hit = mock.method(https, 'request', (_u, _o, cb) => { const r = new EventEmitter(); r.destroy = () => {}; r.end = () => queueMicrotask(() => { const res = new EventEmitter(); res.statusCode = 204; res.destroy = () => {}; cb(res); }); return r; });
+  try {
+    assert.deepEqual(await step(healthy), ['OK', 0]);
+    assert.deepEqual(await step(bad), ['DEGRADED', 1]);
+    assert.deepEqual(await step(bad), ['INCIDENT', 1]);
+    assert.deepEqual(await step(healthy), ['RECOVERED', 0]);
+  } finally { hit.mock.restore(); }
+});
 test('source is manual only, reuses verifier, has no timer/service activation', () => {
   const monitor = fs.readFileSync(new URL('./monitor-go-production.mjs', import.meta.url), 'utf8');
   const state = fs.readFileSync(new URL('./monitor-state.mjs', import.meta.url), 'utf8');

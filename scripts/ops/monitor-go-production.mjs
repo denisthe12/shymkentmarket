@@ -78,7 +78,7 @@ export async function runMonitor({ directory, check = () => createVerifier()(), 
   finally { try { store?.close(); } catch { answer = result('BLOCKED', 'state_unavailable'); } }
   return answer;
 }
-export async function main(args, env = process.env, write = s => process.stdout.write(s + '\n')) {
+export async function main(args, env = process.env, write = s => process.stdout.write(s + '\n'), inject = {}) {
   if (args.length === 0 || (args.length === 1 && args[0] === '--offline')) {
     write(JSON.stringify({ outcome: 'OFFLINE', activation: 'ACTIVATION_PENDING', requests: 0, deliveries: 0 })); return 0;
   }
@@ -90,7 +90,7 @@ export async function main(args, env = process.env, write = s => process.stdout.
     else throw Error('delivery_not_configured');
   }
   catch { write(JSON.stringify(result('BLOCKED', 'delivery_not_configured'))); return 2; }
-  const value = await runMonitor({ directory: env.AKTAU_MONITOR_STATE_DIR, notify });
+  const value = await runMonitor({ directory: env.AKTAU_MONITOR_STATE_DIR, notify, check: inject.check, now: inject.now });
   write(JSON.stringify(value)); return ['OK','RECOVERED'].includes(value.outcome) ? 0 : value.outcome === 'BLOCKED' ? 2 : 1;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = await main(process.argv.slice(2));
