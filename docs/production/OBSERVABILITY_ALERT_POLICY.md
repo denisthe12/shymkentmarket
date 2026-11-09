@@ -25,8 +25,10 @@ stuck monitor does not show up as a failed unit.
 **Detection of a silent monitor.** A daily Telegram report at 13:30 UTC (18:30
 Aktau) lists the sync runs of the last 24 hours and a monitor line: OK only if the
 last probe is under 15 minutes old, the queue is empty and the phase is OK;
-unsent alerts, a stale last probe or an unreadable state show as a warning or
-error. A missing report at 18:30 is itself the signal that the VPS (or its
+a stale last probe is checked first (`не запускался с HH:MM`, with the date
+when it is not today, plus the number of queued alerts), so a queue never hides a
+stopped monitor; unsent alerts on a fresh probe or an unreadable state also show
+as a warning or error. A missing report at 18:30 is itself the signal that the VPS (or its
 network) is down. Same-VPS monitoring cannot notify through a total host/network
 outage; an external watchdog is not part of this policy.
 

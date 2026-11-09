@@ -177,9 +177,13 @@ the sync runs and a line about the monitor itself.
   `running` for ≥ 25 minutes ("не завершился"), or no file ("прогон не найден");
   ⏳ a recent `running` run. Weekly line: ✅ code 0, ❌ with the failed
   networks/scope steps, or not found.
-- Monitor line: ✅ `lastUTC` within 15 minutes, empty queue, phase OK; ⚠️ unsent
-  alerts in the queue (count), `lastUTC` older than 15 minutes, or phase
-  DEGRADED/INCIDENT; ❌ `state.json` missing or unreadable.
+- Monitor line: ✅ `lastUTC` within 15 minutes, empty queue, phase OK; ⚠️ `lastUTC`
+  older than 15 minutes (checked first, so a stopped monitor is never hidden by a
+  queue): `не запускался с HH:MM`, plus ` (D <month>)` when that Aktau date differs
+  from today's, plus `, N неотправленных тревог` when the queue is not empty;
+  ⚠️ fresh probe with unsent alerts (`N неотправленных тревог, проверка в HH:MM`) or
+  phase DEGRADED/INCIDENT; ❌ `state.json` missing or unreadable. Example:
+  `⚠️ Монитор API: не запускался с 14:05 (8 ноября), 1 неотправленная тревога`.
 - Sending: up to 3 attempts 30 s apart, 10 s each, no queue and no event label.
   All failed: exit 1, journal `{"outcome":"FAILED","reason":"delivery_failed"}`.
   Journal lines carry only `outcome`/`reason`/`lines`, never the report text or token.
@@ -220,19 +224,39 @@ Order matters: sync starts writing run files first, then the report is installed
    `/var/lib/aktau-sync/runs/`.
 3. Monitor: create `/opt/aktau-monitor/releases/<sha>` (modules from the git objects
    of the sync checkout, compare hashes), render the four units with
-   `render-monitor-units.mjs ... telegram`, `systemd-analyze verify`, install, remove
-   the old drop-in `aktau-go-monitor.service.d/10-connect-timeout.conf` (the unit
-   now carries `--network-family-autoselection-attempt-timeout=2000` and
-   `TimeoutStartSec=90s`), `daemon-reload`. State v1 is upgraded to v2 on the first
-   run. A manual `systemctl start aktau-go-monitor.service` must print `OK` with
-   `"queued":0`.
+   `render-monitor-units.mjs ... telegram`, `systemd-analyze verify` (all four units).
+   Before installing: `sudo systemctl stop aktau-go-monitor.timer`, then keep a v1
+   backup of the state, `sudo cp -p /var/lib/aktau-monitor/state/state.json
+   /var/lib/aktau-monitor/quarantine/state.v1-<date>.json` (as root into the
+   root-only quarantine directory), and check the copy: `grep -c '"pending":null'
+   <copy>` must print 1 and there must be no `manualReconciliation`. Then install
+   the four units, remove the old drop-in
+   `aktau-go-monitor.service.d/10-connect-timeout.conf` (the unit now carries
+   `--network-family-autoselection-attempt-timeout=2000` and
+   `TimeoutStartSec=90s`), `daemon-reload`, and check
+   `systemctl cat aktau-go-monitor.service`: exactly one `ExecStart`, no drop-in
+   section left. State v1 is upgraded to v2 on the first run. A manual
+   `systemctl start aktau-go-monitor.service` must print `OK` with `"queued":0`;
+   then `sudo systemctl start aktau-go-monitor.timer`.
 4. Report: `sudo systemctl start aktau-sync-report.service`, confirm the Telegram
-   message, then `sudo systemctl enable --now aktau-sync-report.timer`.
-5. Rollback: monitor — point the unit back to the previous release with its old
-   drop-in. **Old monitor code cannot read state v2**: before rolling back restore
-   the v1 copy from `/var/lib/aktau-monitor/quarantine/` or reset the state, otherwise
-   the old monitor blocks. Sync — checkout the previous SHA and previous units.
-   Report — `sudo systemctl disable --now aktau-sync-report.timer`.
+   message, then `sudo systemctl enable --now aktau-sync-report.timer`. Until the
+   updated sync has run, the first manual report shows ❌ «прогон не найден» for the
+   slots before the sync update: expected, not a fault. After the first sync run
+   check that the report user can read the runs directory:
+   `stat -c '%a %U' /var/lib/aktau-sync /var/lib/aktau-sync/runs` and
+   `sudo -u <monitor user> ls /var/lib/aktau-sync/runs` (an unreadable directory
+   makes every slot show «прогон не найден»).
+5. Rollback: monitor — `sudo systemctl stop aktau-go-monitor.timer`, point the unit
+   back to the previous release with its old drop-in. **Old monitor code cannot read
+   state v2.** Restore exactly the backup made in step 3 (`state.v1-<date>.json` to
+   `state/state.json`, owner the monitor user, mode 0600), or delete `state.json`
+   for a fresh OK start. Never restore a copy that has `manualReconciliation` or a
+   non-null `pending`: it puts the old latch straight back. Also check
+   `monitor.lock` ("Recovery / reset" step 1): when the old code read v2 it threw
+   after creating the lock and the lock was kept, so after a mistaken rollback a
+   stale lock must be removed by hand once no invocation is active. Sync — checkout
+   the previous SHA and previous units. Report —
+   `sudo systemctl disable --now aktau-sync-report.timer`.
 
 **Why the 2000 ms Node flag.** The VPS has no IPv6 route and about 20% of IPv4
 connects to Cloudflare need a 1 s SYN retry. Node's default 250 ms per-address
@@ -274,7 +298,7 @@ appropriate approved release route, compatible preserved rollback, private confi
 and application Voice gates. Keep AUTO_DEPLOY_ENABLED disabled. 
 
 The mandatory existing Security job runs `node scripts/ci/run-checks.mjs ops`
-with Node24: all92 Part20 cases plus the Part21 lifecycle/unit-kit tests. The
+with Node24: the operator suite (monitor, state queue, Telegram lifecycle, sync report and unit-kit tests). The
 original nine CI job names and deployment eligibility contract are unchanged.
 OpenSSL and systemd-analyze must already exist on the Linux test runner; tests
 do not install them. A broken operator suite fails the job, not a silent skip.
@@ -321,9 +345,10 @@ id "$MONITOR_USER"
 stat -c '%U %a %F' "$NODE24" "$SOURCE_DIR"
 git show HEAD:scripts/ops/monitor-go-production.mjs | sha256sum
 sha256sum "$SOURCE_DIR/scripts/ops/monitor-go-production.mjs"
-# Repeat for monitor-state.mjs, verify-go-production.mjs and telegram-notifier.mjs.
+# Repeat for monitor-state.mjs, verify-go-production.mjs, telegram-notifier.mjs and sync-report.mjs.
 "$NODE24" scripts/ops/render-monitor-units.mjs --render "$RENDER_DIR" "$MONITOR_USER" "$NODE24" "$SOURCE_DIR"
-systemd-analyze verify "$RENDER_DIR/aktau-go-monitor.service" "$RENDER_DIR/aktau-go-monitor.timer"
+systemd-analyze verify "$RENDER_DIR/aktau-go-monitor.service" "$RENDER_DIR/aktau-go-monitor.timer" \
+  "$RENDER_DIR/aktau-sync-report.service" "$RENDER_DIR/aktau-sync-report.timer"
 ```
 
 Owner must verify every ancestor, source digest and exact commit, not only the
@@ -331,13 +356,16 @@ shown leaf stat. Confirm receiver DNS/TLS, bearer authentication, durable
 idempotency and a private downstream receipt channel independently. Never put
 URL/token in the command line. Provision the root-owned env files via the
 existing private operator procedure; this kit does not create credentials.
-After path/custody validation and approval, Owner may install only the two
+After path/custody validation and approval, Owner may install only the four
 rendered0644 units (no account or source changes implicit in these commands):
 
 ```bash
 sudo install -o root -g root -m 0644 "$RENDER_DIR/aktau-go-monitor.service" /etc/systemd/system/aktau-go-monitor.service
 sudo install -o root -g root -m 0644 "$RENDER_DIR/aktau-go-monitor.timer" /etc/systemd/system/aktau-go-monitor.timer
-sudo systemd-analyze verify /etc/systemd/system/aktau-go-monitor.service /etc/systemd/system/aktau-go-monitor.timer
+sudo install -o root -g root -m 0644 "$RENDER_DIR/aktau-sync-report.service" /etc/systemd/system/aktau-sync-report.service
+sudo install -o root -g root -m 0644 "$RENDER_DIR/aktau-sync-report.timer" /etc/systemd/system/aktau-sync-report.timer
+sudo systemd-analyze verify /etc/systemd/system/aktau-go-monitor.service /etc/systemd/system/aktau-go-monitor.timer \
+  /etc/systemd/system/aktau-sync-report.service /etc/systemd/system/aktau-sync-report.timer
 sudo systemctl daemon-reload
 # Manual one-shot mode: timer stays disabled. Up to5 fixed API GET, <=2 deliveries.
 sudo systemctl start aktau-go-monitor.service
@@ -488,7 +516,7 @@ import {createTelegramNotifier} from "./scripts/ops/telegram-notifier.mjs";
 try{
  const send=createTelegramNotifier({token:process.env.BOT_TOKEN,admin:process.env.ADMIN_ID});
  const ok=await send({id:randomBytes(16).toString("hex"),type:"incident_opened",atUTC:Date.now()});
- console.log(JSON.stringify({outcome:ok?"ACCEPTED":"RECONCILE_STOP"}));process.exitCode=ok?0:2;
+ console.log(JSON.stringify({outcome:ok?"ACCEPTED":"REJECTED"}));process.exitCode=ok?0:2;
 }catch{console.log("{\"outcome\":\"CONFIG_BLOCKED\"}");process.exitCode=2;}'
 ```
 

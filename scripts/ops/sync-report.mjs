@@ -71,8 +71,13 @@ function monitorLine(now, s) {
   const n = s.queue.length;
   if (s.lastUTC === null) return '⚠️ Монитор API: ещё не запускался';
   const at = hhmm(s.lastUTC);
-  if (n > 0) return `⚠️ Монитор API: ${n} ${plural(n, 'неотправленная', 'неотправленные', 'неотправленных')} ${plural(n, 'тревога', 'тревоги', 'тревог')}, проверка в ${at}`;
-  if (now - s.lastUTC > STALE_MONITOR) return `⚠️ Монитор API: не запускался с ${at}`;
+  const tail = n > 0 ? `${n} ${plural(n, 'неотправленная', 'неотправленные', 'неотправленных')} ${plural(n, 'тревога', 'тревоги', 'тревог')}` : '';
+  if (now - s.lastUTC > STALE_MONITOR) {
+    const l = new Date(s.lastUTC + AKTAU), c = new Date(now + AKTAU);
+    const date = l.toISOString().slice(0, 10) !== c.toISOString().slice(0, 10) ? ` (${l.getUTCDate()} ${MONTHS[l.getUTCMonth()]})` : '';
+    return `⚠️ Монитор API: не запускался с ${at}${date}${tail ? `, ${tail}` : ''}`;
+  }
+  if (n > 0) return `⚠️ Монитор API: ${tail}, проверка в ${at}`;
   return `${s.phase === 'OK' ? '✅' : '⚠️'} Монитор API: ${s.phase}, проверка в ${at}`;
 }
 

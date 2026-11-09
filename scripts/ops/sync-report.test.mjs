@@ -81,9 +81,16 @@ test('phase INCIDENT with empty queue is a warning', () => {
 test('v1 latched monitor state is read', () => {
   const v1 = { version: 1, phase: 'INCIDENT', failures: 2, lastUTC: 1792869347441, pending: { id: 'a'.repeat(32), type: 'incident_opened', atUTC: 1792869347441, nextAttemptUTC: 1792869407441, attempts: 1, manualReconciliation: true } };
   const st = parseStateText(JSON.stringify(v1) + '\n');
-  // lastUTC is stale AND the queue is non-empty: the queue-count line wins.
-  assert.equal(one(TUE, [], st).at(-1),
-    '⚠️ Монитор API: 1 неотправленная тревога, проверка в ' + new Date(1792869347441 + 5 * 3600000).toISOString().slice(11, 16));
+  // lastUTC is stale (25 Oct): staleness wins, the queue count is a suffix.
+  assert.equal(one(TUE, [], st).at(-1), '⚠️ Монитор API: не запускался с 00:15 (25 октября), 1 неотправленная тревога');
+});
+test('stale monitor with queued alerts: staleness first, date only on another Aktau day', () => {
+  const last = l => l.at(-1);
+  const st = (lastUTC, n) => ({ version: 2, phase: 'INCIDENT', failures: 2, lastUTC, queue: q(n) });
+  assert.equal(last(one(TUE, [], st(TUE - 50 * 60000, 2))), '⚠️ Монитор API: не запускался с 17:40, 2 неотправленные тревоги');
+  assert.equal(last(one(TUE, [], st(Date.UTC(2026, 10, 9, 9, 5), 5))), '⚠️ Монитор API: не запускался с 14:05 (9 ноября), 5 неотправленных тревог');
+  // 19:30 UTC on the 9th is 00:30 on the 10th in Aktau: same Aktau day as now, so no date.
+  assert.equal(last(one(TUE, [], st(Date.UTC(2026, 10, 9, 19, 30), 1))), '⚠️ Монитор API: не запускался с 00:30, 1 неотправленная тревога');
 });
 test('manual rerun inside the slot hour wins', () => {
   const runs = [daily(D(10, 1)), daily(D(10, 13), { exitCode: 1, published: false, stores: { dina: 1, dana: 0, fixprice: 0, anvar: 0 } }), daily(D(10, 13, 20, 0))];

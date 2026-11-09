@@ -15,7 +15,7 @@ TimeoutStopSec=5s
 KillMode=control-group
 SendSIGKILL=yes
 Restart=no
-# Unhealthy/pending is a completed observation, not an automatic process retry.
+# Exit 1 (unhealthy probe or undelivered alert) is a completed observation; the queue retries on the next tick, not systemd.
 SuccessExitStatus=1
 UMask=0077
 NoNewPrivileges=yes

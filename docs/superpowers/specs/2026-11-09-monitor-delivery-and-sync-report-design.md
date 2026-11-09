@@ -135,9 +135,10 @@ Weekly: `kind:"weekly"`, `stores` с `dina`/`dana`/`fixprice`, `scopeFailed` (с
   - ⚠️ daily: код 3 (перечислить сети из прошлого файла) или 4 (сбой retention);
   - ❌ daily: код 1 или иной ненулевой; `running` старше 25 минут («не завершился»); файл не найден («прогон не найден»);
   - weekly: ✅ код 0; ❌ иначе, с упавшими сетями и scope-шагами; не найден → ❌;
-  - монитор: ✅ если `lastUTC` не старше 15 минут, очередь пуста и фаза OK; ⚠️ если в очереди есть события (их число),
-    `lastUTC` старше 15 минут или фаза DEGRADED/INCIDENT; ❌ если `state.json` нет или он не читается. В строке — фаза и время последней проверки
-    (по Актау, UTC+5).
+  - монитор (проверки по порядку): ❌ если `state.json` нет или он не читается; ⚠️ `не запускался с HH:MM`, если `lastUTC`
+    старше 15 минут, плюс ` (D <месяц>)`, если дата Актау у `lastUTC` не совпадает с датой отчёта, плюс `, N неотправленных тревог`,
+    если очередь не пуста (остановленный монитор не скрывается очередью); свежий `lastUTC` и очередь не пуста →
+    ⚠️ `N неотправленных тревог, проверка в HH:MM`; фаза DEGRADED/INCIDENT → ⚠️; иначе ✅ с фазой и временем проверки (по Актау, UTC+5).
 - Формат: заголовок `Отчёт Aktau Market · <день> <месяц>` (дата по Актау), затем по строке на прогон и строка монитора;
   время прогонов по Актау. Пример — в разделе «Примеры» ниже.
 - Сборка текста — чистая функция `buildReport({ now, runs, monitorState })` без I/O.
@@ -204,12 +205,19 @@ Weekly: `kind:"weekly"`, `stores` с `dina`/`dana`/`fixprice`, `scopeFailed` (с
 2. Sync: вне окон прогонов обновить checkout `/opt/aktau-sync` на новый SHA; заменить два юнита из `ops/sync/`,
    `daemon-reload`. Первый прогон после этого создаёт `/var/lib/aktau-sync/runs/`.
 3. Монитор: новый релиз `/opt/aktau-monitor/releases/<SHA>` (модули из git-объектов checkout sync, хеши сверить);
-   отрендерить 4 юнита, поставить; удалить drop-in `aktau-go-monitor.service.d/10-connect-timeout.conf`; `daemon-reload`.
-   Состояние v1 переводится в v2 на первом прогоне. Ручной прогон → ожидается `OK`, `queued:0`.
-4. Отчёт: ручной запуск `aktau-sync-report.service` → сообщение в Telegram; затем `enable --now` таймера.
-5. Откат: монитор — вернуть юнит на релиз `4d8e3c0` с прежним drop-in (state v2 старый код не прочитает:
-   перед откатом вернуть копию v1 из `/var/lib/aktau-monitor/quarantine/` или сбросить состояние);
-   sync — checkout на прежний SHA и прежние юниты; отчёт — `disable --now` таймера.
+   отрендерить 4 юнита; `stop aktau-go-monitor.timer`; скопировать `state.json` в
+   `/var/lib/aktau-monitor/quarantine/state.v1-<дата>.json` и проверить `"pending":null` (без `manualReconciliation`);
+   поставить 4 юнита; удалить drop-in `aktau-go-monitor.service.d/10-connect-timeout.conf`; `daemon-reload`;
+   `systemctl cat aktau-go-monitor.service` — один `ExecStart`, drop-in не осталось.
+   Состояние v1 переводится в v2 на первом прогоне. Ручной прогон → ожидается `OK`, `queued:0`; затем `start` таймера.
+4. Отчёт: ручной запуск `aktau-sync-report.service` → сообщение в Telegram (до первого прогона обновлённого sync
+   слоты покажут ❌ «прогон не найден» — ожидаемо); затем `enable --now` таймера. После первого прогона sync:
+   `stat -c '%a %U' /var/lib/aktau-sync /var/lib/aktau-sync/runs` и `sudo -u <пользователь монитора> ls /var/lib/aktau-sync/runs`.
+5. Откат: монитор — `stop` таймера, юнит на релиз `4d8e3c0` с прежним drop-in; state v2 старый код не прочитает:
+   вернуть именно копию шага 3 (`state.v1-<дата>.json`) или удалить `state.json` (чистый OK); копию с
+   `manualReconciliation` или непустым `pending` не возвращать — старый latch вернётся. Проверить `monitor.lock`
+   (README, «Recovery / reset», п. 1): старый код после чтения v2 падает, создав lock, и lock остаётся — убрать вручную,
+   убедившись, что прогона нет; sync — checkout на прежний SHA и прежние юниты; отчёт — `disable --now` таймера.
 
 ## Риски
 
