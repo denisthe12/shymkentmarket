@@ -30,8 +30,11 @@ const protectedPaths=['backend/prisma','contracts','deploy/compose.production.ym
 const approvedExceptions=[
   // Legacy NestJS seed removal (step 2 of the Nest decommission): the dead seed script only;
   // no DB/schema/migration change. Active release 1cbd535 (release.env API_IMAGE, 2026-11-08).
+  // contracts/README.md: docs-only edit in PR #110 (live profile points at the Go API instead of
+  // NestJS); no OpenAPI, example, schema or tooling change.
   {active:'1cbd535562cca1852942683a3c0f0f717db181b3',blobs:[
     ['backend/prisma/seed.ts','5a9debc5abe9ba91367e935dfe22662f849847e7',null],
+    ['contracts/README.md','4839a0739abbddd1ffef71ad33ce879e0f43572e','78221239d4730bc1a95301f8247da86a97bfea3c'],
   ]},
 
   // PR103 schema delta: Backend2 reports applied migrations, checksums/RLS/SELECT PASS.
