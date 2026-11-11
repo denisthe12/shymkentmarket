@@ -219,7 +219,10 @@ the VPS as `aktau-sync`:
 Order matters: sync starts writing run files first, then the report is installed.
 
 1. Merge to `main`, green CI, bundle to the VPS.
-2. Sync: outside run windows update the `/opt/aktau-sync` checkout, replace the two
+2. Sync: outside run windows first check that `/usr/local/go/bin/go version` is at
+   least the `go` line of `backend-go/go.mod` at the new SHA (sync runs with
+   `GOTOOLCHAIN=local`; if it is older, upgrade Go on the VPS first, see
+   `ops/sync/README.md`), then update the `/opt/aktau-sync` checkout, replace the two
    units from `ops/sync/`, `daemon-reload`. The first run creates
    `/var/lib/aktau-sync/runs/`.
 3. Monitor: create `/opt/aktau-monitor/releases/<sha>` (modules from the git objects
