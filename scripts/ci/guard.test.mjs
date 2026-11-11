@@ -26,7 +26,8 @@ test('setup refuses caller-controlled hosts/options/database/credentials', () =>
     good.replace('127.0.0.1', 'localhost')]) assert.throws(() => localURL(value));
 });
 test('browser setup distinguishes hosted CI and local reproduction without sudo', () => {
-  assert.deepEqual(browserInstallArgs({ CI: 'true', PW_CHANNEL: 'chrome' }), ['exec', 'playwright', 'install', '--with-deps', 'chromium']);
+  assert.deepEqual(browserInstallArgs({ CI: 'true', PW_CHANNEL: 'chrome' }), ['exec', 'playwright', 'install', 'chromium']);
+  assert.deepEqual(browserInstallArgs({ CI: 'true' }), ['exec', 'playwright', 'install', 'chromium']);
   assert.equal(browserInstallArgs({ PW_CHANNEL: 'chrome' }), null);
   assert.deepEqual(browserInstallArgs({}), ['exec', 'playwright', 'install', 'chromium']);
   assert.deepEqual(browserInstallArgs({ CI: 'false' }), ['exec', 'playwright', 'install', 'chromium']);

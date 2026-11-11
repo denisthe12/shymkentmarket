@@ -55,13 +55,17 @@ export async function wait(label, probe, budget = 60_000) {
   }
   throw new Error(`${label}: readiness deadline exceeded`);
 }
+// No --with-deps: its apt step hung for ~10 min or failed on Ubuntu mirror DNS errors. The hosted
+// runner already has Chrome's system libraries; CI still uses the Chromium pinned by Playwright.
 export function browserInstallArgs(settings) {
-  if (settings.CI === 'true') return ['exec', 'playwright', 'install', '--with-deps', 'chromium'];
-  if (settings.PW_CHANNEL === 'chrome') return null;
+  if (settings.CI !== 'true' && settings.PW_CHANNEL === 'chrome') return null;
   return ['exec', 'playwright', 'install', 'chromium'];
 }
-export function prepareBrowser() {
+export function prepareBrowser(attempts = 3) {
   const args = browserInstallArgs(env);
-  if (args) run('Chromium install', 'pnpm', args, { cwd: join(root, 'frontend') });
-  else console.log('Browser installer: SKIP (local existing Chrome; E2E must still pass)');
+  if (!args) return console.log('Browser installer: SKIP (local existing Chrome; E2E must still pass)');
+  for (let i = 1; ; i++) {
+    try { return run('Chromium install', 'pnpm', args, { cwd: join(root, 'frontend'), timeout: 3 * 60_000 }); }
+    catch (error) { if (i >= attempts) throw error; console.log(`Chromium install: retry ${i + 1}/${attempts}`); }
+  }
 }
