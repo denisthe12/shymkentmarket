@@ -1,5 +1,15 @@
 # Go API auto-deploy — SOURCE CANDIDATE, disabled by default
 
+> **Status 2026-11-11:** the broker is installed on the VPS
+> (`/usr/local/lib/adilbaga-deploy/auto_broker.py`, SHA-256 `7b8f5320…`, PR #104,
+> CAS upgrade from `2dd252ee…` on 2026-11-08). Repository variable
+> `AUTO_DEPLOY_ENABLED` is `false`: the workflow builds the image artifact on manual
+> `mode: build` but its deploy job never runs; releases are
+> run by the operator with a new exact-artifact root approval (or a documented manual
+> cutover, as for `1cbd535`). Active release and rollback target: `deploy/README.md`.
+> Statements below about «not installed» and the e50de253→ffc0bc44 Prisma block record
+> the state before PR #104/#105.
+
 No activation/deployment/server or secret setup was performed by this task.
 Production remains Supabase / existing Go API, not a new provider or registry.
 New workflow does not change the existing nine CI jobs, compose or API/Voice code.
@@ -116,7 +126,7 @@ this source exception.
 
 ## Server privilege boundary — separate review/authorization required
 
-This implementation needs a new root-owned fixed broker. It is **not installed**
+This implementation needs a new root-owned fixed broker. It was **not installed** at the time (installed 2026-11-08, see the status note above)
 and no existing generic sudo rule is assumed acceptable for CI. Do not give the
 CI user docker group membership, general sudo, shell/tee/python/systemctl rights,
 or write access to root code/configuration. Missing prerequisites fail closed.
@@ -331,7 +341,7 @@ performed by the source implementation. Missing trust file/account/key blocks.
    root-private no-clobber backup, locks/idle state, atomic CAS replacement and
    old/new hash/mode/owner readback. The source agent must not overwrite root code.
 4. Fresh read-only lookup must match the independently admitted final main SHA.
-   Compatibility still blocks the e50de253→ffc0bc44 protected Prisma delta:
+   (Historical, before PR #105.) Compatibility blocked the e50de253→ffc0bc44 protected Prisma delta:
    Backend2's DB confirmation is supporting evidence, NOT an approved exception.
    Any exception requires independent review of the exact final SHA pair/blobs;
    no broad migration/Prisma exception is introduced in this PR.

@@ -1,5 +1,7 @@
 # Performance baseline — local representative Part13
 
+> **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
+
 Status: **READY_FOR_EXTERNAL_REVIEW**. Date:2026-10-06.
 Immutable runtime source: `b9ef53347c42c35143a9930801d38e030f27bd80`.
 Local WSL2 linux/amd64,12 logical CPUs,16,705,351,680 RAM bytes, Docker29.1.3;

@@ -1,5 +1,7 @@
 # Targeted eggs data-quality fix — external review
 
+> **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
+
 Status: **SNAPSHOT READY FOR REVIEW; LIVE DB NOT UPDATED**.
 
 ## Scope and method

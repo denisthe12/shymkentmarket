@@ -1,7 +1,8 @@
-# Go backend — local-only production candidate
+# Go backend — production API
 
-This is the production API (`backend/` now holds only the Prisma schema and
-migrations). Frozen v1 catalog, dashboard and Voice wire behavior is pinned by
+This is the production API, live at `https://api.aktau.market` (active release and
+rollback target: [deploy/README.md](../deploy/README.md); `backend/` now holds only
+the Prisma schema and migrations). Frozen v1 catalog, dashboard and Voice wire behavior is pinned by
 recorded reference responses, see "Recorded reference" below. Health routes
 are operational and intentionally outside the frozen OpenAPI.
 
@@ -62,8 +63,11 @@ or a transient Redis session dependency.
 Private encrypted application backups and disposable PG17 restore commands:
 [ops/postgres](../ops/postgres/README.md). Alert conditions, staging-dependent
 thresholds and runbook links: [alert policy](../docs/production/OBSERVABILITY_ALERT_POLICY.md).
-Scheduler and external alert delivery **NOT CONFIGURED**. Independent off-VPS
-storage/key custody and real host/domain monitoring await operations review.
+Scheduled ingestion runs on the VPS as systemd timers ([ops/sync](../ops/sync/README.md)):
+daily sync 01:00/13:00 UTC with retention (`cmd/prune`), weekly full scrape Sunday 22:00 UTC.
+External alert delivery: `aktau-go-monitor` probes the public API every 5 minutes and sends
+ALERT/RECOVERED to Telegram, plus a daily sync report ([ops/monitor](../ops/monitor/README.md)).
+Scheduled DB backups and independent off-VPS storage/key custody are **not configured**.
 
 Part11 local operator/reader instrumentation profile uses only explicit
 PART11_OPERATOR_DATABASE_URL and PART11_READER_DATABASE_URL targeting the same
@@ -75,7 +79,7 @@ rtk proxy go test -race -count=1 -tags=integration ./internal/postgres -run '^Te
 
 ## Configuration and local run
 
-Go 1.27.1, Docker and RTK are required. With the owner's WSL installation:
+Go 1.27.4, Docker and RTK are required. With the owner's WSL installation:
 
 ```bash
 export PATH=/usr/local/go/bin:$PATH
@@ -138,9 +142,9 @@ rtk proxy go test -tags=integration ./...
 `SMOKE_DATABASE_URL` explicitly selects a loopback production clone for read-only
 smoke/local EXPLAIN ANALYZE; no production dump becomes a committed fixture.
 Live read-only smoke (`TestLiveReadOnlySmoke`) requires separate
-`LIVE_DATABASE_URL` and `LIVE_READONLY_CONFIRM=1`. **Phase A is live audit-only: do not run live repositories with the owner
-credential as least-privilege evidence. Production apply and live parity await
-separate Phase B approval.** No live DDL/grants/role creation/write tests allowed.
+`LIVE_DATABASE_URL` and `LIVE_READONLY_CONFIRM=1`. Do not run live repositories with the owner credential as least-privilege
+evidence. (The Phase A/Phase B reader rollout described in POSTGRES_LAYER.md is
+applied: production uses the restricted `aktau_api_runtime` login.) No live DDL/grants/role creation/write tests allowed.
 
 The separate destructive rollout profile requires `SECURITY_DATABASE_URL` and
 `SECURITY_API_DATABASE_URL`, set privately to an isolated loopback
@@ -163,7 +167,7 @@ RLS. Existing unsafe flags/membership/ownership, direct/default ACLs, FORCE/poli
 mixed-state guards and real atomic lock-timeout refusal are tested independently.
 The rollback SQL is operator-only, not an automatic Prisma/runtime action.
 Database CONNECT comes from the audited existing PUBLIC ACL, not a new grant.
-See POSTGRES_LAYER.md for the future, separately authorized Phase B runbook.
+See POSTGRES_LAYER.md for the Phase B runbook (historical; applied).
 
 ## HTTP behavior and security
 
@@ -221,7 +225,7 @@ From repository root:
 rtk proxy docker build -t adilbaga-part03-api:review backend-go
 ```
 
-Image: Go 1.27.1 Alpine build, CGO disabled/trimpath; minimal Alpine 3.24 runtime
+Image: Go 1.27.4 Alpine build, CGO disabled/trimpath; minimal Alpine 3.24 runtime
 with CA certificates, UID/GID 10001, no compiler/toolchain. Healthcheck probes live.
 
 First confirm the names below do not belong to pre-existing resources. Export

@@ -17,14 +17,17 @@ changing RLS/schema, running seed/migrations or switching to owner DB credential
 Recovery: live200, ready200, frozen GET smoke and controlled Voice flow; no new
 5xx and bounded latency. An unavailable backend alone is not DB loss.
 
-## VPS — active Part15 Go API
+## VPS — production Go API
 
-Railway retired. Host cloudflared → loopback Docker API; Supabase restricted
-identity only. See [deployment procedure](../../deploy/README.md). Active release
-is `e6ef854e2973e5b0871888bbc3111e026cdccc5b`; all9 hosted CI jobs PASS,
-portable identity/readiness/Voice/public smoke PASS. Earlier failed attempts and
-zero-state rollbacks remain in Part15 report. New releases require external review,
-exact-SHA CI and off-VPS immutable image; never hot-fix dependencies/runtime on VPS.
+Host cloudflared → loopback Docker API; Supabase restricted identity only.
+Active release and rollback target: [deploy/README.md](../../deploy/README.md)
+→ «Current release». New releases require exact-SHA CI and an off-VPS immutable
+image; never hot-fix dependencies/runtime on VPS. A regression in the new release
+→ [rollback](rollback.md) to the prior image.
+
+External check: `aktau-go-monitor.timer` probes the public API every 5 minutes
+and sends ALERT/RECOVERED to Telegram ([ops/monitor](../../ops/monitor/README.md)).
+A silent monitor is visible in the daily sync report (18:30 Aktau).
 Provider-perfect availability is superseded: require correct application Voice/
 session flows through Gemini success OR approved deterministic fallback.
 
@@ -38,8 +41,7 @@ After separately approved recovery, require running/healthy/restart0, loopback
 publication, real Voice/session smoke and then public health through Tunnel.
 Recreate command is documented in deploy/README; close public traffic first.
 Inspect logs privately, output fixed error/provider classes only, never raw env,
-voice text/coordinates/session IDs. Disk/memory/alert delivery and probe cadence
-remain separate operations work, not a scheduler installed by this deployment.
+voice text/coordinates/session IDs. Disk/memory alerts are not configured.
 
 Use curl or a clearly identified operator client for edge diagnostics. Generic
 Python-urllib currently gets Cloudflare1010/403 despite healthy origin, not proof

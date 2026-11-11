@@ -1,5 +1,7 @@
 # Adil Bağa — Backend 2 source/data integration
 
+> **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
+
 ## Sources and selective merge
 
 - Branch: `integrate/full-stack`; pre-merge HEAD: `deef3f29ce16c1d076e227ebf2d70cd629c7b462`.

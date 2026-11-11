@@ -21,32 +21,25 @@ security and local restricted Go smoke. Restore only an owned loopback target
 until owner separately approves production recovery. Take a fresh backup before
 any destructive recovery; preserve existing backups and audit evidence.
 
-## VPS — first Go release rollback
+## VPS — prior-image rollback
 
-Railway retired. First release has no prior production Go image. Safe reviewed
-target is Part14B zero-application state; no database rollback is required because
-Part15 performs no migration/data/ingestion change. This rollback was executed
-after the first Part15 artifact/readiness failure and again after full-context
-Gemini invalid_output3/3 despite corrected identity/readiness PASS. At those
-historical checkpoints Tunnel was stopped and application container/network
-removed, image/private config retained. Current source release
-`e6ef854e2973e5b0871888bbc3111e026cdccc5b` is active behind Tunnel. Zero-application
-rollback remains the first-release emergency target. A correctly handled Gemini
-failure alone is not a rollback trigger; application/security/network failures are.
+Active release and rollback target: `deploy/README.md` → «Current release»
+(this runbook does not copy SHAs). Several prior SHA images are kept on the VPS,
+so the normal rollback is switching `release.env` to the rollback target and
+recreating the container: `deploy/README.md` → «Rollback». No database rollback;
+check schema compatibility of the target before switching.
 
-```bash
-ssh my-vps 'sudo systemctl stop cloudflared'
-ssh my-vps 'sudo docker compose --env-file /etc/adilbaga/release.env -f /opt/adilbaga/compose.production.yml down'
-ssh my-vps 'sudo ss -lntup'
-```
-
-Require no8080 listener and no public80/443/8080. Never expose origin as emergency
+A correctly handled Gemini failure alone is not a rollback trigger;
+application/security/network failures are. Never expose origin as emergency
 fallback, switch to owner credentials, mutate schema/history or rewind snapshots.
-Recovery needs artifact identity and local health/Voice proof before Tunnel start.
-Future successful releases preserve current/previous SHA images and private
-release metadata; prior-image rollback requires schema compatibility review.
+Recovery needs local health/smoke before Tunnel start.
 
-## Products-discovery hotfix rollback — 2026-10-08
+Last resort, only when no kept image is healthy: Part14B zero-application state
+(`deploy/README.md` → «Emergency stop»). The site is down until a reviewed recovery.
+History: zero-application rollbacks were used during the first Part15 attempts
+(no prior image existed then); see the Part15 report.
+
+## Products-discovery hotfix rollback — 2026-10-08 (historical)
 
 The reviewed `d6098f622dc5bb18fd9e7ec4f4a0c82033927981` application release made
 no schema/data change. A public Voice HTTP500 triggered the authorized prior-image

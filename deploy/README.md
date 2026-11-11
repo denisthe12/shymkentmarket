@@ -13,18 +13,25 @@ single-VPS transport is docker save → encrypted SSH → docker load. No VPS bu
 
 ## Current release
 
-Active production Go release: `e6ef854e2973e5b0871888bbc3111e026cdccc5b`.
-Hosted run37668466461 attempt2 passed all9 mandatory jobs; reviewed source was
-not changed during rollout. Portable identity, restricted local/VPS readiness,
-real application Voice/Upstash, exact measured peer and public edge checks PASS.
-Keep the SHA image and private release configuration for reviewed recovery.
-The 2026-10-08 products-discovery rollout of
-`d6098f622dc5bb18fd9e7ec4f4a0c82033927981` was rolled back after a public Voice
-HTTP500 despite local VPS application checks passing. The active release remains
-the SHA above, with Tunnel active and readiness200. Both images are retained;
-do not repeat rollout or change provider configuration without external review.
-See the appended performance-hotfix evidence in the Part15 report.
-Part16+ NOT STARTED; frontend/HSTS/ingestion are not included.
+This section is the single source of truth for the active SHA and the rollback
+target. Runbooks and other production docs link here instead of copying SHAs;
+update only this section after a release.
+
+- Active: `1cbd535562cca1852942683a3c0f0f717db181b3` (search word order, PR #105).
+  Manual cutover 2026-11-08 15:24Z; evidence in
+  `docs/production/reports/SEARCH_WORD_ORDER_PRODUCTION_DEPLOY_REPORT.md`.
+- Rollback target: `e50de2532259ab477e8491c4bddc2e6120ef3da0` (image kept on the VPS).
+- Images kept on the VPS (checked 2026-11-11): `695f7e3`, `e6ef854`, `d6098f6`,
+  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`.
+- Deploy broker installed: `/usr/local/lib/adilbaga-deploy/auto_broker.py`
+  SHA-256 `7b8f5320…` (PR #104, installed 2026-11-08). Every broker release needs
+  a new exact-artifact root approval; see `docs/production/AUTO_DEPLOY_SETUP.md`.
+- Last read-only check 2026-11-11: healthy, 0 restarts, live/ready 200, cloudflared active.
+
+History: the first Go release was `e6ef854` (2026-10-08, Part15 report); the same-day
+`d6098f6` rollout was rolled back after a public Voice HTTP500. Later releases:
+`438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`. HSTS stays deferred;
+ingestion is the separate `ops/sync/` units, not part of an API release.
 
 Use curl or an explicitly identified operator User-Agent for edge probes. Generic
 Python-urllib gets Cloudflare1010/403; no browser impersonation or WAF weakening
@@ -107,19 +114,38 @@ flow. Broader natural-language/category cases rely on Gemini and may require
 additional clarification during provider degradation. This accepted limitation
 must be monitored after launch; not every phrase/category works without Gemini.
 
-## First-release rollback
+## Rollback
 
-There is no earlier Go production image. Accepted rollback target is Part14B
-zero-application state, not another backend/provider or DB rollback:
+Roll back to the target named in «Current release»: same compose, previous SHA
+image, no DB rollback, migration, ingest or snapshot action. Do it outside the
+sync windows (01:00Z, 13:00Z, Sunday 22:00Z). Replace `<ROLLBACK_SHA>` with the
+full SHA from «Current release».
+
+```bash
+ssh my-vps 'sudo systemctl stop cloudflared'
+ssh my-vps 'sudo cp -p /etc/adilbaga/release.env /root/adilbaga-release.env.$(date -u +%Y%m%dT%H%M%SZ)'
+ssh my-vps 'echo "API_IMAGE=adilbaga-api:<ROLLBACK_SHA>" | sudo tee /etc/adilbaga/release.env >/dev/null'
+ssh my-vps 'sudo docker compose --env-file /etc/adilbaga/release.env -f /opt/adilbaga/compose.production.yml up -d --force-recreate'
+ssh my-vps 'sudo docker inspect adilbaga-api --format "status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{end}} restart={{.RestartCount}} image={{.Config.Image}}"'
+ssh my-vps 'curl -fsS http://127.0.0.1:8080/health/live; curl -fsS http://127.0.0.1:8080/health/ready'
+ssh my-vps 'sudo systemctl start cloudflared'
+```
+
+Run the local smoke (installed `auto_smoke.py`) before starting cloudflared, then
+update «Current release». Before every new release keep both the current and the
+previous SHA images and check DB compatibility of the rollback target.
+
+### Emergency stop (last resort)
+
+Only if no retained image is healthy: return to the Part14B zero-application state
+(public path closed, API stopped). The site is down until a reviewed recovery.
+Never expose origin as fallback.
 
 ```bash
 ssh my-vps 'sudo systemctl stop cloudflared; sudo docker compose --env-file /etc/adilbaga/release.env -f /opt/adilbaga/compose.production.yml down'
 ssh my-vps 'sudo ss -lntup'
 ```
 
-Require no8080 listener and no public80/443/8080; retain the verified image and
-private configuration for reviewed recovery. Never expose origin as fallback.
-Future releases preserve current/previous SHA images before replacement and
-validate DB compatibility. No DB rollback, migration, ingest or snapshot action.
+Require no 8080 listener and no public 80/443/8080.
 
-Ingestion (регулярный sync цен) — отдельный systemd-юнит из `ops/sync/`, не часть API-релиза.
+Ingestion (регулярный sync цен) — отдельные systemd-юниты из `ops/sync/`, не часть API-релиза.

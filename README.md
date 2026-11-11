@@ -41,9 +41,8 @@
 Adil Bağa (Әділ баға, «Справедливая цена»); GitHub repository `kiratonine/AdilBaga`
 и Vercel project `adil-baga` не переименовываются. Existing зелёный SVG-знак выше
 утверждён как финальный логотип; новый знак не требуется. Старый `assets/logo/Logo.jpg`
-и скриншоты сохранены как исторические материалы. Frontend branding/SEO implementation
-подготовлена как source candidate, ещё не merged/deployed. Контакты и юридические
-данные остаются pending: [Part17 Frontend handoff](docs/production/PART_17_FRONTEND_HANDOFF.md).
+и скриншоты сохранены как исторические материалы. Брендинг и SEO Aktau Market
+работают в production (PR #25). Контакты и юридические данные остаются pending: [Part17 Frontend handoff](docs/production/PART_17_FRONTEND_HANDOFF.md).
 
 Проект объединяет данные магазинов в единый каталог и помогает быстро получить ответ на простой вопрос:
 
@@ -56,7 +55,7 @@ Adil Bağa (Әділ баға, «Справедливая цена»); GitHub re
 - **Fix Price**;
 - **Анвар**.
 
-Во время работы приложения backend **не обращается к сайтам магазинов**. Каталоги были собраны заранее, нормализованы и сохранены как snapshot в PostgreSQL.
+API **не обращается к сайтам магазинов** при запросах пользователей: он читает опубликованный snapshot в PostgreSQL. Snapshot обновляет отдельный sync на VPS — два раза в день (06:00 и 18:00 по Актау) и полный скрап раз в неделю ([ops/sync](ops/sync/README.md)).
 
 ---
 
@@ -146,14 +145,15 @@ Aktau Market сокращает путь от поиска до конкретн
 
 ## Что уже работает? ✅
 
-Числа 849 товаров / 6 категорий ниже относятся к историческому исходному snapshot,
-не являются текущими live counts; актуальный опубликованный каталог меняется.
+Числа ниже — по публичному API на 2026-11-11 (snapshot 01:02 UTC); каталог меняется
+после каждого sync. Исходный snapshot MVP был меньше: 849 товаров, 3 сети, 6 категорий.
 
-- единый snapshot данных магазинов Актау;
-- **849** canonical products;
-- **3** торговые сети;
-- **15** физических точек на карте;
-- **6** публичных категорий;
+- единый snapshot данных магазинов Актау, обновляется автоматически два раза в день;
+- **4 184** canonical products, из них **486** есть больше чем в одной сети;
+- **4** торговые сети;
+- физические точки сетей на карте;
+- **9** публичных категорий;
+- месячная история цен (с ноября 2026);
 - поиск, фильтрация и сортировка;
 - карточка товара с предложениями разных сетей;
 - dashboard с ценовым разбросом;
@@ -178,7 +178,7 @@ Aktau Market сокращает путь от поиска до конкретн
 ```text
 Dana Market / Dina Market / Fix Price / Анвар
                 ↓
-         одноразовый import
+   sync 2×/день + полный скрап раз в неделю
                 ↓
       deterministic normalization
                 ↓
@@ -207,7 +207,7 @@ Production API: immutable Go container на VPS → Cloudflare Tunnel →
 **https://api.aktau.market**; PostgreSQL остаётся Supabase. Railway retired.
 Frozen v1 wire-контракт закреплён записанными ответами в
 `backend-go/tests/integration/testdata/reference`. Запуск и проверки: [backend-go/README.md](backend-go/README.md).
-Это документирование принятого deployment, не новая проверка VPS.
+Активный релиз API и цель отката: [deploy/README.md](deploy/README.md).
 
 ```text
 Siri
@@ -416,10 +416,9 @@ Siri-flow дополнительно проверяется вручную на 
 
 Production build/start требуют явных HTTP mode, публичного API URL и site URL.
 Production адреса: `https://aktau.market` и `https://api.aktau.market`.
-Публичное имя — **Aktau Market**; frontend branding/SEO изменения реализованы
-как source candidate и ещё не выпущены в production.
-Part16 signed production verification ещё открыт; Automatic CI/CD Activation
-остаётся **FROZEN / WAITING_FOR_OWNER**. Backend может быть
+Публичное имя — **Aktau Market**; брендинг и SEO в production.
+Релиз API — вручную через брокер деплоя с одобрением (`AUTO_DEPLOY_ENABLED=false`,
+[AUTO_DEPLOY_SETUP](docs/production/AUTO_DEPLOY_SETUP.md)). Backend может быть
 недоступен при `next build`: каталог, Dashboard и sitemap читают API в runtime;
 серверные GET кешируются до 3600 секунд. Mock production build разрешён только
 через `NEXT_PUBLIC_ENABLE_TEST_MOCKS=1` для Playwright, не для deployment.
@@ -445,6 +444,10 @@ AdilBaga/
 │
 ├── backend-go/                 # production Go API, ingest, retention
 │
+├── contracts/                  # OpenAPI v1 и контрактные тесты
+│
+├── deploy/                     # production compose, релиз и откат API
+│
 ├── data/
 │   └── snapshots/              # frozen dataset used by the MVP
 │
@@ -458,6 +461,10 @@ AdilBaga/
 │       ├── app/                # Next App Router, SSR/SEO
 │       ├── views/
 │       └── mocks/
+│
+├── ops/                        # VPS: sync, монитор, Cloudflare, PostgreSQL
+│
+├── pipeline/                   # скраперы магазинов и подготовка sync
 │
 ├── scripts/
 └── README.md
@@ -484,11 +491,11 @@ AdilBaga/
 
 - [ ] подключить больше магазинов и торговых сетей Актау;
 - [ ] расширить количество категорий и товаров;
-- [ ] автоматизировать регулярное обновление snapshot;
+- [x] автоматизировать регулярное обновление snapshot (sync 2×/день, полный скрап раз в неделю);
 - [ ] усилить автоматический контроль качества данных;
 - [ ] добавить голосовые сценарии для Gemini на Android;
 - [ ] исследовать Samsung Bixby и Xiaomi / HyperOS voice integrations;
-- [ ] добавить историю изменения цен;
+- [ ] добавить историю изменения цен (месячные цены уже собираются в `price_history`, в интерфейсе пока нет);
 - [ ] показывать динамику стоимости продуктовой корзины;
 - [ ] добавить уведомления о заметных изменениях цен;
 - [ ] расширить городской аналитический dashboard.
@@ -497,9 +504,10 @@ AdilBaga/
 
 ## Документация 📚
 
-- [Техническое задание MVP](docs/00_TECHNICAL_SPEC.md)
-- [Риски и технические решения](docs/01_RISKS_AND_DECISIONS.md)
-- [Вся документация проекта](docs/)
+- [Карта документации: что актуально, что исторично](docs/README.md)
+- [Production API: релиз и откат](deploy/README.md), [runbooks](docs/runbooks/)
+- [Sync цен на VPS](ops/sync/README.md), [монитор API](ops/monitor/README.md)
+- Исторические: [ТЗ MVP](docs/00_TECHNICAL_SPEC.md), [риски и решения](docs/01_RISKS_AND_DECISIONS.md) — описывают NestJS-версию MVP
 
 ---
 

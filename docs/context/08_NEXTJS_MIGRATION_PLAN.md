@@ -1,5 +1,7 @@
 # Next.js frontend migration — COMPLETE
 
+> **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
+
 Updated: 2026-10-03. Implementation COMPLETE; Production Part 01 awaits external review.
 Canonical report: `docs/production/reports/PART_01_REPORT.md`.
 

@@ -1,4 +1,6 @@
 # Adil Bağa — Backend 2 Data Quality Fix Report
+
+> **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
 **Дата:** 25 сентября 2026  
 **Baseline Commit SHA:** `c9c8149d6bff9791266452664a3b1e8278bb687c`  
 **Статус проверки:** Production-ready для Smart City Актау  

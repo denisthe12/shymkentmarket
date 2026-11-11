@@ -1,5 +1,7 @@
 # Adil Bağa — Backend 2 Data Quality Fix Report V2
 
+> **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
+
 **Дата:** 25 сентября 2026  
 **Ветка:** `fix/backend-2-critical-data-v2`  
 **Baseline Backend 2 SHA:** `226fbfc46a865819302cc0a545d9be4da355f2ed`  

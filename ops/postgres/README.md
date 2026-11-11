@@ -86,13 +86,17 @@ partial restore PASS or repair production to match a backup.
 
 Retention policy: **7 daily + 4 weekly + several monthly** encrypted recovery
 points; exact monthly count selected during operations review. Record creation
-time/checksums; no automatic pruning/deletion now. Prove recovery regularly.
+time/checksums; no automatic pruning/deletion of backups. Prove recovery regularly.
+(Not to be confused with snapshot retention inside the DB: after each daily sync
+`cmd/prune -keep 14` deletes old published snapshots, see `ops/sync/README.md`.)
 Current private owner-workstation encrypted copy is off the managed DB server,
 not final disaster redundancy. Independent off-VPS storage/provider and key
 custody/escrow must be reviewed before deployment; no provider chosen here.
 
-**Scheduler NOT CONFIGURED; live alerts NOT CONFIGURED.** Scheduling/pruning,
+**Backup scheduler NOT CONFIGURED; backup alerts NOT CONFIGURED** (checked on the VPS
+2026-11-11: no backup timer besides the system `dpkg-db-backup`). Backup scheduling/pruning,
 off-VPS delivery and independent key backup are future operations activation.
+API availability alerts are separate: `ops/monitor/README.md`.
 See [rollback](../../docs/runbooks/rollback.md) and
 [rotation](../../docs/runbooks/secret-rotation.md).
 

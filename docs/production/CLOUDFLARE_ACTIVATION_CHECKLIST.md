@@ -1,6 +1,11 @@
 # Cloudflare activation checklist — Part14B execution
 
-## Part15 current application deployment
+> **Status 2026-11-11:** this is the Part14/Part15 perimeter record. Tunnel and the Go API are live;
+> the active release SHA and rollback target live only in `deploy/README.md` («Current release»).
+> Release SHAs and «Go API: NOT DEPLOYED» / «NOT STARTED» lines below describe Part14/Part15 at the time;
+> they are kept because `scripts/network/verify-part14.mjs` checks this text.
+
+## Part15 application deployment (2026-10-08)
 
 - [x] Release `e6ef854e2973e5b0871888bbc3111e026cdccc5b`; hosted run37668466461
       attempt2, all9 mandatory jobs success.

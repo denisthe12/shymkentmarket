@@ -45,7 +45,8 @@ Use this profile against a Go reference server loaded with equivalent fixtures.
 
 ## Live read-only profile
 
-Start the current NestJS with its private local env (not fixture). Then:
+Start the Go API (`backend-go`, `PORT=3000` as in the root README) with its private
+local env (not fixture). Then:
 
 ```bash
 cd contracts
@@ -54,8 +55,8 @@ CONTRACT_API_BASE_URL=http://127.0.0.1:3000 rtk pnpm test:live
 
 This profile issues **GET only**; POST is explicitly prohibited by its helper.
 It discovers categories/filter options/product IDs at runtime; no live dataset
-count, price, SKU or location is hardcoded. It is reusable against the future Go
-server by changing only `CONTRACT_API_BASE_URL`. It never runs SQL, import, seed
+count, price, SKU or location is hardcoded. Only `CONTRACT_API_BASE_URL` changes
+between targets. It never runs SQL, import, seed
 or migration. Logs include only test names, schema paths and safe aggregate counts.
 Live voice and physical Siri are not claimed by this profile.
 
