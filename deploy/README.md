@@ -17,20 +17,22 @@ This section is the single source of truth for the active SHA and the rollback
 target. Runbooks and other production docs link here instead of copying SHAs;
 update only this section after a release.
 
-- Active: `1cbd535562cca1852942683a3c0f0f717db181b3` (search word order, PR #105).
-  Manual cutover 2026-11-08 15:24Z; evidence in
-  `docs/production/reports/SEARCH_WORD_ORDER_PRODUCTION_DEPLOY_REPORT.md`.
-- Rollback target: `e50de2532259ab477e8491c4bddc2e6120ef3da0` (image kept on the VPS).
+- Active: `a08ff7165f9922b1497c26928aad7fa92e55f948` (Go 1.27.4 rebuild for GO-2026-6859,
+  PR #108; no API code change since `1cbd535`). Manual cutover 2026-11-11 13:41Z; evidence in
+  `docs/production/reports/GO_1_27_4_API_RELEASE_REPORT.md`.
+- Rollback target: `1cbd535562cca1852942683a3c0f0f717db181b3` (image kept on the VPS;
+  release.env backup `/root/adilbaga-release.env.1cbd535.1794404467`).
 - Images kept on the VPS (checked 2026-11-11): `695f7e3`, `e6ef854`, `d6098f6`,
-  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`.
+  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`.
 - Deploy broker installed: `/usr/local/lib/adilbaga-deploy/auto_broker.py`
   SHA-256 `7b8f5320…` (PR #104, installed 2026-11-08). Every broker release needs
   a new exact-artifact root approval; see `docs/production/AUTO_DEPLOY_SETUP.md`.
-- Last read-only check 2026-11-11: healthy, 0 restarts, live/ready 200, cloudflared active.
+- Last check 2026-11-11 13:54Z: healthy, 0 restarts, ready 200, cloudflared active,
+  no ERROR/5xx in the new container log.
 
 History: the first Go release was `e6ef854` (2026-10-08, Part15 report); the same-day
 `d6098f6` rollout was rolled back after a public Voice HTTP500. Later releases:
-`438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`. HSTS stays deferred;
+`438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`. HSTS stays deferred;
 ingestion is the separate `ops/sync/` units, not part of an API release.
 
 Use curl or an explicitly identified operator User-Agent for edge probes. Generic
