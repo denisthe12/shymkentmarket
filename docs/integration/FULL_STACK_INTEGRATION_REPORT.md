@@ -1,5 +1,7 @@
 # Adil Bağa — full-stack integration review
 
+> **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
+
 ## Sources and merge
 
 - Initial working tree: clean; current local branch before integration: `feat/backend-1`, HEAD matched origin.

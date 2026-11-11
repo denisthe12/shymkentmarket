@@ -1,7 +1,13 @@
 # PostgreSQL production layer — Part 04
 
-Status: **BLOCKED**. NestJS remains the reference/traffic owner. Go business HTTP
-API parity is not implemented. This document records inspected facts and a
+> **Status 2026-11-11 (historical document):** the restricted reader rollout is applied;
+> production traffic is served by the Go API with the `aktau_api_runtime` login since
+> October 2026. NestJS was removed from the repository (PR #106/#107); the parity
+> reference is now the recorded responses in `backend-go/tests/integration/testdata/reference`.
+> «BLOCKED», «NestJS remains traffic owner» and Go↔Nest parity below describe Part 04 at the time.
+
+Original Part 04 status: **BLOCKED**. NestJS remained the reference/traffic owner. Go business HTTP
+API parity was not implemented. This document records inspected facts and a
 owner-approved access model, not permission to change Supabase. Historical Phase A
 sections below predate the retained production RLS/runtime rollout. Current Go
 pool remediation is LOCAL only; live validation awaits an immutable reviewed

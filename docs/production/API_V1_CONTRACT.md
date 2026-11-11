@@ -1,8 +1,9 @@
 # Aktau Market API v1 — frozen reference contract
 
 Source of truth: [contracts/openapi.yaml](../../contracts/openapi.yaml).
-Version: **1.0.0**, OpenAPI **3.1.0**. Production Part 02; external review required
-before Go implementation. No `/api/v1` prefix and no generated SDK.
+Version: **1.0.0**, OpenAPI **3.1.0**. Production Part 02. Implemented by the Go API
+in production; the original NestJS reference is removed and replaced by recorded
+responses. No `/api/v1` prefix and no generated SDK.
 Planned origin: `https://api.aktau.market`; public brand remains `Adil Bağa`.
 
 ## Endpoints and wire shape
@@ -45,7 +46,8 @@ Pagination happens after filtering/sorting. Standard query repeats → 400.
 
 Canonical v1 query values use URL percent-encoding for reserved characters
 (`allowReserved: false`). A literal semicolon in search is sent as
-`search=a%3Bb`, preserving the literal substring and NestJS↔Go 200 parity.
+`search=a%3Bb`, preserving the literal substring and 200 parity with the recorded
+reference (`backend-go/tests/integration/testdata/reference`; NestJS is removed).
 Unescaped `search=a;b` is non-canonical transport; Go may fail closed with 400.
 This clarifies serialization, not search semantics or a new input bound.
 
@@ -96,7 +98,7 @@ Haversine selects nearest chain location. Approximate session TTL 10 minutes;
 completion deletes it. Missing/expired/completed session →404; session dependency
 unavailable →503. Session payloads/coordinates/text must not be logged.
 
-## Errors, compatibility and future Go parity
+## Errors, compatibility and Go parity
 
 Envelope: `{statusCode: integer, message: string | string[], error?: string}`.
 400 validation and 404 missing resources/session are current; 503 current voice

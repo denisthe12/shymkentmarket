@@ -635,3 +635,62 @@ Tests: transport105/105PASS exit0; ops176PASS exit0; security including Python57
 Read-only SSH metadata: /etc/ssh/adilbaga-github-known-hosts root:root0644 regular/single-link confirmed, exit0. Installed broker stillSHA2562dd252eed4e0c634e908acd33135d61dd02b8d9595911708f459e50efa62406c. No root installation or known_hosts modification. Owner independently reports host authentication; metadata alone is not an independent fingerprint proof.
 
 Phase A independent policy Code Review is the next mandatory gate. Do not self-approve, merge policy, install root code or create new final artifact before that review. Phase B installer implementation/qualification and exact executable admin commands NOT_RUN; no untested installer offered. Continue the SAME task from this policy review checkpoint after reviewerPASS, then exact-mainCI, disposable installer qualification/admin install, new official artifact/admin approval and new UTCwindow. Existing broker source bytes7b8f... unchanged. No PostgreSQL, Frontend, publisher, C2/G3, timer, backup, credential or flag changes. No deployment/E2E/rollback success claimed.
+
+## BACKEND2_RESUMED_SEARCH_RELEASE_20261108
+
+**Final status: `EMERGENCY_MANUAL_DEPLOY_PASS`.** This is a manual release, not a broker `DEPLOY_PASS`.
+
+Operator: Backend 2 (VPS commands typed by the operator as `b2admin`; Claude Code wrote and reviewed scripts and never connected to the VPS). Authority: on 2026-11-08 the Backend 2 operator is the team decision-maker and explicitly approved one manual cutover to `1cbd535` per `deploy/README.md`, after artifact verification, with no new `docker load`. Window used: 2026-11-08T15:23:34Z–15:31:04Z (outside the 01:00Z/13:00Z syncs and the 22:00Z weekly run).
+
+### Source, CI, artifact
+
+- main `1cbd535562cca1852942683a3c0f0f717db181b3` = merge of PR #105 (PR #104 is in `32b8a35`).
+- Exact-main CI run `42489370499`, attempt 1: 9/9 jobs `success`.
+- Build-only run `42490016333`, attempt 1; artifact `13620564744` `adilbaga-api-1cbd535562cca1852942683a3c0f0f717db181b3-42490016333-1`.
+- ZIP SHA-256 `01bf683401a4d09e315bcd270cbb66c0ecba213a81ccc15d795db023e0569b93` (matches the GitHub artifact digest); `image.tar` `8e852257e8ef57b6cf765d82bb85e05a5ed38cbce446543be12e6a54ea9f598f` (21 981 184 bytes); API binary `3c9be87e4165c43813b4bb2710bdc5fe6297da2ca394435e3b5d95ec432508b2`; rootfs `75f1d965…`, `2d417a41…`, `7701ca41…`.
+- Old artifact `13588533054` (`ffc0bc44`) was not used.
+
+### Reconciliation of the interrupted run (read-only, 15:14–15:16Z)
+
+- The interrupted agent did not use the broker. It ran its own root procedure (`sudo python3 -I -B -` from `deploy`), state in `/var/lib/adilbaga/deploy/1cbd535….emergency-1794148631/`. Journal: worker started 14:44:53Z and 14:48:07Z; `VERIFIED_ARCHIVE_BEFORE_ONE_LOAD` 14:48:22Z; `LOADED_IMAGE_IDENTITY_PASS` 14:48:23Z; `READ_ONLY_SOURCE_LOOKUP_RECHECK` 14:48:38Z (15 s timeout), then nothing.
+- Loads: 1 (per that journal; Docker event buffer no longer held it). Cutovers before this section: 0. Rollbacks: 0.
+- `/var/lib/adilbaga/deploy/1cbd535….json` = `{"status": "RUNNING"}` written 14:37:39Z by that procedure, no process behind it. Lock free. No approval file for `1cbd535`, no `.used` marker; only the 2026-10-20 authorization exists.
+- Installed broker is still `2dd252ee…` (reviewed `7b8f5320…` from PR #104 not installed); `auto_smoke.py` `3f7a22c2…` = repository version; compose `7ba6711f…` unchanged.
+- Timeout cause: transient. The same fixed `ls-remote` as `deploy` with the fixed key and `/etc/ssh/adilbaga-github-known-hosts` (ED25519 `SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU`, GitHub's published key) returned `1cbd535…` 3/3 in 2.5–3.7 s.
+- Scenario: D at reconciliation (unscripted procedure, stale RUNNING), resolved by an explicit decision to use the documented manual path (C). The `RUNNING` file and emergency directory were left untouched.
+
+### Cutover (systemd unit `adilbaga-search-cutover`, script SHA-256 `d9a2110f…ee14`)
+
+- Held `/var/lib/adilbaga/deploy/lock` for the whole run. Preflight re-checked inside the loaded image: revision label, linux/amd64, `10001:10001`, entrypoint, 3/3 rootfs layers, binary SHA-256. `PREFLIGHT_PASS` 15:23:34Z.
+- Baseline old API (local): `творог dekmy` 4 results, `dekmy творог` 0 (the bug); smoke PASS; search median 615 ms.
+- Backup `/root/adilbaga-release.env.e50de25.1794151454`. Tunnel stopped 15:24:14Z → `release.env` set to `1cbd535` → `compose up -d --force-recreate` → healthy 15:24:22Z; hardening identical to old container; `api.env` and compose unchanged. Tunnel restarted 15:25:02Z (public outage about 48 s).
+- Old image ID `sha256:a5f4b2733b6e9fb8a3b62e88e869fdcce80d59928fd504b4503a210fa4822ea7` (`adilbaga-api:e50de25…`), kept for rollback. New image ID `sha256:153f7b296c574886e35e79bcc060d5d77631490ff39c60928cd829bf3464218a`, OCI revision `1cbd535…`. Store ID differs from the archive config digest `0b7ba1a9…`, as `deploy/README.md` Gate L allows; file, layer and binary proof match.
+- Final 15:31:04Z: ref `adilbaga-api:1cbd535…`, restarts 0, healthy. Loads in this section: 0. Cutovers: 1. Rollbacks: 0.
+
+### Acceptance
+
+- Installed `auto_smoke.py` (health, categories, milk filters, three sorts, pagination, 400 cases, product detail, dashboard, CORS, Voice start single/list, clarification + continue with Redis session TTL and deletion): local PASS 15:24:54Z, public PASS 15:25:49Z.
+- Search parity, `sort=price_asc&limit=100`: `творог dekmy` and `dekmy творог` both 7 results, same IDs and order (ids hash `ce42c639f044d064`), local and public. Extra: `творог` 46, `DEKMY` 25, `100%` 3, `a_b` 0, empty 100.
+- Latency medians: local 615/501 ms old → 617/615 ms new; public 972/1185 ms.
+- 300 s observation: container healthy, restarts 0, tunnel active, public live/ready OK, no `ERROR` level and no 5xx in new container logs.
+- Independent workstation check 15:31Z: both orders HTTP 200, 7 identical IDs in order, every result contains both tokens, `minPrice` = cheapest offer, price order correct; three sorts with pages 1/2 without overlap; `limit=101` → 400; health, `/api/categories` (9), `/api/dashboard` 200.
+- Frontend `https://aktau.market` (browser): catalog loads; `/ru/search` shows the same 7 Dekmy products for both word orders. Console shows only pre-existing Yandex Metrica CSP errors.
+- Voice through a real iPhone Siri Shortcut: `NOT_VERIFIED` (application-level Voice covered by smoke). Execution as `aktau_api_runtime` is now proven by live readiness and catalog traffic.
+
+### Left as is (needs a separate decision)
+
+- `/var/lib/adilbaga/deploy/1cbd535….json` (`RUNNING`) blocks any broker call until reviewed; emergency directory (with a 22 MB `image.tar`) retained.
+- Installed broker remains `2dd252ee…`; installing `7b8f5320…` is separate work.
+- `/root/adilbaga-search-cutover-1cbd535.py` and the release.env backup are kept as evidence.
+- No PostgreSQL, migration, sync, parser, Frontend, scheduler, credential or flag change.
+
+Rollback if needed: stop cloudflared, set `/etc/adilbaga/release.env` to `API_IMAGE=adilbaga-api:e50de2532259ab477e8491c4bddc2e6120ef3da0`, `docker compose --env-file /etc/adilbaga/release.env -f /opt/adilbaga/compose.production.yml up -d --force-recreate`, local health + smoke, start cloudflared.
+
+### Post-release cleanup and broker upgrade — 2026-11-08T15:38Z
+
+Decided by the Backend 2 operator. One script run as `b2admin`, each step gated on the previous one; both parts tested first in a disposable `python:3.12-slim` container (10/10 cases: refusals on RUNNING present, lock held, release.env on old SHA, unexpected hash, wrong mode; pass; idempotent re-runs).
+
+- Cleanup `CLEANUP_PASS`: under the broker lock, `1cbd535….json` (`RUNNING`) and `1cbd535….emergency-1794148631/` moved (not deleted) to `/var/lib/adilbaga/evidence/2026-11-08-search-release/` (root 0700). No `*.json` left in the state directory. Old broker `status` via the fixed wrapper: `{"active": "1cbd535…", "available": true}`.
+- Broker upgrade `INSTALL_PASS`: compare-and-swap `2dd252eed4e0…` (`9a3556c`) → `7b8f532015506e90fd1ce34d7f4b6df181bec17774d142ff69cdbc8406be0a6f` (`0b492bc`, PR #104) under the lock; no-clobber backup `/var/lib/adilbaga/broker-backup/auto_broker.py.2dd252eed4e0.20261108T153815Z` (0600); readback mode 0644, owner 0:0. `auto_smoke.py` `3f7a22c2…` and wrapper `f7bcc5a0…` unchanged (both equal main).
+- New broker `status` via wrapper: `{"active": "1cbd535…", "available": true}`. Read-only `private_main()` through the fixed SSH identity: `1cbd535…`. API stayed on `1cbd535`, healthy, restarts 0.
+- Unchanged: sudoers, keys, known_hosts, approval records, `AUTO_DEPLOY_ENABLED`. The next broker release still needs a new exact-artifact root approval.

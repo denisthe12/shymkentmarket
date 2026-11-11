@@ -1,7 +1,8 @@
 # Staging and CD boundary
 
-**Persistent staging NOT PROVISIONED.** Local development only; Railway retired;
-VPS/domain/Cloudflare not provisioned. No provider/host/domain is selected here.
+**Persistent staging NOT PROVISIONED.** Production runs on the VPS behind Cloudflare
+Tunnel (`deploy/README.md`); there is no separate long-lived staging host or domain.
+The staging check is the disposable CI job below.
 
 Part12 candidate rehearses only disposable local services: fresh PostgreSQL17,
 reviewed reader bootstrap, Prisma `migrate deploy` for all checked-in migrations,
@@ -53,6 +54,7 @@ push before; workflow_dispatch uses no fabricated base and retains local drift
 checks. Values are validated hex and passed through GITHUB_ENV/environment, never
 interpolated as shell text. Security checkout keeps fetch-depth=0.
 
-CD is deferred: reviewed immutable green SHA + built image is an input to future
-VPS deployment procedures, **not auto-deploy main**. Phase B activation needs the
-owner's separate commit/push and actual CI Gate PASS before branch protections.
+CD: a reviewed immutable green SHA + built image is the input to the VPS release
+procedure (`deploy/README.md`, broker in `docs/production/AUTO_DEPLOY_SETUP.md`),
+**not auto-deploy of main** (`AUTO_DEPLOY_ENABLED=false`). Branch protection state:
+`docs/production/GITHUB_BRANCH_PROTECTION.md`.

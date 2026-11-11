@@ -16,7 +16,9 @@ Recovery: isolated SET EX600/GET/DEL and direct+clarification→continue smoke,
 followed by catalog200/ready200. Real provider calls require scoped authorization;
 Part11 tests use fake providers and make none.
 
-## FUTURE VPS
+## VPS
 
-Delivery/window/threshold and provider operational routing are deferred. No
-notification vendor or runtime fallback is installed by this foundation.
+Upstash is used only for Voice sessions; catalog, dashboard and `ready` do not
+depend on it, so the API monitor does not alert on a Redis outage. Check with a
+Voice clarification → continue smoke. No Redis-specific alerting or runtime
+fallback is installed.

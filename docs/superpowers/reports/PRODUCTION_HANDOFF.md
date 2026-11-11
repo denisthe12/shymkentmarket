@@ -1,5 +1,12 @@
 # Production handoff — C2 removal, administrator only
 
+> **Итог на 2026-11-11 (исторический документ, чек-боксы ниже не обновлялись):**
+> - G1: Анвар в production с 2026-11-05.
+> - G2: PR #93 смёржен, REMOVAL_SHA `eb68773`, CI 9/9; переключение VPS 2026-11-06 07:12Z, ранняя очистка Task 9 в 07:53Z (по решению владельца).
+> - G3: ежедневные прогоны 06–07.11 прошли (по записям сессий), недельный 2026-11-08 22:00Z прошёл; все daily 09–11.11 — четыре сети `exit=0` (журнал VPS, 2026-11-11).
+> - Сверка VPS 2026-11-09 и 2026-11-11: юнитов, каталогов и drop-in C2/promotion нет; environment `sync-publisher` на GitHub — 404.
+> - Открыто: закрыть задачу C2 в Jira; удалить копию `aktau-c2-removal-*` после 2026-12-06 (30 дней).
+
 ## Gate register and boundaries
 
 G0: written removal decision in Owner task (2026-11-05); retain Owner attribution.

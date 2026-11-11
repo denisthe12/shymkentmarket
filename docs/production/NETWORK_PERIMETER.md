@@ -1,6 +1,11 @@
 # Network perimeter — Part14 Phase A / Phase B
 
-## Part15 current deployment — Go API active
+> **Status 2026-11-11:** this is the Part14/Part15 perimeter record. Tunnel and the Go API are live;
+> the active release SHA and rollback target live only in `deploy/README.md` («Current release»).
+> Release SHAs and «Go API: NOT DEPLOYED» / «NOT STARTED» lines below describe Part14/Part15 at the time;
+> they are kept because `scripts/network/verify-part14.mjs` checks this text.
+
+## Part15 deployment (2026-10-08) — Go API active
 
 Release `e6ef854e2973e5b0871888bbc3111e026cdccc5b` is deployed from a clean,
 byte-verified committed export built outside VPS. Exact-SHA hosted run37668466461

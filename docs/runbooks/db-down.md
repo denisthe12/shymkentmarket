@@ -20,7 +20,11 @@ Production restore is a separate authorization, never this runbook's default.
 Recovery: restricted pool session policy PASS, ready200, categories/products/
 dashboard parity, data/history/security unchanged; API remains least privilege.
 
-## FUTURE VPS
+## VPS
 
-Private pool dashboards, managed DB alert delivery and reviewed recovery target
-are deferred. No migration/role/scheduler/deployment operation configured here.
+The API and the sync units both use Supabase over the session pooler (the VPS has no
+IPv6). A DB outage shows as API `ready` 503 (monitor ALERT in Telegram) and as sync
+exit 1 (nothing published; the site keeps the previous snapshot). Supabase status and
+the project dashboard are the first check. No managed DB alert delivery, pool dashboards
+or scheduled backups are configured; recovery target is a reviewed decision, not this
+runbook's default.
