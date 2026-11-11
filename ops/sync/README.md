@@ -22,7 +22,7 @@ Ingestion не входит в API-релиз (`deploy/`) и ставится о
 
 ## Требования на VPS
 
-- checkout репозитория в `/opt/aktau-sync`, Node + pnpm (`pnpm install --frozen-lockfile` в `pipeline/`), Go (ожидается в `/usr/local/go/bin`, иначе поправьте `PATH` в юнитах; `Node` и `pnpm` должны быть в `/usr/local/bin` или `/usr/bin`);
+- checkout репозитория в `/opt/aktau-sync`, Node + pnpm (`pnpm install --frozen-lockfile` в `pipeline/`), Go (ожидается в `/usr/local/go/bin`, иначе поправьте `PATH` в юнитах; `Node` и `pnpm` должны быть в `/usr/local/bin` или `/usr/bin`). Версия Go не ниже строки `go` в `backend-go/go.mod`: `daily-sync.sh` задаёт `GOTOOLCHAIN=local`, поэтому более старый Go не скачивает новый, а `go run ./cmd/ingest` падает с `go.mod requires go >= …`;
 - системный пользователь `aktau-sync` с доступом на чтение/запись в `/opt/aktau-sync/data` (и на чтение репозитория; запись в `.git` нужна для обновления кода, см. ниже);
 - без `GEMINI_API_KEY*` — sync не использует LLM;
 - каталог `/opt/aktau-sync` отдельный: на production-VPS `/opt/adilbaga` занят `compose.production.yml` боевого Go API, туда sync не кладётся и API не затрагивается;
@@ -91,6 +91,8 @@ PATH должен совпадать с PATH юнита. Откат: те же �
 Еженедельный файл: `"kind":"weekly"`, `stores` с `dina`/`dana`/`fixprice`, `scopeFailed` (список `scope:dina`/`scope:dana`), `"published":false`, без `stale` и `retention`.
 
 Просмотр на VPS: `ls -lt /var/lib/aktau-sync/runs | head`, `cat /var/lib/aktau-sync/runs/<файл>`.
+
+Перед `checkout` сверить Go: `/usr/local/go/bin/go version` должен быть не ниже вывода `sudo -n -u aktau-sync -H git -C /opt/aktau-sync show <полный SHA>:backend-go/go.mod | grep '^go '`. Если ниже — сначала обновить Go на VPS, иначе следующий прогон sync упадёт на `go run ./cmd/ingest`.
 
 ## Хранение snapshot
 
