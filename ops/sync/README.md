@@ -66,6 +66,8 @@ cd /opt/aktau-sync/pipeline && sudo -n -u aktau-sync -H env PATH=/usr/local/go/b
 
 PATH должен совпадать с PATH юнита. Откат: те же две последние команды (`checkout --detach`, `pnpm install`) с записанным SHA; прежние объекты уже в репозитории, bundle для отката не нужен. Миграции БД и API выкатываются отдельно до обновления sync.
 
+Перед `checkout` сверить Go: `/usr/local/go/bin/go version` должен быть не ниже вывода `sudo -n -u aktau-sync -H git -C /opt/aktau-sync show <полный SHA>:backend-go/go.mod | grep '^go '`. Если ниже — сначала обновить Go на VPS, иначе следующий прогон sync упадёт на `go run ./cmd/ingest`.
+
 ## Файлы прогонов
 
 Каждый прогон `daily-sync.sh` и `weekly-full-scrape.sh` пишет JSON-файл с итогом; по ним ежедневный Telegram-отчёт (`scripts/ops/sync-report.mjs`, см. `ops/monitor/README.md`, «Daily sync report») собирает строки по прогонам.
@@ -91,8 +93,6 @@ PATH должен совпадать с PATH юнита. Откат: те же �
 Еженедельный файл: `"kind":"weekly"`, `stores` с `dina`/`dana`/`fixprice`, `scopeFailed` (список `scope:dina`/`scope:dana`), `"published":false`, без `stale` и `retention`.
 
 Просмотр на VPS: `ls -lt /var/lib/aktau-sync/runs | head`, `cat /var/lib/aktau-sync/runs/<файл>`.
-
-Перед `checkout` сверить Go: `/usr/local/go/bin/go version` должен быть не ниже вывода `sudo -n -u aktau-sync -H git -C /opt/aktau-sync show <полный SHA>:backend-go/go.mod | grep '^go '`. Если ниже — сначала обновить Go на VPS, иначе следующий прогон sync упадёт на `go run ./cmd/ingest`.
 
 ## Хранение snapshot
 
