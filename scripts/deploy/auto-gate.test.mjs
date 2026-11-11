@@ -379,15 +379,19 @@ test('the schema-only CI job is mandatory under its new name',()=>{
 });
 
 const seedActive='1cbd535562cca1852942683a3c0f0f717db181b3';
-const seedBlobs={'backend/prisma/seed.ts':['5a9debc5abe9ba91367e935dfe22662f849847e7',null]};
-test('legacy seed removal delta requires the exact active blob and an absent candidate file',()=>{
-  const path='backend/prisma/seed.ts';
-  const config={old:seedActive,next:reviewed,table:seedBlobs,paths:[path]};
+const seedBlobs={'backend/prisma/seed.ts':['5a9debc5abe9ba91367e935dfe22662f849847e7',null],
+  'contracts/README.md':['4839a0739abbddd1ffef71ad33ce879e0f43572e','78221239d4730bc1a95301f8247da86a97bfea3c']};
+test('active 1cbd535 delta (seed removal + contracts README) requires every exact blob',()=>{
+  const path='backend/prisma/seed.ts',readme='contracts/README.md';
+  const config={old:seedActive,next:reviewed,table:seedBlobs,paths:[path,readme]};
   withGit(config,()=>transport.verifyCompatibility(seedActive,reviewed));
-  for(const ref of [seedActive,reviewed])
-    withGit({...config,change:{[ref+':'+path]:'f'.repeat(40)}},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
-  withGit({...config,paths:[path,'contracts/openapi.yaml']},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
-  withGit({...config,paths:[path,'backend/prisma/schema.prisma']},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  for(const p of [path,readme])for(const ref of [seedActive,reviewed])
+    withGit({...config,change:{[ref+':'+p]:'f'.repeat(40)}},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  withGit({...config,change:{[seedActive+':'+readme]:'missing'}},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  for(const only of [[path],[readme]])
+    withGit({...config,paths:only},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  withGit({...config,paths:[path,readme,'contracts/openapi.yaml']},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
+  withGit({...config,paths:[path,readme,'backend/prisma/schema.prisma']},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
   withGit({...config,mode:'120000'},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
   withGit({...config,fail:true},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
 });
