@@ -107,7 +107,7 @@ async function tlsFixture(t) {
         || Object.keys(value).sort().join() !== 'category,timestamp,type') { res.writeHead(400); res.end(); return; }
       if (fs.existsSync(path.join(state, 'state.json'))) {
         const s = JSON.parse(fs.readFileSync(path.join(state, 'state.json')));
-        f.attemptChecks.push(s.pending?.id === id && s.pending.attempts >= 1);
+        f.attemptChecks.push(s.queue?.[0]?.id === id && s.queue[0].attempts >= 1);
       }
       const rows = fs.existsSync(receipt) ? JSON.parse(fs.readFileSync(receipt)) : [];
       const prior = rows.find(r => r.id === id);
@@ -122,7 +122,7 @@ async function tlsFixture(t) {
   server.on('connection', socket => { sockets.add(socket); socket.on('close', () => sockets.delete(socket)); });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   f.base = 'https://127.0.0.1:' + server.address().port;
-  f.notifier = (trusted = true, timeoutMs = 5000, credential = token) => createNotifier({ url: f.base + '/alerts', token: credential },
+  f.notifier = (trusted = true, timeoutMs = 10000, credential = token) => createNotifier({ url: f.base + '/alerts', token: credential },
     trusted ? { timeoutMs, request: (url, options, callback) => https.request(url, { ...options, ca }, callback) } : { timeoutMs });
   f.waitAccepted = () => new Promise(resolve => { accepted = resolve; });
   f.receipts = () => fs.existsSync(receipt) ? JSON.parse(fs.readFileSync(receipt)) : [];
@@ -163,31 +163,39 @@ test('real HTTPS, independent processes: healthy→degraded→incident→recover
 test('native HTTPS rejects untrusted TLS and wrong bearer before durable acceptance', { timeout: 15000 }, async t => {
   const f = await tlsFixture(t), event = { id: 'a'.repeat(32), type: 'incident_opened', atUTC: 100000 };
   assert.equal(await f.notifier(false)(event), false); assert.equal(f.posts, 0);
-  assert.equal(await f.notifier(true, 5000, 'wrong-synthetic-token')(event), false); assert.equal(f.unauthorized, 1);
+  assert.equal(await f.notifier(true, 10000, 'wrong-synthetic-token')(event), false); assert.equal(f.unauthorized, 1);
   assert.equal(f.receipts().length, 0);
 });
-test('lost reply AFTER durable acceptance: pending restart + same ID, receiver dedup, ordered recovery', { timeout: 20000 }, async t => {
-  const f = await tlsFixture(t); f.apiHealthy = false; await f.run(); f.mode = 'lost';
-  assert.equal((await f.run()).outcome, 'PENDING'); assert.equal(f.receipts().length, 1);
-  const id = f.receipts()[0].id, gets = f.gets, posts = f.posts;
-  assert.equal((await f.run()).reason, 'delivery_cooldown'); assert.equal(f.posts, posts); assert.equal(f.gets, gets);
-  f.mode = 'normal'; f.utc += 60000; assert.equal((await f.run()).outcome, 'DELIVERED');
-  assert.equal(f.receipts().length, 1); assert.equal(f.receipts()[0].id, id); assert.equal(f.duplicates, 1); assert.equal(f.gets, gets);
+test('lost reply AFTER durable acceptance: next run resends the same ID, receiver dedup, ordered recovery', { timeout: 20000 }, async t => {
+  const f = await tlsFixture(t); f.apiHealthy = false; assert.equal((await f.run()).outcome, 'DEGRADED'); f.mode = 'lost';
+  const first = await f.run(); assert.equal(first.outcome, 'INCIDENT'); assert.equal(first.queued, 1); assert.equal(f.receipts().length, 1);
+  const id = f.receipts()[0].id, gets = f.gets;
+  f.mode = 'normal'; const second = await f.run(); assert.equal(second.outcome, 'INCIDENT'); assert.equal(second.queued, 0);
+  assert.equal(f.receipts().length, 1); assert.equal(f.receipts()[0].id, id); assert.equal(f.duplicates, 1); assert.ok(f.gets > gets);
   f.apiHealthy = true; assert.equal((await f.run()).outcome, 'RECOVERED'); assert.equal(f.receipts().length, 2);
+  assert.deepEqual(f.receipts().map(r => r.type), ['incident_opened', 'incident_recovered']);
 });
-test('non2xx exhaustion stops probes/delivery; availability alone cannot reset reconciliation STOP', { timeout: 20000 }, async t => {
-  const f = await tlsFixture(t); f.mode = 'reject'; f.apiHealthy = false; await f.run(); await f.run();
-  f.utc += 60000; await f.run(); f.utc += 60000; await f.run(); const posts = f.posts, gets = f.gets;
-  f.utc += 60000; f.mode = 'normal'; f.apiHealthy = true;
-  assert.equal((await f.run()).reason, 'delivery_exhausted'); assert.equal(f.posts, posts); assert.equal(f.gets, gets); assert.equal(f.receipts().length, 0);
+test('non2xx keeps probing and retries every run', { timeout: 20000 }, async t => {
+  const f = await tlsFixture(t); f.mode = 'reject'; f.apiHealthy = false;
+  assert.equal((await f.run()).outcome, 'DEGRADED');
+  for (let i = 0; i < 3; i++) {
+    const gets = f.gets, posts = f.posts; f.utc += 60000;
+    const r = await f.run(); assert.equal(r.outcome, 'INCIDENT'); assert.equal(r.queued, 1); assert.ok(f.gets > gets); assert.equal(f.posts, posts + 1);
+  }
+  assert.equal(f.receipts().length, 0);
+  f.utc += 60000; f.mode = 'normal'; f.apiHealthy = true; const gets = f.gets;
+  const r = await f.run(); assert.equal(r.outcome, 'RECOVERED'); assert.equal(r.queued, 0); assert.equal(f.gets, gets + 5);
+  assert.deepEqual(f.receipts().map(x => x.type), ['incident_opened', 'incident_recovered']);
 });
-test('real TLS timeout is ambiguous acceptance, retained locally, no transport retry', { timeout: 15000 }, async t => {
-  const f = await tlsFixture(t); f.mode = 'hold';
-  const accepted = f.waitAccepted(), response = f.notifier(true)({ id: 'c'.repeat(32), type: 'incident_opened', atUTC: 100000 });
-  await accepted; assert.equal(await response, false); // Real unchanged5000ms deadline, not a short handshake race.
+test('TLS timeout is retried next run with the same Idempotency-Key', { timeout: 30000 }, async t => {
+  const f = await tlsFixture(t), event = { id: 'c'.repeat(32), type: 'incident_opened', atUTC: 100000 }; f.mode = 'hold';
+  const accepted = f.waitAccepted(), response = f.notifier(true)(event);
+  await accepted; assert.equal(await response, false); // Real unchanged 10000 ms deadline.
   assert.equal(f.posts, 1); assert.equal(f.receipts().length, 1);
+  f.mode = 'normal'; assert.equal(await f.notifier(true)(event), true);
+  assert.equal(f.posts, 2); assert.equal(f.duplicates, 1); assert.equal(f.receipts().length, 1);
 });
-test('SIGTERM after durable receiver acceptance retains crash lock; next process makes0 GET/POST', { timeout: 15000 }, async t => {
+test('SIGTERM after durable receiver acceptance retains crash lock; next process makes 0 GET/POST', { timeout: 15000 }, async t => {
   const f = await tlsFixture(t); f.apiHealthy = false; await f.run(); f.mode = 'hold';
   const accepted = f.waitAccepted(), child = f.spawn(); await accepted;
   const activeGets = f.gets, activePosts = f.posts;
@@ -195,7 +203,7 @@ test('SIGTERM after durable receiver acceptance retains crash lock; next process
   assert.equal(f.gets, activeGets); assert.equal(f.posts, activePosts);
   child.kill('SIGTERM'); await once(child, 'exit');
   assert.ok(fs.existsSync(path.join(f.state, 'monitor.lock'))); assert.equal(f.receipts().length, 1);
-  const pending = JSON.parse(fs.readFileSync(path.join(f.state, 'state.json'))).pending; assert.equal(pending.attempts, 1);
+  const head = JSON.parse(fs.readFileSync(path.join(f.state, 'state.json'))).queue[0]; assert.equal(head.attempts, 1);
   const gets = f.gets, posts = f.posts; assert.equal((await f.run()).outcome, 'BLOCKED'); assert.equal(f.gets, gets); assert.equal(f.posts, posts);
 });
 
@@ -204,7 +212,13 @@ test('inactive units render privately and systemd-analyze verifies expanded synt
   const parameters = { user: 'monitor-fixture', node: '/usr/bin/node', source: '/opt/aktau-monitor/releases/' + 'a'.repeat(40) };
   writeUnits(dir, parameters);
   const service = fs.readFileSync(path.join(dir, 'aktau-go-monitor.service'), 'utf8'), timer = fs.readFileSync(path.join(dir, 'aktau-go-monitor.timer'), 'utf8');
-  assert.match(service, /^User=monitor-fixture$/m); assert.match(service, /^TimeoutStartSec=70s$/m);
+  assert.match(service, /^User=monitor-fixture$/m); assert.match(service, /^TimeoutStartSec=90s$/m);
+  assert.match(service, /^ExecStart=\S+ --network-family-autoselection-attempt-timeout=2000 \S+monitor-go-production\.mjs --run$/m);
+  assert.deepEqual(fs.readdirSync(dir).sort(), ['aktau-go-monitor.service','aktau-go-monitor.timer','aktau-sync-report.service','aktau-sync-report.timer']);
+  const report = fs.readFileSync(path.join(dir, 'aktau-sync-report.service'), 'utf8'), reportTimer = fs.readFileSync(path.join(dir, 'aktau-sync-report.timer'), 'utf8');
+  assert.match(report, /^ExecStart=\S+ --network-family-autoselection-attempt-timeout=2000 \S+sync-report\.mjs --run$/m); assert.match(report, /^User=monitor-fixture$/m);
+  assert.ok(!/ReadWritePaths|SuccessExitStatus/.test(report)); assert.ok(!/@[A-Z_]+@/.test(report));
+  assert.match(reportTimer, /^OnCalendar=\*-\*-\* 13:30:00 UTC$/m); assert.match(reportTimer, /^Persistent=true$/m); assert.match(reportTimer, /^Unit=aktau-sync-report\.service$/m);
   assert.match(service, /^KillMode=control-group$/m); assert.match(service, /^NoNewPrivileges=yes$/m);
   assert.match(service, /^ProtectSystem=strict$/m); assert.match(service, /^Restart=no$/m);
   assert.match(timer, /^Persistent=false$/m); assert.match(timer, /^OnUnitInactiveSec=5min$/m);
@@ -218,7 +232,7 @@ test('inactive units render privately and systemd-analyze verifies expanded synt
   fs.copyFileSync(process.execPath, path.join(virtual, 'usr/bin/node')); fs.chmodSync(path.join(virtual, 'usr/bin/node'), 0o555);
   for (const [name, text] of Object.entries(renderUnits(parameters))) fs.writeFileSync(path.join(units, name), text);
   for (const name of ['basic','sysinit','shutdown','network-online','timers']) fs.writeFileSync(path.join(units, name + '.target'), '[Unit]\nDescription=Synthetic local verification target\nDefaultDependencies=no\n');
-  execFileSync('systemd-analyze', ['verify','--root=' + virtual,'--man=no','aktau-go-monitor.service','aktau-go-monitor.timer'],
+  execFileSync('systemd-analyze', ['verify','--root=' + virtual,'--man=no','aktau-go-monitor.service','aktau-go-monitor.timer','aktau-sync-report.service','aktau-sync-report.timer'],
     { env: cleanEnv, timeout: 10000, maxBuffer: 16384, stdio: ['ignore','pipe','pipe'] });
   // This validates syntax/dependencies, not actual sandbox/user provisioning.
   assert.throws(() => writeUnits(dir, parameters));

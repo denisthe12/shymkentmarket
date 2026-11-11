@@ -45,18 +45,54 @@ sudo systemctl enable --now aktau-sync.timer aktau-sync-full.timer
 
 Обновлять только на SHA из `main` с зелёным CI. Не запускать во время sync: прогоны идут в 01:00 и 13:00 UTC, полный скрап в воскресенье в 22:00 UTC.
 
+Репозиторий приватный (с 2026-11-06), поэтому `git fetch https://github.com/...` на VPS запрашивает учётные данные и не используется; токены на VPS не кладутся. Код доставляется через git bundle, собранный на рабочей станции:
+
+```bash
+# на рабочей станции, в checkout репозитория
+git update-ref refs/tmp/release <новый SHA>                        # ref обязателен: с голыми SHA bundle пустой
+git bundle create aktau-<sha7>.bundle <прежний SHA>..refs/tmp/release
+git update-ref -d refs/tmp/release
+scp aktau-<sha7>.bundle <vps>:/tmp/
+```
+
 ```bash
 systemctl is-active aktau-sync aktau-sync-full        # оба inactive
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync rev-parse HEAD   # записать для отката
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync status --porcelain=v1   # пусто
-sudo -n -u aktau-sync -H git -C /opt/aktau-sync fetch --no-tags https://github.com/kiratonine/AdilBaga.git main
+sudo -n -u aktau-sync -H git -C /opt/aktau-sync fetch /tmp/aktau-<sha7>.bundle refs/tmp/release
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync checkout --detach <полный SHA>
 cd /opt/aktau-sync/pipeline && sudo -n -u aktau-sync -H env PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin pnpm install --frozen-lockfile
 ```
 
-PATH должен совпадать с PATH юнита. Откат: те же две последние команды с записанным SHA. Миграции БД и API выкатываются отдельно до обновления sync.
+PATH должен совпадать с PATH юнита. Откат: те же две последние команды (`checkout --detach`, `pnpm install`) с записанным SHA; прежние объекты уже в репозитории, bundle для отката не нужен. Миграции БД и API выкатываются отдельно до обновления sync.
 
 Перед `checkout` сверить Go: `/usr/local/go/bin/go version` должен быть не ниже вывода `sudo -n -u aktau-sync -H git -C /opt/aktau-sync show <полный SHA>:backend-go/go.mod | grep '^go '`. Если ниже — сначала обновить Go на VPS, иначе следующий прогон sync упадёт на `go run ./cmd/ingest`.
+
+## Файлы прогонов
+
+Каждый прогон `daily-sync.sh` и `weekly-full-scrape.sh` пишет JSON-файл с итогом; по ним ежедневный Telegram-отчёт (`scripts/ops/sync-report.mjs`, см. `ops/monitor/README.md`, «Daily sync report») собирает строки по прогонам.
+
+- Каталог задаёт `RUN_STATUS_DIR`; в обоих юнитах `Environment=RUN_STATUS_DIR=/var/lib/aktau-sync/runs`. Пусто или не задано (локальные запуски, тесты) — файлы не пишутся. Скрипт сам создаёт каталог (`mkdir -p`, 0755); если создать не удалось, в stderr `cannot create RUN_STATUS_DIR, run file disabled`, код выхода прогона не меняется.
+- Имя: `<kind>-<старт UTC, YYYYMMDDTHHMMSSZ>.json`, `kind` = `daily` | `weekly`; права 0644; запись атомарная (временный файл в том же каталоге, затем `mv`).
+- При старте файл имеет `"status":"running"`, `finishedAt` и `exitCode` равны `null`; по выходу скрипта (`trap EXIT`) он перезаписывается итогом (`"status":"finished"`). Убитый прогон остаётся `running`; отчёт считает такой файл зависшим, если ему больше 25 минут.
+- Хранятся 60 самых новых файлов (`daily-*` и `weekly-*` вместе); чистка выполняется после записи итога. Ошибка записи файла код выхода скрипта не меняет.
+
+Ежедневный файл:
+
+```json
+{"version":1,"kind":"daily","startedAt":"2026-11-09T13:00:01Z","finishedAt":"2026-11-09T13:03:27Z",
+ "status":"finished","exitCode":3,"published":true,
+ "stores":{"dina":0,"dana":1,"fixprice":0,"anvar":0},"stale":["dana"],"retention":"ok"}
+```
+
+- `stores` — код выхода каждого скрапера, `null`, если скрапер не завершился до выхода скрипта;
+- `published` — `true`, если `cmd/ingest -apply` завершился успешно;
+- `stale` — сети, взятые из прошлого файла (код 3);
+- `retention` — `ok` | `skipped` | `failed` | `null` (до очистки не дошли).
+
+Еженедельный файл: `"kind":"weekly"`, `stores` с `dina`/`dana`/`fixprice`, `scopeFailed` (список `scope:dina`/`scope:dana`), `"published":false`, без `stale` и `retention`.
+
+Просмотр на VPS: `ls -lt /var/lib/aktau-sync/runs | head`, `cat /var/lib/aktau-sync/runs/<файл>`.
 
 ## Хранение snapshot
 
@@ -71,6 +107,8 @@ PATH должен совпадать с PATH юнита. Откат: те же �
 Установка роли — операция владельца базы, не sync. Порядок: сначала `backend/prisma/security/aktau_ingest_writer_role.sql`, затем `ops/postgres/security/aktau_retention_writer_role.sql` (он создаёт группу `aktau_retention_writer` с правами только SELECT и DELETE на пять snapshot-таблиц; порядок важен, потому что ingest-скрипт ожидает ровно 6 политик). Затем владелец вручную создаёт LOGIN-роль `aktau_retention_runtime`, входящую в группу (`GRANT aktau_retention_writer TO aktau_retention_runtime WITH ADMIN FALSE, INHERIT TRUE, SET FALSE`), с паролем, который задаёт человек (пароль не хранится в репозитории и в чат не передаётся), и кладёт строку подключения только в `/etc/aktau-sync.env` (chmod 600). Откат доступа: `ops/postgres/security/rollback_aktau_retention_writer_access.sql`.
 
 ## Эксплуатация
+
+Ежедневный отчёт о прогонах приходит в Telegram в 13:30 UTC (18:30 по Актау) и устроен в `ops/monitor/README.md`; отсутствие сообщения — сигнал проверить VPS вручную.
 
 ```bash
 systemctl list-timers 'aktau-sync*'      # ближайшие запуски обоих таймеров
@@ -102,7 +140,7 @@ git diff data/mapping/dina-scope-categories.json          # просмотрет
 git add data/mapping/dina-scope-categories.json && git commit -m "data(mapping): refresh dina scope categories"
 git push -u origin HEAD                                    # дальше — PR и мерж в main
 
-# 2. После мержа — выполнить раздел «Обновление кода на VPS» ниже.
+# 2. После мержа — выполнить раздел «Обновление кода на VPS» выше.
 ```
 
 Кандидат Dana обновляется так же: `scp <vps>:/opt/aktau-sync/data/sources-full/dana-scope-sections.candidate.json data/mapping/dana-scope-sections.json`, ветка `data/refresh-dana-scope`, коммит `data(mapping): refresh dana scope sections`, PR и мерж в `main`, затем отдельный exact-source rollout после readback, не слепой pull на VPS.

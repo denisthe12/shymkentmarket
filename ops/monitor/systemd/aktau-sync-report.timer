@@ -1,0 +1,11 @@
+# SOURCE TEMPLATE ONLY; not enabled by merge/install.
+[Unit]
+Description=Aktau Market daily sync report schedule
+
+[Timer]
+OnCalendar=*-*-* 13:30:00 UTC
+Persistent=true
+Unit=aktau-sync-report.service
+
+[Install]
+WantedBy=timers.target

@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { createTelegramNotifier, validateTelegramConfig, parseTelegramEntries } from './telegram-notifier.mjs';
+import { createTelegramNotifier, createTelegramSender, formatEventText, validateTelegramConfig, parseTelegramEntries } from './telegram-notifier.mjs';
 
 // Intentionally synthetic, assembled to avoid resembling a real stored secret.
 const token = '123456789:' + 'S'.repeat(35), admin = '123456789';
 const config = { token, admin };
-const event = { type: 'incident_opened', atUTC: 100000, id: 'a'.repeat(32) };
+const event = { type: 'incident_opened', atUTC: 100000, id: 'a'.repeat(32), attempts: 1 };
 const success = { ok: true, result: { message_id: 12, chat: { id: Number(admin), type: 'private' } } };
 test('literal dotenv selects only two entries, strict duplicate/substitution rejection', () => {
   assert.deepEqual(parseTelegramEntries(['BOT_TOKEN="' + token + '"', 'ADMIN_ID=' + admin]), config);
@@ -27,7 +27,7 @@ for (const kind of ['ok','no_chat','bad_chat','group','no_message','zero_message
       assert.deepEqual(Object.keys(options.headers).sort(),['Accept','Content-Length','Content-Type']);
       const req=new EventEmitter();req.destroy=()=>{destroyed++};req.end=body=>{
         sent=JSON.parse(body);assert.deepEqual(Object.keys(sent).sort(),['chat_id','text']);assert.equal(sent.chat_id,admin);
-        assert.match(sent.text,/^ALERT — Aktau Market Go API\nСервис недоступен\nUTC /);assert.ok(!body.includes(event.id));
+        assert.equal(sent.text,'ALERT — Aktau Market Go API\nСервис недоступен\nUTC 1970-01-01T00:01:40Z · событие #aaaa');assert.ok(!body.includes(event.id));
         assert.equal(options.headers['Content-Length'],Buffer.byteLength(body));
         if(['timeout','abort'].includes(kind))return;
         queueMicrotask(()=>{
@@ -59,6 +59,26 @@ for (const kind of ['ok','no_chat','bad_chat','group','no_message','zero_message
 }
 test('invalid event and pre-cancelled operation perform no request',async()=>{
   const notify=createTelegramNotifier(config,{request:()=>assert.fail('network')});
-  for(const value of [{}, {...event,type:'arbitrary'}, {...event,atUTC:NaN}, {...event,id:'bad'}])assert.equal(await notify(value),false);
+  for(const value of [{}, {...event,type:'arbitrary'}, {...event,atUTC:NaN}, {...event,id:'bad'}, {...event,attempts:0}, {...event,attempts:1.5}, {...event,attempts:undefined}])assert.equal(await notify(value),false);
   const c=new AbortController();c.abort();assert.equal(await notify(event,c.signal),false);
+});
+const iso='UTC 1970-01-01T00:01:40Z · событие #aaaa';
+test('ALERT text with tag, seconds precision',()=>assert.equal(formatEventText(event),'ALERT — Aktau Market Go API\nСервис недоступен\n'+iso));
+test('retry is marked on the first line',()=>assert.equal(formatEventText({...event,attempts:3}).split('\n')[0],'ALERT — Aktau Market Go API (повтор, попытка 3)'));
+test('RECOVERED text',()=>assert.equal(formatEventText({...event,type:'incident_recovered'}),'RECOVERED — Aktau Market Go API\nРабота восстановлена\n'+iso));
+test('sender rejects empty and 4097-char text without a request',async()=>{
+  const send=createTelegramSender(config,{request:()=>assert.fail('network')});
+  for(const t of ['','x'.repeat(4097),undefined,5])assert.equal(await send(t),false);
+});
+test('sender default timeout is 10000 ms and 10001 is rejected',()=>{
+  assert.equal(typeof createTelegramSender(config),'function');
+  assert.equal(typeof createTelegramSender(config,{timeoutMs:10000}),'function');
+  for(const t of [10001,0,1.5])assert.throws(()=>createTelegramSender(config,{timeoutMs:t}),/telegram_configuration/);
+  assert.throws(()=>createTelegramNotifier(config,{timeoutMs:10001}),/telegram_configuration/);
+});
+test('sender sends the given text as-is',async()=>{
+  let sent;const request=(u,o,cb)=>{const req=new EventEmitter();req.destroy=()=>{};req.end=b=>{sent=JSON.parse(b);
+    queueMicrotask(()=>{const res=new EventEmitter();res.destroy=()=>{};res.complete=true;res.statusCode=200;res.headers={'content-type':'application/json'};
+      cb(res);res.emit('data',Buffer.from(JSON.stringify(success)));res.emit('end');});};return req;};
+  assert.equal(await createTelegramSender(config,{request})('hello'),true);assert.deepEqual(sent,{chat_id:admin,text:'hello'});
 });

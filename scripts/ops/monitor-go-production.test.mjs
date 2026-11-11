@@ -10,7 +10,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { createVerifier } from './verify-go-production.mjs';
 import { openState } from './monitor-state.mjs';
-import { runMonitor, createNotifier, main } from './monitor-go-production.mjs';
+import { runMonitor, createNotifier, main, trimQueue } from './monitor-go-production.mjs';
 
 const healthy = () => ({ outcome: 'PASS', requests: 5, records: ['live','ready','categories','products','dashboard'].map(endpoint => ({ endpoint, outcome: 'PASS', schemaClass: 'valid', statusClass: '2xx' })) });
 const bad = () => ({ outcome: 'BLOCKED', reason: 'PRIVATE_SENTINEL', records: [] });
@@ -44,18 +44,33 @@ test('zero-success-ever and a single failure followed by success', async t => {
   assert.equal((await f.run()).outcome, 'OK'); assert.equal(f.sends.length, 0);
   await f.run(bad); await f.run(bad); assert.equal(f.sends[0].type, 'incident_opened');
 });
-test('pending delivery survives restart, cooldown, bounded attempts and recovery ordering', async t => {
-  const f = fixture(t); f.failing(true); await f.run(bad); assert.equal((await f.run(bad)).outcome, 'PENDING');
-  let probes = 0; const check = () => { probes++; return healthy() };
-  assert.equal((await f.run(check)).reason, 'delivery_cooldown'); assert.equal(probes, 0); assert.equal(f.sends.length, 1);
-  f.advance(); f.failing(false); assert.equal((await f.run(check)).reason, 'pending_delivered'); assert.equal(probes, 0);
-  assert.equal(f.sends[0].id, f.sends[1].id); await f.run();
-  assert.equal(f.sends.at(-1).type, 'incident_recovered');
+test('undelivered ALERT keeps probing and arrives before RECOVERED', async t => {
+  const f = fixture(t); f.failing(true); let probes = 0; const good = () => { probes++; return healthy() };
+  assert.equal((await f.run(bad)).outcome, 'DEGRADED');
+  assert.deepEqual(await f.run(bad), { outcome: 'INCIDENT', reason: 'probe_unavailable', queued: 1 });
+  assert.deepEqual(await f.run(good), { outcome: 'RECOVERED', reason: 'probe_complete', queued: 2 }); assert.equal(probes, 1);
+  f.failing(false);
+  assert.deepEqual(await f.run(good), { outcome: 'OK', reason: 'probe_complete', queued: 0 });
+  assert.deepEqual(f.sends.map(x => [x.type, x.attempts]),
+    [['incident_opened', 1], ['incident_opened', 2], ['incident_opened', 3], ['incident_recovered', 1]]);
+  assert.equal(new Set(f.sends.slice(0, 3).map(x => x.id)).size, 1);
 });
-test('three failed sends stop further attempts, no automatic flood', async t => {
-  const f = fixture(t); f.failing(true); await f.run(bad); await f.run(bad);
-  f.advance(); await f.run(); f.advance(); await f.run(); f.advance();
-  assert.equal((await f.run()).reason, 'delivery_exhausted'); assert.equal(f.sends.length, 3);
+test('at most two sends per run, oldest first', async t => {
+  const f = fixture(t); f.failing(true);
+  await f.run(bad); await f.run(bad); await f.run(); await f.run(bad); const r = await f.run(bad); // o1 r1 o2 queued
+  assert.equal(r.queued, 3); f.sends.length = 0; f.failing(false);
+  assert.deepEqual(await f.run(bad), { outcome: 'INCIDENT', reason: 'probe_unavailable', queued: 1 });
+  assert.deepEqual(f.sends.map(x => x.type), ['incident_opened', 'incident_recovered']);
+  assert.equal((await f.run(bad)).queued, 0);
+  assert.deepEqual(f.sends.map(x => [x.type, x.attempts]), [['incident_opened', 5], ['incident_recovered', 1], ['incident_opened', 1]]);
+});
+test('trimQueue drops a leading recovered alone, else the oldest pair', () => {
+  const mk = (first, n) => Array.from({ length: n }, (_, i) => ({ id: String(i), type: (i % 2 === 0) === (first === 'incident_opened') ? 'incident_opened' : 'incident_recovered' }));
+  const a = mk('incident_opened', 11), b = mk('incident_recovered', 11);
+  const ta = trimQueue(a), tb = trimQueue(b);
+  assert.equal(ta.length, 9); assert.equal(ta[0].id, a[2].id);
+  assert.equal(tb.length, 10); assert.equal(tb[0].id, b[1].id);
+  assert.equal(trimQueue(a.slice(0, 10)).length, 10);
 });
 test('partial/fabricated PASS and thrown checker are not healthy', async t => {
   const f = fixture(t);
@@ -74,10 +89,10 @@ test('overlapping invocations fail closed before second probe', async t => {
   assert.equal((await f.run(() => assert.fail('second probe'))).reason, 'state_unavailable');
   release(); assert.equal((await first).outcome, 'OK');
 });
-for (const kind of ['corrupt', 'symlink', 'mode', 'hardlink', 'pending']) test('reject unsafe state: ' + kind, async t => {
+for (const kind of ['corrupt', 'symlink', 'mode', 'hardlink', 'queue']) test('reject unsafe state: ' + kind, async t => {
   const f = fixture(t), file = path.join(f.dir, 'state.json');
   if (kind === 'symlink') fs.symlinkSync('/does/not/exist', file);
-  else if (kind === 'pending') fs.writeFileSync(path.join(f.dir, '.pending-interrupted'), '', { mode: 0o600 });
+  else if (kind === 'queue') fs.writeFileSync(file, JSON.stringify({ version: 2, phase: 'INCIDENT', failures: 2, lastUTC: 100000, queue: [0, 1].map(i => ({ id: String(i).repeat(32), type: 'incident_opened', atUTC: 100000, attempts: 0 })) }), { mode: 0o600 });
   else { fs.writeFileSync(file, 'corrupt PRIVATE_SENTINEL', { mode: kind === 'mode' ? 0o644 : 0o600 }); if (kind === 'hardlink') fs.linkSync(file, file + '.copy'); }
   const result = await f.run(() => assert.fail('unsafe probe')); assert.equal(result.outcome, 'BLOCKED');
   assert.ok(!JSON.stringify(result).includes('PRIVATE_SENTINEL'));
@@ -109,8 +124,8 @@ test('foreign ancestor ownership is rejected before opening any files', async t 
 });
 test('persist attempt before send; crash-like send throw retains same event', async t => {
   const f = fixture(t); await f.run(bad);
-  const result = await f.run(bad, { notify: async () => { const s = JSON.parse(fs.readFileSync(path.join(f.dir, 'state.json'))); assert.equal(s.pending.attempts, 1); throw Error('PRIVATE_SENTINEL') } });
-  assert.equal(result.outcome, 'PENDING'); assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+  const result = await f.run(bad, { notify: async () => { const s = JSON.parse(fs.readFileSync(path.join(f.dir, 'state.json'))); assert.equal(s.queue[0].attempts, 1); throw Error('PRIVATE_SENTINEL') } });
+  assert.deepEqual(result, { outcome: 'INCIDENT', reason: 'probe_unavailable', queued: 1 }); assert.ok(!JSON.stringify(result).includes('PRIVATE'));
 });
 test('clock rollback blocks before probe/delivery; no freshness from snapshotAt', async t => {
   const f = fixture(t); await f.run();
@@ -150,6 +165,18 @@ test('actual CLI exit codes and stderr are bounded with synthetic missing config
     const r = spawnSync(process.execPath, [file, ...args], { env: { PATH: process.env.PATH }, encoding: 'utf8', timeout: 2000 });
     assert.equal(r.status, exit); assert.equal(r.stderr, ''); assert.ok(r.stdout.length < 512);
   }
+});
+test('main maps outcomes to exit codes: INCIDENT/DEGRADED 1, RECOVERED/OK 0', async t => {
+  const f = fixture(t); let time = 100000;
+  const env = { AKTAU_MONITOR_STATE_DIR: f.dir, AKTAU_MONITOR_RECEIVER_URL: 'https://alerts.example.invalid/', AKTAU_MONITOR_RECEIVER_TOKEN: 'synthetic-token-123456' };
+  const step = async check => { const out = []; const code = await main(['--run'], env, x => out.push(x), { check, now: () => (time += 60000) }); return [JSON.parse(out[0]).outcome, code]; };
+  const hit = mock.method(https, 'request', (_u, _o, cb) => { const r = new EventEmitter(); r.destroy = () => {}; r.end = () => queueMicrotask(() => { const res = new EventEmitter(); res.statusCode = 204; res.destroy = () => {}; cb(res); }); return r; });
+  try {
+    assert.deepEqual(await step(healthy), ['OK', 0]);
+    assert.deepEqual(await step(bad), ['DEGRADED', 1]);
+    assert.deepEqual(await step(bad), ['INCIDENT', 1]);
+    assert.deepEqual(await step(healthy), ['RECOVERED', 0]);
+  } finally { hit.mock.restore(); }
 });
 test('source is manual only, reuses verifier, has no timer/service activation', () => {
   const monitor = fs.readFileSync(new URL('./monitor-go-production.mjs', import.meta.url), 'utf8');
@@ -207,7 +234,7 @@ for (const kind of ['success', 'redirect', 'timeout', 'error', 'shutdown']) test
     }; return req;
   };
   const notifier = createNotifier({ url: 'https://alerts.example.invalid/events', token: 'synthetic-token-123456' }, { request, timeoutMs: 5 });
-  const c = new AbortController(); const pending = notifier({ type: 'incident_opened', atUTC: 100000, id: 'a'.repeat(32), PRIVATE_SENTINEL: 'not sent' }, c.signal);
+  const c = new AbortController(); const pending = notifier({ type: 'incident_opened', atUTC: 100000, id: 'a'.repeat(32), attempts: 2, PRIVATE_SENTINEL: 'not sent' }, c.signal);
   if (kind === 'shutdown') c.abort();
   assert.equal(await pending, kind === 'success'); assert.equal(calls, 1);
   assert.ok(!body.includes('PRIVATE_SENTINEL')); assert.ok(body.length < 256);

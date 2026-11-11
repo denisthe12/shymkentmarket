@@ -12,6 +12,7 @@ EnvironmentFile=/etc/aktau-sync.env
 # systemd не читает профиль: Go лежит в /usr/local/go/bin, а у системного пользователя нет HOME и GOCACHE
 Environment=PATH=/usr/local/go/bin:/usr/local/bin:/usr/bin:/bin
 Environment=HOME=/var/lib/aktau-sync
+Environment=RUN_STATUS_DIR=/var/lib/aktau-sync/runs
 Environment=GOCACHE=/var/cache/aktau-sync/go
 StateDirectory=aktau-sync
 CacheDirectory=aktau-sync
