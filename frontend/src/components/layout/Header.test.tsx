@@ -20,6 +20,27 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: 'Aktau Market' })).toHaveAttribute('href', '/kk/catalog')
   })
 
+  it('logo on the catalog scrolls back to the top instead of a no-op navigation', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    renderPage(<Header />, '/ru/catalog')
+    const logo = screen.getByRole('link', { name: 'Aktau Market' })
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    act(() => void logo.dispatchEvent(click))
+    expect(click.defaultPrevented).toBe(true)
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
+    scrollTo.mockRestore()
+  })
+
+  it('logo on other pages is a plain link to the catalog', () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    renderPage(<Header />, '/ru/collections/dairy')
+    const logo = screen.getByRole('link', { name: 'Aktau Market' })
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    act(() => void logo.dispatchEvent(click))
+    expect(scrollTo).not.toHaveBeenCalled()
+    scrollTo.mockRestore()
+  })
+
   it('marks the catalog active on category and product pages too', () => {
     renderPage(<Header />, '/ru/products/p1')
     expect(screen.getByTestId('nav-catalog')).toHaveAttribute('aria-current', 'page')

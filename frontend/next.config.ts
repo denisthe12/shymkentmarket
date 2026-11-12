@@ -33,5 +33,12 @@ export default function config(phase: string): NextConfig {
       },
     };
   }
+  // Только `next dev`: живой API пускает браузер лишь с https://aktau.market (CORS), поэтому локально браузер
+  // ходит на свой origin (/api/...), а Next пересылает запрос в API. В production-сборку не попадает
+  const devApiProxy = process.env.DEV_API_PROXY?.trim();
+  if (devApiProxy) {
+    const target = new URL(devApiProxy).origin;
+    return { ...nextConfig, async rewrites() { return [{ source: '/api/:path*', destination: `${target}/api/:path*` }]; } };
+  }
   return nextConfig;
 }

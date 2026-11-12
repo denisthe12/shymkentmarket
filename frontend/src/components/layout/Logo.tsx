@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useHref } from '../../lib/useLang'
 import { SITE_NAME } from '../../lib/brand'
 
@@ -18,10 +19,25 @@ export function LogoMark({ className = 'size-8' }: { className?: string }) {
   )
 }
 
+/** Уже на главной — Next не переходит на тот же адрес, поэтому прокручиваем наверх сами (длинный список товаров) */
+function scrollToTop() {
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+}
+
 export function Logo() {
   const href = useHref()
+  const pathname = usePathname()
+  const home = href('/catalog')
   return (
-    <Link href={href('/catalog')} className="flex shrink-0 items-center justify-self-start gap-1 rounded-md" aria-label={SITE_NAME}>
+    <Link
+      href={home}
+      onClick={(e) => {
+        if (pathname !== home) return
+        e.preventDefault()
+        scrollToTop()
+      }}
+      className="flex shrink-0 items-center justify-self-start gap-1 rounded-md" aria-label={SITE_NAME}>
       <LogoMark />
       <span className="font-display text-[1.0625rem] whitespace-nowrap font-extrabold tracking-[-0.02em]">{SITE_NAME}</span>
     </Link>

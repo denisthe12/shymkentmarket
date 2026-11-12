@@ -21,6 +21,8 @@ vi.mock('next/server', async (original) => ({
 const cardNames = () =>
   screen.getAllByTestId('product-card').map((card) => within(card).getByRole('link').textContent)
 const plain = (el: Element) => el.textContent?.replace(/\s/g, ' ')
+// Фасовки — фильтр-карточка, как в категории (на lg в колонке слева; в jsdom она в DOM всегда)
+const sizeChip = (name: RegExp) => within(screen.getByTestId('filter-sizeGrams')).getByRole('button', { name })
 
 describe('SzptPage', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -31,7 +33,8 @@ describe('SzptPage', () => {
     expect(await screen.findByText(/10 позиций из перечня СЗПТ \(приказ МТИ РК № 362-нқ\)/)).toBeInTheDocument()
     expect(screen.getByTestId('szpt-group-rice')).toHaveAttribute('aria-current', 'page')
     expect(screen.getByTestId('szpt-group-milk')).toHaveAttribute('href', '/ru/szpt/milk')
-    expect(screen.getByTestId('szpt-size-1000')).toHaveTextContent('1 кг')
+    expect(sizeChip(/^1\s+кг$/)).toBeInTheDocument()
+    expect(within(screen.getByTestId('filter-sizeGrams')).getByText('Фасовка')).toBeInTheDocument()
     expect(await screen.findAllByTestId('product-card')).toHaveLength(3)
     expect(cardNames()).toEqual(['Рис Тест 500 г', 'Рис Кызылординский 800 г', 'Рис Тест 1 кг'])
     expect(screen.getAllByTestId('unit-price').map(plain)).toEqual(['840 ₸/кг', '750 ₸/кг', '710 ₸/кг'])
@@ -40,22 +43,22 @@ describe('SzptPage', () => {
   it('filters by pack size and switches to unit-price sort in the URL', async () => {
     renderPage(<SzptPage group="rice" />, '/ru/szpt/rice')
     await screen.findAllByTestId('product-card')
-    await userEvent.click(screen.getByTestId('szpt-size-500'))
+    await userEvent.click(sizeChip(/^500\s+г$/))
     expect(navigation.url).toBe('/ru/szpt/rice?size=500')
     await expect.poll(() => cardNames()).toEqual(['Рис Тест 500 г'])
 
-    await userEvent.click(screen.getByTestId('szpt-size-500'))
+    await userEvent.click(sizeChip(/^500\s+г$/))
     expect(navigation.url).toBe('/ru/szpt/rice')
-    expect(screen.getByTestId('szpt-sort-unit_price_asc')).toHaveTextContent('Выгоднее за кг')
-    await userEvent.click(screen.getByTestId('szpt-sort-unit_price_asc'))
+    expect(screen.getByRole('option', { name: 'Выгоднее за кг' })).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByTestId('sort-select'), 'unit_price_asc')
     expect(navigation.url).toBe('/ru/szpt/rice?sort=unit_price_asc')
     await expect.poll(() => cardNames()).toEqual(['Рис Тест 1 кг', 'Рис Кызылординский 800 г', 'Рис Тест 500 г'])
-    expect(screen.getByTestId('szpt-sort-unit_price_asc')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('sort-select')).toHaveValue('unit_price_asc')
   })
 
   it('names the unit of the group in the sort label', async () => {
     renderPage(<SzptPage group="eggs" />, '/ru/szpt/eggs')
-    expect(await screen.findByTestId('szpt-sort-unit_price_asc')).toHaveTextContent('Выгоднее за 10 шт')
+    expect(await screen.findByRole('option', { name: 'Выгоднее за 10 шт' })).toBeInTheDocument()
   })
 
   it('is a not-found page for an unknown group', async () => {
