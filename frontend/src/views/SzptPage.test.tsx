@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import SzptIndexRoute from '../app/[lang]/(site)/szpt/page'
 import SzptGroupRoute from '../app/[lang]/(site)/szpt/[group]/page'
 import { catalogApi } from '../api/catalogApi'
+import { ApiError } from '../api/types'
 import { getI18n } from '../i18n'
 import { szptGroupName } from '../lib/dataLabels'
 import { navigation } from '../test/navigation'
@@ -84,6 +85,16 @@ describe('SZPT routes', () => {
     expect(screen.queryByTestId('loading-state')).not.toBeInTheDocument()
     // 999 нет среди фасовок группы — отбрасывается, а не превращается в 400 от API
     expect(cardNames()).toEqual(['Рис Тест 500 г'])
+  })
+
+  it('still renders when the products request fails (a size gone from a newer snapshot)', async () => {
+    vi.spyOn(catalogApi, 'getSzptProducts').mockRejectedValue(new ApiError(400, 'size is not available'))
+    const page = await SzptGroupRoute({
+      params: Promise.resolve({ lang: 'ru', group: 'rice' }),
+      searchParams: Promise.resolve({ size: '500' }),
+    })
+    renderPage(page, '/ru/szpt/rice?size=500')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Социально значимые продукты')
   })
 
   it('is a 404 for an unknown group', async () => {

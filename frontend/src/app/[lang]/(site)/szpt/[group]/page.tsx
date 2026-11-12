@@ -36,8 +36,9 @@ export default async function Page({ params, searchParams }: PageProps<'/[lang]/
 
   const queryClient = new QueryClient()
   queryClient.setQueryData(szptGroupsQuery().queryKey, groups)
-  // Тот же readSzptState, что на клиенте, — ключи запроса совпадут
-  await queryClient.fetchInfiniteQuery(szptProductPagesQuery(readSzptState(toSearchParams(await searchParams), group)))
+  // Тот же readSzptState, что на клиенте, — ключи запроса совпадут. prefetch не бросает: если фасовка из ссылки
+  // пропала в новом снимке раньше, чем обновился кэш групп, страница отрисуется, а ошибку покажет список
+  await queryClient.prefetchInfiniteQuery(szptProductPagesQuery(readSzptState(toSearchParams(await searchParams), group)))
 
   const { t } = getI18n(lang)
   const crumbs = [
