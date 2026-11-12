@@ -78,7 +78,8 @@ var Groups = []Rule{
 		Include: []string{`подсолн`},
 		Exclude: exclude(weighted)},
 	{Slug: "eggs", Name: "Яйца I категории", Category: "eggs", Unit: Pcs10, SizeKeys: []string{"packageCount"}, MinSize: 1,
-		Include: []string{`кур`, `с1|c1|1 категор|i категор`},
+		// С1 (Cyrillic or Latin C) only as a standalone token: «фас10шт» must not read as С1
+		Include: []string{`кур`, `(^|[^а-яёa-z0-9])[сc]1([^0-9]|$)|1 категор|i категор`},
 		Exclude: exclude(`перепел`, weighted)},
 	{Slug: "butter", Name: "Сливочное масло", Category: "dairy", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 100,
 		Include: []string{`^масло.*сливоч|^сливочное масло`},

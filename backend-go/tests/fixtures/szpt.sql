@@ -50,11 +50,12 @@ INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","s
 ('raw-42','anvar','42','Fixture',679,'szpt-v1'),
 ('raw-43','dana','43','Fixture',968,'szpt-v1'),
 ('raw-44','anvar','44','Fixture',649,'szpt-v1'),
-('raw-45','dina','45','Fixture',2400,'szpt-v1'),
-('raw-46','dina','46','Fixture',990,'szpt-v1'),
-('raw-47','dina','47','Fixture',1300,'szpt-v1'),
-('raw-48','dina','48','Fixture',1100,'szpt-v1'),
-('raw-49','dina','49','Fixture',2133,'szpt-v1');
+('raw-45','anvar','45','Fixture',699,'szpt-v1'),
+('raw-46','dina','46','Fixture',2400,'szpt-v1'),
+('raw-47','dina','47','Fixture',990,'szpt-v1'),
+('raw-48','dina','48','Fixture',1300,'szpt-v1'),
+('raw-49','dina','49','Fixture',1100,'szpt-v1'),
+('raw-50','dina','50','Fixture',2133,'szpt-v1');
 INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('r1','Рис Кызылординский 800 г',NULL,'groats','{"weightGrams":800}'),
 ('r2','Рис Полтава Краснодарский 0.9 кг',NULL,'groats','{"weightGrams":900}'),
@@ -99,6 +100,7 @@ INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('e4','Яйцо куриное отборное С0, 10 шт',NULL,'eggs','{"packageCount":10}'),
 ('e5','Яйцо перепелиное 20 шт',NULL,'eggs','{"packageCount":20}'),
 ('e6','Яйца куриное 1 категория десяток',NULL,'eggs','{}'),
+('e7','Яйцо куриное отборное С0 фас10шт',NULL,'eggs','{"packageCount":10}'),
 ('u1','Масло сливочное Lurpak несолёное 80% 200 г',NULL,'dairy','{"weightGrams":200,"fatPercent":80}'),
 ('u2','Масло сливочное Крестьянское 72.5% 180 г',NULL,'dairy','{"weightGrams":180,"fatPercent":72.5}'),
 ('u3','Масло сливочное Простоквашино 82.5% 180 г',NULL,'dairy','{"weightGrams":180,"fatPercent":82.5}'),
@@ -149,8 +151,9 @@ INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldP
 ('off-42','e4','raw-42','anvar',679,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-43','e5','raw-43','dana',968,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-44','e6','raw-44','anvar',649,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
-('off-45','u1','raw-45','dina',2400,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
-('off-46','u2','raw-46','dina',990,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
-('off-47','u3','raw-47','dina',1300,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
-('off-48','u4','raw-48','dina',1100,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
-('off-49','u5','raw-49','dina',2133,NULL,true,'2026-11-11 01:00:00','szpt-v1');
+('off-45','e7','raw-45','anvar',699,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-46','u1','raw-46','dina',2400,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-47','u2','raw-47','dina',990,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-48','u3','raw-48','dina',1300,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-49','u4','raw-49','dina',1100,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-50','u5','raw-50','dina',2133,NULL,true,'2026-11-11 01:00:00','szpt-v1');
