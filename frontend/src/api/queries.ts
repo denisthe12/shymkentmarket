@@ -66,9 +66,10 @@ export const szptProductPagesQuery = (query: SzptPagedQuery) =>
 export const useSzptGroups = () => useQuery(szptGroupsQuery())
 
 /** При смене фасовки или сортировки держим прежний список, но товары другой группы не показываем */
-export const useSzptPages = (query: SzptPagedQuery) =>
+export const useSzptPages = (query: SzptPagedQuery, enabled = true) =>
   useInfiniteQuery({
     ...szptProductPagesQuery(query),
+    enabled,
     placeholderData: (previous, previousQuery) =>
       (previousQuery?.queryKey[1] as SzptPagedQuery | undefined)?.group === query.group ? previous : undefined,
   })
