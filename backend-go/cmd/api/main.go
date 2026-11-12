@@ -50,7 +50,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	}
 	sessions := redis.New(c.UpstashURL, c.UpstashToken, logger)
 	service := &voice.Service{Parser: nlp, Sessions: sessions, Categories: repo, Vocabulary: repo, Products: repo, Locations: repo}
-	server := httpapi.Server(c, httpapi.Router(c, logger, httpapi.Dependencies{DB: pool, Categories: repo, Products: repo, Dashboard: repo, Voice: service}), logger)
+	server := httpapi.Server(c, httpapi.Router(c, logger, httpapi.Dependencies{DB: pool, Categories: repo, Products: repo, Dashboard: repo, Szpt: postgres.SzptRepository{Repository: repo}, Voice: service}), logger)
 	logger.Info("starting", "port", c.Port, "app_env", c.AppEnv)
 	return serve(ctx, server, logger)
 }

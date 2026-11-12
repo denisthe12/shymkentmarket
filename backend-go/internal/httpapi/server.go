@@ -14,6 +14,7 @@ import (
 	"adilbaga/backend-go/internal/config"
 	"adilbaga/backend-go/internal/dashboard"
 	"adilbaga/backend-go/internal/middleware"
+	"adilbaga/backend-go/internal/szpt"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -35,6 +36,7 @@ type Dependencies struct {
 	Categories catalog.CategoryRepository
 	Products   catalog.ProductRepository
 	Dashboard  dashboard.Repository
+	Szpt       szpt.Repository
 	Voice      VoiceService
 }
 
@@ -64,6 +66,8 @@ func Router(c config.Config, logger *slog.Logger, d Dependencies) http.Handler {
 	r.Get("/api/products", d.products)
 	r.Get("/api/products/{id}", d.product)
 	r.Get("/api/dashboard", d.dashboard)
+	r.Get("/api/szpt", d.szptGroups)
+	r.Get("/api/szpt/{group}/products", d.szptProducts)
 	rps, burst, concurrency := c.VoiceRateRPS, c.VoiceRateBurst, c.VoiceConcurrency
 	if rps == 0 {
 		rps = 2

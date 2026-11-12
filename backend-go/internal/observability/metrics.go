@@ -71,7 +71,7 @@ func (r *Registry) observe(key string, failed bool, duration time.Duration) {
 	r.series[key] = h
 }
 func (r *Registry) HTTP(route, method string, status int, duration time.Duration) {
-	route = oneOf(route, "/health/live", "/health/ready", "/api/categories", "/api/categories/{slug}/filters", "/api/products", "/api/products/{id}", "/api/dashboard", "/api/voice/start", "/api/voice/continue", "unmatched")
+	route = oneOf(route, "/health/live", "/health/ready", "/api/categories", "/api/categories/{slug}/filters", "/api/products", "/api/products/{id}", "/api/dashboard", "/api/szpt", "/api/szpt/{group}/products", "/api/voice/start", "/api/voice/continue", "unmatched")
 	method = oneOf(method, "GET", "POST", "OPTIONS", "HEAD", "PUT", "PATCH", "DELETE")
 	class := "other"
 	switch {
