@@ -3,6 +3,8 @@
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { useProductPages } from '../api/queries'
+import { LoadMore } from '../components/catalog/LoadMore'
+import { infiniteLoadMore } from '../lib/loadMore'
 import { SortSelect } from '../components/catalog/SortSelect'
 import { ProductGrid } from '../components/product/ProductGrid'
 import { Button } from '../components/ui/Button'
@@ -78,17 +80,7 @@ export function SearchPage() {
               <ProductGrid products={items} wide />
             </div>
           )}
-          {products.hasNextPage && (
-            <div className="mt-8 flex justify-center">
-              <Button
-                onClick={() => products.fetchNextPage()}
-                disabled={products.isFetchingNextPage}
-                testId="load-more"
-              >
-                {t(products.isFetchingNextPage ? 'state.loading' : 'category.loadMore')}
-              </Button>
-            </div>
-          )}
+          <LoadMore {...infiniteLoadMore(products)} />
         </section>
       )}
     </>

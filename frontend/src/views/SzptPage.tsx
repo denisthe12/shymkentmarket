@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next'
 import { useSzptGroups, useSzptPages } from '../api/queries'
 import type { SzptSort } from '../api/types'
 import { DynamicFilters } from '../components/catalog/DynamicFilters'
+import { LoadMore } from '../components/catalog/LoadMore'
+import { infiniteLoadMore } from '../lib/loadMore'
 import { SortSelect } from '../components/catalog/SortSelect'
 import { BackLink } from '../components/layout/BackLink'
 import { ProductGrid } from '../components/product/ProductGrid'
@@ -165,18 +167,7 @@ export function SzptPage({ group: slug }: { group: string }) {
                 <ProductGrid products={items} />
               </div>
             )}
-            {products.hasNextPage && (
-              <div className="mt-8 flex justify-center">
-                <Button
-                  onClick={() => products.fetchNextPage()}
-                  disabled={products.isFetchingNextPage}
-                  testId="load-more"
-                  className="w-full md:w-auto"
-                >
-                  {t(products.isFetchingNextPage ? 'state.loading' : 'category.loadMore')}
-                </Button>
-              </div>
-            )}
+            <LoadMore {...infiniteLoadMore(products)} />
           </section>
         </div>
       </div>

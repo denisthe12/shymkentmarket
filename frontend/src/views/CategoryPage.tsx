@@ -8,6 +8,7 @@ import { useCategories, useCategoryFilters, useProductPages } from '../api/queri
 import { ApiError } from '../api/types'
 import { DynamicFilters } from '../components/catalog/DynamicFilters'
 import { BackLink } from '../components/layout/BackLink'
+import { LoadMore } from '../components/catalog/LoadMore'
 import { SortSelect } from '../components/catalog/SortSelect'
 import { ProductGrid } from '../components/product/ProductGrid'
 import { Button } from '../components/ui/Button'
@@ -16,6 +17,7 @@ import { Icon } from '../components/ui/Icon'
 import { Sheet } from '../components/ui/Sheet'
 import { CategoryPageSkeleton, ProductGridSkeleton } from '../components/ui/Skeleton'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
+import { infiniteLoadMore } from '../lib/loadMore'
 import { categoryName } from '../lib/dataLabels'
 import { countActive, readFilters, readSort, withFilter, withoutFilters, withSort } from '../lib/filterParams'
 import { replaceQuery } from '../lib/urlState'
@@ -145,18 +147,7 @@ export function CategoryPage({ slug }: { slug: string }) {
                   <ProductGrid products={items} wide={!hasFilters} />
                 </div>
               )}
-              {products.hasNextPage && (
-                <div className="mt-8 flex justify-center">
-                  <Button
-                    onClick={() => products.fetchNextPage()}
-                    disabled={products.isFetchingNextPage}
-                    testId="load-more"
-                    className="w-full md:w-auto"
-                  >
-                    {t(products.isFetchingNextPage ? 'state.loading' : 'category.loadMore')}
-                  </Button>
-                </div>
-              )}
+              <LoadMore {...infiniteLoadMore(products)} />
             </section>
           </div>
         </div>

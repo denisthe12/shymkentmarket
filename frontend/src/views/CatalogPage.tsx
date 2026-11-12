@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { TOP_DEALS, topDealIds, useCategories, useDashboard, useProductsByIds, useSzptGroups } from '../api/queries'
 import { CategoryTiles } from '../components/catalog/CategoryTiles'
 import { ProductGrid } from '../components/product/ProductGrid'
-import { Button } from '../components/ui/Button'
+import { LoadMore } from '../components/catalog/LoadMore'
+import { AUTO_PAGES } from '../lib/loadMore'
 import { CategoryTilesSkeleton, ProductGridSkeleton } from '../components/ui/Skeleton'
 import { ErrorState, LoadingState } from '../components/ui/States'
 
@@ -39,7 +40,7 @@ export function CatalogPage() {
 
 /**
  * Товары с самой большой разницей цен между сетями (dashboard.priceSpreads).
- * Серверной пагинации у блока нет: список целиком в дашборде, «Показать ещё» догружает следующие товары по id
+ * Серверной пагинации у блока нет: список целиком в дашборде, «Показать ещё» (и прокрутка, см. LoadMore) догружает следующие товары по id
  */
 function TopDeals() {
   const { t } = useTranslation()
@@ -68,17 +69,13 @@ function TopDeals() {
         {dashboard.isError && <ErrorState onRetry={() => dashboard.refetch()} />}
         {products.isError && <ErrorState onRetry={products.refetch} />}
         {shown.length > 0 && <ProductGrid products={shown} wide />}
-        {shown.length > 0 && (hasMore || products.isPending) && (
-          <div className="mt-8 flex justify-center">
-            <Button
-              onClick={() => setCount((n) => n + TOP_DEALS)}
-              disabled={products.isPending}
-              testId="load-more"
-              className="w-full md:w-auto"
-            >
-              {t(products.isPending ? 'state.loading' : 'category.loadMore')}
-            </Button>
-          </div>
+        {shown.length > 0 && (
+          <LoadMore
+            hasMore={hasMore}
+            loading={products.isPending}
+            auto={count / TOP_DEALS < AUTO_PAGES && !products.isError}
+            onLoad={() => setCount((n) => n + TOP_DEALS)}
+          />
         )}
       </div>
     </section>

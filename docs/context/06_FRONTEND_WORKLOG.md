@@ -121,6 +121,14 @@ backend-down build PASS. Planned URLs: https://aktau.market / https://api.aktau.
 
 ## Журнал
 
+### Сессия 26 — 2026-11-12 (бесконечная прокрутка списков)
+- По просьбе пользователя: `components/catalog/LoadMore.tsx` — «Показать ещё» + `IntersectionObserver` (rootMargin 600px). Сами грузим первые `AUTO_PAGES = 5` страниц (24 × 5 = 120 товаров), дальше только по кнопке, чтобы был доступен футер (там email). Не грузим сами после ошибки и пока показан placeholder (смена фильтров); `fetchNextPage({ cancelRefetch: false })` — без дублей запросов. Бэк не менялся: те же limit/offset запросы.
+- Подключено в Category/Szpt/Search и «Топ разброса» на главной (блок последний на странице; по 8 id из `priceSpreads`, каждая карточка — свой запрос, авто до 40 карточек). Аналитика (дашборд) — по-прежнему по кнопке (пользователь: в аналитике не надо).
+- `LoadMore` принимает `{ hasMore, loading, auto, onLoad }`; для useInfiniteQuery — `infiniteLoadMore()` и `AUTO_PAGES` в `lib/loadMore.ts` (в файле компонента нельзя — oxlint only-export-components). 331 unit, e2e mock 73 passed.
+- Проверено: typecheck, oxlint (2 старых), 329 unit (+6 `LoadMore.test`), e2e `PW_CHANNEL=chrome` 73 passed + 11 skipped (без channel desktop падает: не установлен chromium headless shell). Не закоммичено.
+- **Локальный dev против живого API без CORS:** в `next.config.ts` dev-only rewrite `/api/*` → `DEV_API_PROXY` (в production-фазе не подключается). `.env.local`: `NEXT_PUBLIC_API_BASE_URL=http://localhost:3000`, `API_BASE_URL=DEV_API_PROXY=https://api.aktau.market`; описано в `.env.example`. Вручную в браузере (без page.route): категория 24→72→120 (лимит) → клик 144, поиск 24→120, СЗПТ «Рис» 24→72→82 (конец, кнопки нет), дашборд 10 строк по кнопке, консоль чистая.
+- **Живой e2e (`E2E_API=http`) — 7 failed и на чистом HEAD** (не из-за этой задачи): в живых данных картинки с `https://media.shop.anvar.kz`, его нет в CSP `img-src` (`lib/security-headers.ts`) → на проде такие фото блокируются; плюс http.spec:233/301 (длинный фильтр, kk) — не разбирались.
+
 ### Сессия 25 — 2026-11-12 (СЗПТ: раскладка как у категории)
 - СЗПТ сделали другие разработчики (SCRUM-25, PR #116, в `main`). Ветка `feat/frontend-szpt-filters-left` от `main`, только локальный коммит, без push.
 - По просьбе пользователя раздел выглядит как категория: ≥ lg — колонка 260px слева, карточки «Группы продуктов» (ссылки-чипы) и «Фасовка» (`DynamicFilters boxed` через `sizeFilter` в `lib/szpt.ts`, ключи `sizeGrams`/`sizeMl`/`sizeCount` — единицы по суффиксу, подпись из `szpt.size`), под ними «Сбросить фильтры». < lg — группы строкой чипов с прокруткой (решение Claude: переключать продукт в один тап), фасовки в шторке `filters-sheet` по чипу `filters-toggle`. Сортировка — общий `SortSelect` (теперь принимает `options`/`optionLabel`): select справа / чип + шторка. Видимый h2 с названием группы стал `sr-only`, сетка всегда 3 колонки.
