@@ -2,8 +2,9 @@
 
 import { useTranslation } from 'react-i18next'
 import Link from 'next/link'
-import type { ProductCardDto } from '../../api/types'
+import type { ProductCardDto, UnitPriceDto } from '../../api/types'
 import { formatDate, formatPrice } from '../../lib/format'
+import { formatUnitPrice } from '../../lib/szpt'
 import { discountPercent, savingOf, topOffers } from '../../lib/offers'
 import { useHref } from '../../lib/useLang'
 import { Badge } from '../ui/Badge'
@@ -14,7 +15,13 @@ import { usePriceStale } from '../../lib/freshness'
 /** Сколько сетей видно в карточке; остальные — строкой «ещё N сетей» */
 const OFFERS_SHOWN = 3
 
-export function ProductCard({ product }: { product: ProductCardDto }) {
+type Props = {
+  product: ProductCardDto
+  /** Раздел СЗПТ: цена за кг / л / 10 шт самого дешёвого предложения. Без неё строки нет */
+  unitPrice?: UnitPriceDto | null
+}
+
+export function ProductCard({ product, unitPrice }: Props) {
   const { t } = useTranslation()
   const href = useHref()
   const stale = usePriceStale(product.snapshotAt)
@@ -47,6 +54,11 @@ export function ProductCard({ product }: { product: ProductCardDto }) {
         </span>
         {oldPrice !== null && <s className="text-meta text-muted tabular">{formatPrice(oldPrice)}</s>}
       </p>
+      {unitPrice && (
+        <p data-testid="unit-price" className="text-meta text-muted tabular">
+          {formatUnitPrice(unitPrice, t)}
+        </p>
+      )}
       {saving && <SavingLine amount={saving.amount} store={saving.store} className="mt-1 text-meta" />}
 
       {product.brand && <p className="mt-1.5 truncate text-meta text-muted">{product.brand}</p>}
