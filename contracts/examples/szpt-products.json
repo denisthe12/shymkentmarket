@@ -1,0 +1,59 @@
+[
+  {
+    "id": "6f1c2a7e-3b0d-4c55-9a1e-2d8f4b7c9e01",
+    "name": "Рис Тест 500 г",
+    "brand": null,
+    "category": {
+      "slug": "groats",
+      "name": "Крупы, макароны, мука"
+    },
+    "imageUrl": null,
+    "attributes": {
+      "weightGrams": 500
+    },
+    "minPrice": 420,
+    "unitPrice": { "value": 840, "unit": "kg" },
+    "offers": [
+      {
+        "storeCode": "DINA",
+        "storeName": "Dina Market",
+        "price": 420,
+        "oldPrice": null,
+        "unitPrice": { "value": 840, "unit": "kg" }
+      },
+      {
+        "storeCode": "DANA",
+        "storeName": "Dana Market",
+        "price": 455,
+        "oldPrice": 490,
+        "unitPrice": { "value": 910, "unit": "kg" }
+      }
+    ],
+    "snapshotAt": "2026-11-11T01:00:51.947Z"
+  },
+  {
+    "id": "a83d5e10-7c2b-4f6a-8e3d-0b9c1d2e3f45",
+    "name": "Рис Тест 1 кг",
+    "brand": null,
+    "category": {
+      "slug": "groats",
+      "name": "Крупы, макароны, мука"
+    },
+    "imageUrl": null,
+    "attributes": {
+      "weightGrams": 1000
+    },
+    "minPrice": 710,
+    "unitPrice": { "value": 710, "unit": "kg" },
+    "offers": [
+      {
+        "storeCode": "ANVAR",
+        "storeName": "Анвар",
+        "price": 710,
+        "oldPrice": null,
+        "unitPrice": { "value": 710, "unit": "kg" }
+      }
+    ],
+    "snapshotAt": "2026-11-11T01:02:40.447Z"
+  }
+]

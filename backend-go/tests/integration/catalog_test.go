@@ -99,7 +99,9 @@ func raw(values ...string) []json.RawMessage {
 	return out
 }
 
-func TestDeterministicCatalog(t *testing.T) {
+// openPart04Fixture guards the dedicated disposable fixture DB, loads one fixture file and truncates it on cleanup.
+func openPart04Fixture(t *testing.T, ctx context.Context, fixture string) (*pgx.Conn, string) {
+	t.Helper()
 	value := os.Getenv("TEST_DATABASE_URL")
 	if value == "" {
 		t.Skip("explicit TEST_DATABASE_URL required")
@@ -123,8 +125,6 @@ func TestDeterministicCatalog(t *testing.T) {
 	if au.User.Username() != "part04_api_login" {
 		t.Fatal("fixture API must use the restricted part04_api_login")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
 	admin, err := pgx.Connect(ctx, value)
 	if err != nil {
 		t.Fatal("local fixture connection failed")
@@ -148,7 +148,7 @@ func TestDeterministicCatalog(t *testing.T) {
 	if _, err = admin.Exec(ctx, `TRUNCATE categories CASCADE`); err != nil {
 		t.Fatal("seeded categories cleanup failed")
 	}
-	data, err := os.ReadFile(filepath.Join("..", "fixtures", "catalog.sql"))
+	data, err := os.ReadFile(filepath.Join("..", "fixtures", fixture))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,6 +161,14 @@ func TestDeterministicCatalog(t *testing.T) {
 			t.Error("local fixture cleanup failed")
 		}
 	})
+	return admin, apiURL
+}
+
+func TestDeterministicCatalog(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	admin, apiURL := openPart04Fixture(t, ctx, "catalog.sql")
+	value := os.Getenv("TEST_DATABASE_URL") // validated by openPart04Fixture
 	pool, err := postgres.OpenReadOnly(ctx, apiURL)
 	if err != nil {
 		t.Fatal(err)

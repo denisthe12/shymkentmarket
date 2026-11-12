@@ -156,8 +156,6 @@ func (r *Repository) products(ctx context.Context, q catalog.ProductQuery, order
 		return nil, databaseError(err)
 	}
 	out := make([]catalog.Product, 0)
-	ids := make([]string, 0)
-	indices := make(map[string]int)
 	for rows.Next() {
 		var p catalog.Product
 		var attributes []byte
@@ -168,8 +166,6 @@ func (r *Repository) products(ctx context.Context, q catalog.ProductQuery, order
 		p.Attributes = scalarAttributes(attributes)
 		p.SnapshotAt = p.SnapshotAt.UTC()
 		p.Offers = make([]catalog.Offer, 0)
-		indices[p.ID] = len(out)
-		ids = append(ids, p.ID)
 		out = append(out, p)
 	}
 	err = rows.Err()
@@ -177,25 +173,40 @@ func (r *Repository) products(ctx context.Context, q catalog.ProductQuery, order
 	if err != nil {
 		return nil, databaseError(err)
 	}
+	if err := r.attachOffers(ctx, out, snapshotID); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// attachOffers fills Offers (usable, price ASC) for already selected products of one snapshot.
+func (r *Repository) attachOffers(ctx context.Context, out []catalog.Product, snapshotID string) error {
 	if len(out) == 0 {
-		return out, nil
+		return nil
+	}
+	ids := make([]string, 0, len(out))
+	indices := make(map[string]int, len(out))
+	for i := range out {
+		out[i].Offers = make([]catalog.Offer, 0)
+		indices[out[i].ID] = i
+		ids = append(ids, out[i].ID)
 	}
 	offers, err := r.db.Query(ctx, offersSQL, ids, snapshotID)
 	if err != nil {
-		return nil, databaseError(err)
+		return databaseError(err)
 	}
 	defer offers.Close()
 	for offers.Next() {
 		var pid string
 		var o catalog.Offer
 		if err := offers.Scan(&pid, &o.StoreCode, &o.StoreName, &o.Price, &o.OldPrice); err != nil {
-			return nil, databaseError(err)
+			return databaseError(err)
 		}
 		i := indices[pid]
 		out[i].Offers = append(out[i].Offers, o)
 	}
 	if offers.Err() != nil {
-		return nil, databaseError(offers.Err())
+		return databaseError(offers.Err())
 	}
-	return out, nil
+	return nil
 }

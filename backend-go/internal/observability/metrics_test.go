@@ -84,3 +84,13 @@ func TestStructuredLoggerAndErrorCodes(t *testing.T) {
 		}
 	}
 }
+
+func TestSzptRoutesAreNamedMetricDimensions(t *testing.T) {
+	r := NewRegistry()
+	for _, route := range []string{"/api/szpt", "/api/szpt/{group}/products"} {
+		r.HTTP(route, "GET", 200, time.Millisecond)
+		if _, ok := r.Snapshot().Series["http|"+route+"|GET|2xx"]; !ok {
+			t.Errorf("%s must keep its own metric series, not collapse into other", route)
+		}
+	}
+}

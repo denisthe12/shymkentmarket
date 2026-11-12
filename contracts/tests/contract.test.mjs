@@ -23,6 +23,7 @@ const examples = {
   categories: 'Categories', filters: 'FilterSchema', products: 'Products',
   product: 'ProductCard', dashboard: 'Dashboard',
   'voice-start-result': 'VoiceResponse', 'voice-clarification': 'VoiceResponse',
+  'szpt-groups': 'SzptGroups', 'szpt-products': 'SzptProducts',
 };
 function example(name) {
   return JSON.parse(readFileSync(new URL(`examples/${name}.json`, root), 'utf8'));
@@ -33,7 +34,8 @@ test('OpenAPI scope, pagination and required baskets are frozen', () => {
   assert.equal(spec.info.version, '1.0.0');
   assert.deepEqual(Object.keys(spec.paths).sort(), [
     '/api/categories', '/api/categories/{slug}/filters', '/api/dashboard',
-    '/api/products', '/api/products/{id}', '/api/voice/continue', '/api/voice/start',
+    '/api/products', '/api/products/{id}', '/api/szpt', '/api/szpt/{group}/products',
+    '/api/voice/continue', '/api/voice/start',
   ]);
   const parameters = spec.paths['/api/products'].get.parameters;
   assert.deepEqual(parameters.find((p) => p.name === 'limit').schema,
@@ -45,7 +47,7 @@ test('OpenAPI scope, pagination and required baskets are frozen', () => {
   assert.throws(() => validate(offset, 9007199254740992));
   assert.ok(spec.components.schemas.Dashboard.required.includes('baskets'));
   assert.ok(spec.paths['/api/products'].get['x-dynamic-filters']);
-  assert.equal(Object.values(spec.paths).reduce((count, path) => count + Object.keys(path).length, 0), 7);
+  assert.equal(Object.values(spec.paths).reduce((count, path) => count + Object.keys(path).length, 0), 9);
   for (const path of ['/api/voice/start', '/api/voice/continue']) {
     assert.equal(spec.paths[path].post.responses['201'].content['application/json'].schema.$ref,
       '#/components/schemas/VoiceResponse');
@@ -84,6 +86,22 @@ test('coordinate strings, opaque sessions and compatible error envelopes', () =>
     validate(ref('ApiError'), { statusCode, message: 'Compatible error', error: 'Error' });
     validate(ref('ApiError'), { statusCode, message: ['Validation error'] });
   }
+});
+test('szpt query parameters and unit price are frozen', () => {
+  const parameters = spec.paths['/api/szpt/{group}/products'].get.parameters;
+  const byName = (name) => parameters.find((p) => p.name === name);
+  assert.deepEqual(byName('sort').schema,
+    { type: 'string', enum: ['price_asc', 'unit_price_asc'], default: 'price_asc' });
+  const products = spec.paths['/api/products'].get.parameters;
+  for (const name of ['limit', 'offset']) {
+    assert.deepEqual(byName(name).schema, products.find((p) => p.name === name).schema);
+  }
+  assert.deepEqual(byName('size').schema, { type: 'array', items: { type: 'number', exclusiveMinimum: 0 } });
+  assert.equal(byName('size').explode, true);
+  validate(ref('UnitPrice'), { value: 840, unit: 'kg' });
+  assert.throws(() => validate(ref('UnitPrice'), { value: 0, unit: 'kg' }));
+  assert.throws(() => validate(ref('UnitPrice'), { value: 840, unit: 'g' }));
+  validate(ref('SzptProductCard'), example('szpt-products')[0]);
 });
 test('clients tolerate unknown additive response properties', () => {
   validate(ref('ProductCard'), { ...example('product'), futureAdditive: 'ignored' });
@@ -237,6 +255,17 @@ httpTest('dashboard baskets/nullability/totals and ordered spreads', async () =>
   }
   if (profile === 'fixture') assert.deepEqual(dashboard, example('dashboard'));
   console.log(`safe summary: categories=${categories.length}, page=${firstPage.length}, canonical=${dashboard.summary.canonicalProducts}, stores=${dashboard.summary.stores}, locations=${dashboard.locations.length}, baskets=${dashboard.baskets.length}`);
+});
+httpTest('szpt groups and first group page', async () => {
+  const body = await request('/api/szpt');
+  validate(ref('SzptGroups'), body);
+  if (body.groups.length > 0) {
+    const group = body.groups[0];
+    const page = await request(`/api/szpt/${group.slug}/products?limit=5`);
+    validate(ref('SzptProducts'), page);
+    for (const product of page) assert.equal(product.unitPrice.unit, group.unit);
+  }
+  await request('/api/szpt/unknown/products', 404);
 });
 
 const fixtureVoice = (name, fn) => test(`fixture voice HTTP: ${name}`, { skip: !base || profile !== 'fixture' }, fn);

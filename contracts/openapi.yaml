@@ -21,6 +21,8 @@ tags:
     description: Snapshot-backed product reads
   - name: Dashboard
     description: Snapshot analytics, not a checkout cart
+  - name: Szpt
+    description: Socially significant food groups with package and unit prices
   - name: Voice
     description: NLP and short-lived clarification sessions
 paths:
@@ -166,6 +168,80 @@ paths:
                 fixture: { $ref: '#/components/examples/Dashboard' }
         '429': { $ref: '#/components/responses/RateLimited' }
         '500': { $ref: '#/components/responses/InternalError' }
+  /api/szpt:
+    get:
+      operationId: listSzptGroups
+      tags: [Szpt]
+      summary: List SZPT product groups present in the current snapshot
+      description: |
+        Socially significant food groups (a subset of the official list, order 362-nq),
+        selected by fixed rules over existing canonical products of the latest published
+        snapshot. Group order is fixed; a group without usable products is omitted.
+        sizes are distinct package sizes of usable group products, ascending, in the
+        group's base unit: grams for kg groups, millilitres for l groups, pieces for
+        10pcs groups. For milk and kefir a size given in grams is treated as millilitres
+        (1 g = 1 ml). count is the number of usable products in the group.
+      responses:
+        '200':
+          description: Groups in fixed order, possibly empty
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SzptGroups' }
+              examples:
+                fixture: { $ref: '#/components/examples/SzptGroups' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/szpt/{group}/products:
+    get:
+      operationId: listSzptProducts
+      tags: [Szpt]
+      summary: Page products of one SZPT group with package and unit prices
+      description: |
+        Returns an array in the ProductCard shape plus unitPrice on the product and on
+        every offer. Unit price = price × 1000 / size for kg and l groups, price × 10 / size
+        for 10pcs groups, where size is the package size in the group's base unit.
+        value is rounded half-up to 2 decimals in the response only; sorting uses the
+        exact value. Product unitPrice belongs to the minPrice offer.
+        price_asc sorts by minPrice; unit_price_asc by the exact unit price of the
+        minPrice offer, then minPrice; ties use id ASC. size repeats (OR) and accepts
+        only values listed in the group's sizes. Unknown group returns 404; unknown
+        parameters, repeated single parameters or a size outside sizes return 400.
+      parameters:
+        - name: group
+          in: path
+          required: true
+          description: Group slug from /api/szpt
+          schema: { type: string }
+        - name: size
+          in: query
+          style: form
+          explode: true
+          description: Repeated package size in the group's base unit (OR)
+          schema: { type: array, items: { type: number, exclusiveMinimum: 0 } }
+        - name: sort
+          in: query
+          description: Single sort value
+          schema: { type: string, enum: [price_asc, unit_price_asc], default: price_asc }
+        - name: limit
+          in: query
+          description: Single decimal integer; 101 returns 400
+          schema: { type: integer, minimum: 1, maximum: 100, default: 24 }
+        - name: offset
+          in: query
+          description: Single nonnegative safe decimal integer
+          schema: { type: integer, minimum: 0, maximum: 9007199254740991, default: 0 }
+      responses:
+        '200':
+          description: Ordered page of group products, possibly empty
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SzptProducts' }
+              examples:
+                fixture: { $ref: '#/components/examples/SzptProducts' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /api/voice/start:
     post:
       operationId: startVoice
@@ -239,6 +315,12 @@ components:
     Dashboard:
       summary: Fixture baskets including missing positions
       externalValue: ./examples/dashboard.json
+    SzptGroups:
+      summary: Reference SZPT groups for kg, l and 10pcs units
+      externalValue: ./examples/szpt-groups.json
+    SzptProducts:
+      summary: Rice 500 g vs 1 kg, package and unit prices
+      externalValue: ./examples/szpt-products.json
     VoiceResult:
       summary: Deterministic fixture result with synthetic coordinates
       externalValue: ./examples/voice-start-result.json
@@ -416,6 +498,63 @@ components:
         baskets:
           type: array
           items: { $ref: '#/components/schemas/Basket' }
+    SzptUnit:
+      type: string
+      description: kg — ₸ per kilogram, l — ₸ per litre, 10pcs — ₸ per 10 pieces
+      enum: [kg, l, 10pcs]
+    UnitPrice:
+      type: object
+      required: [value, unit]
+      properties:
+        value: { type: number, exclusiveMinimum: 0, description: Rounded half-up to 2 decimals }
+        unit: { $ref: '#/components/schemas/SzptUnit' }
+    SzptGroup:
+      type: object
+      required: [slug, name, unit, sizes, count]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        unit: { $ref: '#/components/schemas/SzptUnit' }
+        sizes:
+          type: array
+          minItems: 1
+          items: { type: number, exclusiveMinimum: 0 }
+        count: { type: integer, minimum: 1 }
+    SzptGroups:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          items: { $ref: '#/components/schemas/SzptGroup' }
+    SzptOffer:
+      allOf:
+        - $ref: '#/components/schemas/Offer'
+        - type: object
+          required: [unitPrice]
+          properties:
+            unitPrice:
+              oneOf:
+                - $ref: '#/components/schemas/UnitPrice'
+                - type: 'null'
+    SzptProductCard:
+      description: ProductCard plus unitPrice of the minPrice offer and of every offer
+      allOf:
+        - $ref: '#/components/schemas/ProductCard'
+        - type: object
+          required: [unitPrice, offers]
+          properties:
+            unitPrice:
+              oneOf:
+                - $ref: '#/components/schemas/UnitPrice'
+                - type: 'null'
+            offers:
+              type: array
+              minItems: 1
+              items: { $ref: '#/components/schemas/SzptOffer' }
+    SzptProducts:
+      type: array
+      items: { $ref: '#/components/schemas/SzptProductCard' }
     LatitudeInput:
       description: Number or numeric JSON string; after Number conversion must be finite and between -90 and 90
       oneOf:
