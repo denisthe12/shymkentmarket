@@ -2,18 +2,23 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSzptGroups, useSzptPages } from '../api/queries'
 import type { SzptSort } from '../api/types'
+import { DynamicFilters } from '../components/catalog/DynamicFilters'
+import { SortSelect } from '../components/catalog/SortSelect'
 import { BackLink } from '../components/layout/BackLink'
 import { ProductGrid } from '../components/product/ProductGrid'
 import { Button } from '../components/ui/Button'
 import { Chip, chipClass } from '../components/ui/Chip'
+import { Icon } from '../components/ui/Icon'
+import { Sheet } from '../components/ui/Sheet'
 import { CategoryPageSkeleton, ProductGridSkeleton } from '../components/ui/Skeleton'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
 import { szptGroupName } from '../lib/dataLabels'
 import { formatDate } from '../lib/format'
-import { formatPackSize, readSzptState, szptParams } from '../lib/szpt'
+import { readSzptState, sizeFilter, szptParams } from '../lib/szpt'
 import { replaceQuery } from '../lib/urlState'
 import { useHref } from '../lib/useLang'
 import { NotFoundPage } from './NotFoundPage'
@@ -25,6 +30,7 @@ export function SzptPage({ group: slug }: { group: string }) {
   const { t } = useTranslation()
   const href = useHref()
   const pathname = usePathname()
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const params = useSearchParams()
 
   const groups = useSzptGroups()
@@ -43,11 +49,11 @@ export function SzptPage({ group: slug }: { group: string }) {
   if (groups.isError || !group) return <ErrorState onRetry={() => groups.refetch()} />
 
   const update = (next: Pick<typeof state, 'sizes' | 'sort'>) => replaceQuery(pathname, szptParams(next))
-  const toggleSize = (size: number) =>
-    update({
-      sort: state.sort,
-      sizes: state.sizes.includes(size) ? state.sizes.filter((s) => s !== size) : [...state.sizes, size],
-    })
+  const resetSizes = () => update({ sizes: [], sort: state.sort })
+  const changeSizes = (_key: string, next: string[]) => update({ sizes: next.map(Number), sort: state.sort })
+  const filters = group.sizes.length > 0 ? [sizeFilter(group, t('szpt.size'))] : []
+  const hasFilters = filters.length > 0
+  const values = hasFilters ? { [filters[0].key]: state.sizes.map(String) } : {}
   const items = products.data?.pages.flat() ?? []
   const unit = t(`szpt.per.${group.unit}`)
 
@@ -67,93 +73,135 @@ export function SzptPage({ group: slug }: { group: string }) {
         {items[0] && <> {t('szpt.priceDate', { date: formatDate(items[0].snapshotAt) })}</>}
       </p>
 
-      <nav aria-label={t('szpt.groupsLabel')} className="-mx-4 mt-5 overflow-x-auto px-4 md:mx-0 md:px-0">
-        <ul className="flex gap-2 md:flex-wrap">
-          {groups.data.map((g) => (
-            <li key={g.slug} className="shrink-0">
-              <Link
-                href={href(`/szpt/${g.slug}`)}
-                prefetch={false}
-                data-testid={`szpt-group-${g.slug}`}
-                aria-current={g.slug === slug ? 'page' : undefined}
-                className={chipClass(g.slug === slug)}
-              >
-                {szptGroupName(t, g)}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {/* Как в категории: ≥ lg — колонка слева (группы, затем фасовки карточками). Уже — группы строкой
+          чипов с прокруткой (переключать продукт надо в один тап), фасовки — в шторке */}
+      <div className="mt-6 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
+        <aside className="mb-4 self-start lg:mb-0 lg:flex lg:flex-col lg:gap-2">
+          <nav
+            aria-labelledby="szpt-groups-title"
+            className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0 lg:rounded-card lg:bg-card lg:p-4"
+          >
+            <h2 id="szpt-groups-title" className="sr-only text-sm font-semibold lg:not-sr-only lg:mb-2.5 lg:block">
+              {t('szpt.groupsLabel')}
+            </h2>
+            <ul className="flex gap-2 md:flex-wrap">
+              {groups.data.map((g) => (
+                <li key={g.slug} className="shrink-0">
+                  <Link
+                    href={href(`/szpt/${g.slug}`)}
+                    prefetch={false}
+                    data-testid={`szpt-group-${g.slug}`}
+                    aria-current={g.slug === slug ? 'page' : undefined}
+                    className={chipClass(g.slug === slug)}
+                  >
+                    {szptGroupName(t, g)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          {hasFilters && (
+            <div aria-label={t('category.filters')} role="group" className="hidden lg:block">
+              <DynamicFilters filters={filters} values={values} onChange={changeSizes} boxed />
+              {state.sizes.length > 0 && (
+                <button
+                  type="button"
+                  onClick={resetSizes}
+                  className="mt-4 text-sm font-medium text-muted underline underline-offset-4 hover:text-ink"
+                >
+                  {t('category.reset')}
+                </button>
+              )}
+            </div>
+          )}
+        </aside>
 
-      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div role="group" aria-label={t('szpt.size')} className="flex flex-wrap gap-2">
-          {group.sizes.map((size) => (
-            <Chip
-              key={size}
-              testId={`szpt-size-${size}`}
-              pressed={state.sizes.includes(size)}
-              onClick={() => toggleSize(size)}
-            >
-              {formatPackSize(size, group.unit, t)}
-            </Chip>
-          ))}
-        </div>
-        <div role="group" aria-label={t('szpt.sortLabel')} className="flex shrink-0 gap-2">
-          {SORTS.map((sort) => (
-            <Chip
-              key={sort}
-              testId={`szpt-sort-${sort}`}
-              pressed={state.sort === sort}
-              onClick={() => update({ sizes: state.sizes, sort })}
-            >
-              {t(`szpt.sort.${sort}`, { unit })}
-            </Chip>
-          ))}
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            {hasFilters && (
+              <Chip
+                testId="filters-toggle"
+                aria-haspopup="dialog"
+                onClick={() => setFiltersOpen(true)}
+                className="lg:hidden"
+              >
+                <Icon name="sliders" size={18} />
+                {t('category.filters')}
+                {state.sizes.length > 0 && <span className="tabular">· {state.sizes.length}</span>}
+              </Chip>
+            )}
+            <SortSelect
+              value={state.sort}
+              onChange={(sort) => update({ sizes: state.sizes, sort })}
+              options={SORTS}
+              optionLabel={(sort) => t(`szpt.sort.${sort}`, { unit })}
+              className="md:ml-auto"
+            />
+          </div>
+
+          {/* Скрытый h2, как в категории: группа и так видна в выбранном чипе */}
+          <section aria-labelledby="szpt-results-title">
+            <h2 id="szpt-results-title" className="sr-only">
+              {szptGroupName(t, group)}
+            </h2>
+            {products.isPending && (
+              <LoadingState>
+                <ProductGridSkeleton count={6} />
+              </LoadingState>
+            )}
+            {products.isError && <ErrorState onRetry={() => products.refetch()} />}
+            {products.isSuccess && items.length === 0 && (
+              <EmptyState
+                title={t(state.sizes.length > 0 ? 'szpt.emptyFiltered' : 'szpt.empty')}
+                icon={state.sizes.length > 0 ? 'sliders' : 'basket'}
+                action={state.sizes.length > 0 && <Button onClick={resetSizes}>{t('szpt.resetSizes')}</Button>}
+              />
+            )}
+            {items.length > 0 && (
+              <div
+                aria-busy={products.isPlaceholderData}
+                className={`transition-opacity ${products.isPlaceholderData ? 'opacity-50' : ''}`}
+              >
+                <ProductGrid products={items} />
+              </div>
+            )}
+            {products.hasNextPage && (
+              <div className="mt-8 flex justify-center">
+                <Button
+                  onClick={() => products.fetchNextPage()}
+                  disabled={products.isFetchingNextPage}
+                  testId="load-more"
+                  className="w-full md:w-auto"
+                >
+                  {t(products.isFetchingNextPage ? 'state.loading' : 'category.loadMore')}
+                </Button>
+              </div>
+            )}
+          </section>
         </div>
       </div>
 
-      <section aria-labelledby="szpt-results-title" className="mt-6">
-        <h2 id="szpt-results-title" className="mb-4 text-h2">
-          {szptGroupName(t, group)}
-        </h2>
-        {products.isPending && (
-          <LoadingState>
-            <ProductGridSkeleton count={8} wide />
-          </LoadingState>
-        )}
-        {products.isError && <ErrorState onRetry={() => products.refetch()} />}
-        {products.isSuccess && items.length === 0 && (
-          <EmptyState
-            title={t(state.sizes.length > 0 ? 'szpt.emptyFiltered' : 'szpt.empty')}
-            icon={state.sizes.length > 0 ? 'sliders' : 'basket'}
-            action={
-              state.sizes.length > 0 && (
-                <Button onClick={() => update({ sizes: [], sort: state.sort })}>{t('szpt.resetSizes')}</Button>
-              )
-            }
-          />
-        )}
-        {items.length > 0 && (
-          <div
-            aria-busy={products.isPlaceholderData}
-            className={`transition-opacity ${products.isPlaceholderData ? 'opacity-50' : ''}`}
-          >
-            <ProductGrid products={items} wide />
-          </div>
-        )}
-        {products.hasNextPage && (
-          <div className="mt-8 flex justify-center">
-            <Button
-              onClick={() => products.fetchNextPage()}
-              disabled={products.isFetchingNextPage}
-              testId="load-more"
-              className="w-full md:w-auto"
-            >
-              {t(products.isFetchingNextPage ? 'state.loading' : 'category.loadMore')}
-            </Button>
-          </div>
-        )}
-      </section>
+      {hasFilters && (
+        <Sheet
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          title={t('category.filters')}
+          testId="filters-sheet"
+          footer={
+            <>
+              <Button onClick={resetSizes} disabled={state.sizes.length === 0}>
+                {t('category.resetShort')}
+              </Button>
+              <Button variant="primary" onClick={() => setFiltersOpen(false)}>
+                {t('category.show')}
+              </Button>
+            </>
+          }
+        >
+          {/* Только пока открыта: иначе в DOM два набора filter-<key> (сайдбар и шторка) */}
+          {filtersOpen && <DynamicFilters filters={filters} values={values} onChange={changeSizes} />}
+        </Sheet>
+      )}
     </>
   )
 }

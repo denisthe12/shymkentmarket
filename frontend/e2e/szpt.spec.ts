@@ -1,18 +1,29 @@
 import { expect, test } from '@playwright/test'
 
-test('catalog → SZPT tile → group → pack size → unit-price sort', async ({ page }) => {
+test('catalog → SZPT tile → group → pack size → unit-price sort', async ({ page, isMobile }) => {
   await page.goto('/ru/catalog')
   await page.getByTestId('szpt-tile').click()
   await expect(page).toHaveURL(/\/ru\/szpt\/rice$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Социально значимые продукты')
   await expect(page.getByTestId('product-card')).toHaveCount(3)
 
-  await page.getByTestId('szpt-size-1000').click()
+  // Фасовки — как фильтры категории: с lg колонка слева, на телефоне шторка
+  const sheet = page.getByTestId('filters-sheet')
+  if (isMobile) await page.getByTestId('filters-toggle').click()
+  const size1kg = (isMobile ? sheet : page).getByTestId('filter-sizeGrams').getByRole('button', { name: /^1\s+кг$/ })
+  await size1kg.click()
   await expect(page).toHaveURL(/size=1000/)
   await expect(page.getByTestId('product-card')).toHaveCount(1)
-  await page.getByTestId('szpt-size-1000').click()
-
-  await page.getByTestId('szpt-sort-unit_price_asc').click()
+  await size1kg.click()
+  await expect(page.getByTestId('product-card')).toHaveCount(3)
+  if (isMobile) {
+    await sheet.getByRole('button', { name: 'Показать' }).click()
+    await expect(sheet).toBeHidden()
+    await page.getByTestId('sort-chip').click()
+    await page.getByTestId('sort-sheet').getByRole('radio', { name: 'Выгоднее за кг' }).click()
+  } else {
+    await page.getByTestId('sort-select').selectOption('unit_price_asc')
+  }
   await expect(page).toHaveURL(/sort=unit_price_asc/)
   const first = page.getByTestId('product-card').first()
   await expect(first).toContainText('Рис Тест 1 кг')

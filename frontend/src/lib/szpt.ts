@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next'
-import type { SzptGroupDto, SzptSort, SzptUnit, UnitPriceDto } from '../api/types'
+import type { FilterDto, SzptGroupDto, SzptSort, SzptUnit, UnitPriceDto } from '../api/types'
 import { formatAttributeValue } from './attributes'
 import { formatPrice } from './format'
 
@@ -9,6 +9,15 @@ const SIZE_KEY: Record<SzptUnit, string> = { kg: 'weightGrams', l: 'volumeMl', '
 /** 400 → «400 г», 1950 (l) → «1,95 л», 10 (10pcs) → «10 шт» */
 export function formatPackSize(size: number, unit: SzptUnit, t: TFunction): string {
   return formatAttributeValue(SIZE_KEY[unit], size, t)
+}
+
+// Ключ фасовки как фильтра: суффикс задаёт единицы подписи (lib/attributes), а перевода в data.filter.* у него нет —
+// подпись берётся из szpt.size, а не «Вес»/«Объём» каталога
+const SIZE_FILTER_KEY: Record<SzptUnit, string> = { kg: 'sizeGrams', l: 'sizeMl', '10pcs': 'sizeCount' }
+
+/** Фасовки группы в виде фильтра — для тех же карточек фильтров (DynamicFilters), что в категории */
+export function sizeFilter(group: SzptGroupDto, label: string): FilterDto {
+  return { key: SIZE_FILTER_KEY[group.unit], label, type: 'multi-select', options: group.sizes }
 }
 
 /** { 840, kg } → «840 ₸/кг». Бэк уже посчитал значение; здесь только округление до тенге и подпись */
