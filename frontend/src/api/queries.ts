@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions, useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
 import { catalogApi } from './catalogApi'
-import type { DashboardDto, ProductCardDto, ProductQuery } from './types'
+import type { DashboardDto, ProductCardDto, ProductQuery, SzptProductDto, SzptQuery } from './types'
 
 export const PAGE_SIZE = 24
 
@@ -8,6 +8,7 @@ export const PAGE_SIZE = 24
 const STATIC = { staleTime: Infinity } as const
 
 type PagedQuery = Omit<ProductQuery, 'limit' | 'offset'>
+type SzptPagedQuery = Omit<SzptQuery, 'limit' | 'offset'>
 
 export const queryKeys = {
   categories: ['categories'] as const,
@@ -15,6 +16,8 @@ export const queryKeys = {
   productPages: (query: PagedQuery) => ['products', query] as const,
   product: (id: string) => ['product', id] as const,
   dashboard: ['dashboard'] as const,
+  szptGroups: ['szpt-groups'] as const,
+  szptPages: (query: SzptPagedQuery) => ['szpt-products', query] as const,
 }
 
 /** Опции запросов — общие для хуков и серверного prefetch (страницы с данными в HTML) */
@@ -45,6 +48,30 @@ export const productPagesQuery = (query: PagedQuery) =>
 
 export const dashboardQuery = () =>
   queryOptions({ queryKey: queryKeys.dashboard, queryFn: catalogApi.getDashboard, ...STATIC })
+
+export const szptGroupsQuery = () =>
+  queryOptions({ queryKey: queryKeys.szptGroups, queryFn: catalogApi.getSzptGroups, ...STATIC })
+
+/** Товары группы СЗПТ с «Показать ещё»; сервер кладёт в кэш первую страницу */
+export const szptProductPagesQuery = (query: SzptPagedQuery) =>
+  infiniteQueryOptions({
+    queryKey: queryKeys.szptPages(query),
+    queryFn: ({ pageParam }) => catalogApi.getSzptProducts({ ...query, limit: PAGE_SIZE, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: SzptProductDto[], allPages: SzptProductDto[][]) =>
+      lastPage.length < PAGE_SIZE ? undefined : allPages.length * PAGE_SIZE,
+    ...STATIC,
+  })
+
+export const useSzptGroups = () => useQuery(szptGroupsQuery())
+
+/** При смене фасовки или сортировки держим прежний список, но товары другой группы не показываем */
+export const useSzptPages = (query: SzptPagedQuery) =>
+  useInfiniteQuery({
+    ...szptProductPagesQuery(query),
+    placeholderData: (previous, previousQuery) =>
+      (previousQuery?.queryKey[1] as SzptPagedQuery | undefined)?.group === query.group ? previous : undefined,
+  })
 
 export const useCategories = () => useQuery(categoriesQuery())
 

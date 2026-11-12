@@ -11,6 +11,7 @@ export const getCategories = cache(() => catalogApi.getCategories())
 export const getCategoryFilters = cache((slug: string) => catalogApi.getCategoryFilters(slug))
 export const getProduct = cache((id: string) => catalogApi.getProduct(id))
 export const getDashboard = cache(() => catalogApi.getDashboard())
+export const getSzptGroups = cache(() => catalogApi.getSzptGroups())
 
 /**
  * 404 API → страница 404. Остальные ошибки пробрасываем: при ISR Next оставит прежнюю версию страницы,
