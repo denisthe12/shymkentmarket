@@ -5,7 +5,7 @@ import { postgres } from './postgres.mjs';
 
 await postgres(async ({ url, sql, login, load, go }) => {
   go(['test', '-count=1', '-race', '-tags=integration', './tests/integration',
-    '-run', '^(TestDestructiveTargetGuard|TestDeterministicCatalog|TestBootstrapFailsClosed)$', '-v'], {
+    '-run', '^(TestDestructiveTargetGuard|TestDeterministicCatalog|TestDeterministicSzpt|TestBootstrapFailsClosed)$', '-v'], {
     TEST_DATABASE_URL: url('part04_fixture'), TEST_API_DATABASE_URL: url('part04_fixture', 'part04_api_login'),
   });
   go(['test', '-count=1', '-race', '-tags=integration', './internal/postgres', '-run', '^TestLocalProductionIdentity$', '-v'], {
