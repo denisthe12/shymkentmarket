@@ -23,6 +23,8 @@
   --color-tile-3: #efeaf7;
   --color-tile-4: #fbeae2;
   --color-tile-5: #fbf4d9;
+  /* Плитка раздела СЗПТ: вне ротации категорий, тоже не зелёная */
+  --color-tile-szpt: #f8dfc4;
 
   /* Переменные шрифтов задаёт next/font (app/fonts.ts) на <html> */
   --font-sans: var(--font-golos), system-ui, sans-serif;

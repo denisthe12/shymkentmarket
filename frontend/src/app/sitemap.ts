@@ -61,10 +61,11 @@ function blogEntries(): MetadataRoute.Sitemap {
 // Поиск не включён — он noindex
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection()
-  const [categories, dashboard, products] = await Promise.all([
+  const [categories, dashboard, products, szptGroups] = await Promise.all([
     catalogApi.getCategories(),
     catalogApi.getDashboard(),
     allProducts(),
+    catalogApi.getSzptGroups(),
   ])
   const snapshot = dashboard.summary.snapshotAt
 
@@ -75,6 +76,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...localized('/dashboard', { lastModified: snapshot, changeFrequency: 'daily', priority: 0.6 }),
     ...categories.flatMap((category) =>
       localized(`/collections/${category.slug}`, { lastModified: snapshot, changeFrequency: 'daily', priority: 0.8 }),
+    ),
+    // /szpt — редирект на первую группу, в sitemap только сами группы
+    ...szptGroups.flatMap((group) =>
+      localized(`/szpt/${group.slug}`, { lastModified: snapshot, changeFrequency: 'daily', priority: 0.8 }),
     ),
     ...products.flatMap((product) =>
       localized(`/products/${product.id}`, {

@@ -1,5 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { connection } from 'next/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import SzptIndexRoute from '../app/[lang]/(site)/szpt/page'
 import SzptGroupRoute from '../app/[lang]/(site)/szpt/[group]/page'
@@ -9,6 +10,12 @@ import { szptGroupName } from '../lib/dataLabels'
 import { navigation } from '../test/navigation'
 import { renderPage } from '../test/render'
 import { SzptPage } from './SzptPage'
+
+// The index reads the API, so it must render per request, not at build time (the build has no API)
+vi.mock('next/server', async (original) => ({
+  ...await original<typeof import('next/server')>(),
+  connection: vi.fn(async () => undefined),
+}))
 
 const cardNames = () =>
   screen.getAllByTestId('product-card').map((card) => within(card).getByRole('link').textContent)
@@ -86,7 +93,9 @@ describe('SZPT routes', () => {
   })
 
   it('redirects the section index to the first group', async () => {
+    vi.mocked(connection).mockClear()
     await expect(SzptIndexRoute({ params: Promise.resolve({ lang: 'kk' }), searchParams: Promise.resolve({}) })).rejects.toThrow('NEXT_REDIRECT /kk/szpt/rice')
+    expect(connection).toHaveBeenCalledOnce()
   })
 
   it('is a 404, not a redirect loop, when no group has products', async () => {
