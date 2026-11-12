@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TOP_DEALS, topDealIds, useCategories, useDashboard, useProductsByIds } from '../api/queries'
+import { TOP_DEALS, topDealIds, useCategories, useDashboard, useProductsByIds, useSzptGroups } from '../api/queries'
 import { CategoryTiles } from '../components/catalog/CategoryTiles'
 import { ProductGrid } from '../components/product/ProductGrid'
 import { Button } from '../components/ui/Button'
@@ -12,6 +12,8 @@ import { ErrorState, LoadingState } from '../components/ui/States'
 export function CatalogPage() {
   const { t } = useTranslation()
   const categories = useCategories()
+  // Ошибка /api/szpt только прячет плитку раздела — каталог от неё не зависит
+  const szpt = useSzptGroups()
 
   return (
     <>
@@ -27,7 +29,7 @@ export function CatalogPage() {
           </LoadingState>
         )}
         {categories.isError && <ErrorState onRetry={() => categories.refetch()} />}
-        {categories.data && <CategoryTiles categories={categories.data} />}
+        {categories.data && <CategoryTiles categories={categories.data} szpt={(szpt.data?.length ?? 0) > 0} />}
       </section>
 
       <TopDeals />

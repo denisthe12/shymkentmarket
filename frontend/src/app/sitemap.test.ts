@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { catalogApi } from '../api/catalogApi'
 import mockCategories from '../mocks/categories.json'
 import mockProducts from '../mocks/products.json'
+import mockSzpt from '../mocks/szpt.json'
 import { AUTHORS, totalPages } from '../content/blog'
 import { POSTS } from '../content/blog/posts'
 import robots from './robots'
@@ -75,7 +76,7 @@ describe('sitemap', () => {
     const entries = await sitemap()
     // Блог: страницы ленты на 2 языках + каждая статья на своём языке + авторы на 2 языках
     const blog = 2 * totalPages() + POSTS.length + 2 * AUTHORS.length
-    expect(entries).toHaveLength(2 * (2 + mockCategories.length + mockProducts.length) + blog)
+    expect(entries).toHaveLength(2 * (2 + mockCategories.length + mockSzpt.groups.length + mockProducts.length) + blog)
 
     const urls = entries.map((entry) => entry.url)
     expect(urls).not.toContain('http://localhost:3000/ru')
@@ -83,6 +84,15 @@ describe('sitemap', () => {
     expect(urls).toContain('http://localhost:3000/kk/collections/milk')
     expect(urls).toContain(`http://localhost:3000/ru/products/${mockProducts[0].id}`)
     expect(urls.some((url) => url.includes('/search'))).toBe(false)
+  })
+
+  it('lists every SZPT group in both languages, but not the redirecting section index', async () => {
+    const urls = (await sitemap()).map((entry) => entry.url)
+    for (const group of mockSzpt.groups) {
+      expect(urls).toContain(`http://localhost:3000/ru/szpt/${group.slug}`)
+      expect(urls).toContain(`http://localhost:3000/kk/szpt/${group.slug}`)
+    }
+    expect(urls).not.toContain('http://localhost:3000/ru/szpt')
   })
 
   it('lists each blog post only at the address of its own language, without hreflang', async () => {

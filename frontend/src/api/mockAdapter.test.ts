@@ -75,3 +75,23 @@ describe('mock adapter', () => {
     await expect(api.getCategoryFilters('nope')).rejects.toMatchObject({ status: 404 })
   })
 })
+
+describe('mock adapter szpt', () => {
+  it('sorts by unit price and filters by size', async () => {
+    const byUnit = await api.getSzptProducts({ group: 'rice', sort: 'unit_price_asc' })
+    const values = byUnit.map((p) => p.unitPrice?.value ?? Infinity)
+    expect(values).toEqual([...values].sort((a, b) => a - b))
+    const byPrice = await api.getSzptProducts({ group: 'rice' })
+    expect(byPrice.map((p) => p.minPrice)).toEqual(byPrice.map((p) => p.minPrice).sort((a, b) => a - b))
+    expect(byPrice.map((p) => p.id)).not.toEqual(byUnit.map((p) => p.id))
+    const sized = await api.getSzptProducts({ group: 'rice', sizes: [500] })
+    expect(sized.length).toBeGreaterThan(0)
+    expect(sized.every((p) => p.attributes.weightGrams === 500)).toBe(true)
+  })
+
+  it('lists groups and rejects unknown groups with 404', async () => {
+    const groups = await api.getSzptGroups()
+    expect(groups.map((g) => g.slug)).toEqual(['rice', 'milk', 'eggs'])
+    await expect(api.getSzptProducts({ group: 'nope' })).rejects.toMatchObject({ status: 404 })
+  })
+})

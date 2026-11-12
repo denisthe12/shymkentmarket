@@ -115,3 +115,20 @@ describe('ProductCard', () => {
     expect(await screen.findByTestId('image-placeholder')).toBeInTheDocument()
   })
 })
+
+describe('ProductCard unit price', () => {
+  it('shows the package price and the unit price together', () => {
+    render(<ProductCard product={product} unitPrice={{ value: 570, unit: 'l' }} />)
+    expect(text(screen.getByTestId('min-price'))).toBe('570 ₸')
+    expect(text(screen.getByTestId('unit-price'))).toBe('570 ₸/л')
+  })
+
+  it('renders no unit line without a unit price', () => {
+    for (const unitPrice of [null, undefined]) {
+      const { container, unmount } = render(<ProductCard product={product} unitPrice={unitPrice} />)
+      expect(screen.queryByTestId('unit-price')).toBeNull()
+      expect(container.textContent).not.toMatch(/₸\//)
+      unmount()
+    }
+  })
+})

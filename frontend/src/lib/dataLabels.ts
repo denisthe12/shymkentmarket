@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next'
-import type { CategoryRefDto, FilterDto } from '../api/types'
+import type { CategoryRefDto, FilterDto, SzptGroupDto } from '../api/types'
 
 // Бэк отдаёт названия категорий и подписи фильтров только по-русски (nameKk нет). Перевод — в словаре
 // по слагу/ключу (`data.category.*`, `data.filter.*`, есть только в kk.json); нет перевода — текст бэка как есть.
@@ -11,4 +11,9 @@ export function categoryName(t: TFunction, category: CategoryRefDto): string {
 
 export function filterLabel(t: TFunction, filter: Pick<FilterDto, 'key' | 'label'>): string {
   return t(`data.filter.${filter.key}`, { defaultValue: filter.label })
+}
+
+/** Группа СЗПТ: имя от бэка по-русски, перевод — `szpt.groups.<slug>` (есть только в kk.json) */
+export function szptGroupName(t: TFunction, group: Pick<SzptGroupDto, 'slug' | 'name'>): string {
+  return t(`szpt.groups.${group.slug}`, { defaultValue: group.name })
 }

@@ -109,6 +109,37 @@ export type DashboardDto = {
   baskets: BasketDto[]
 }
 
+/** Раздел СЗПТ: группа продуктов и её фасовки в текущем снимке (contracts/openapi.yaml, /api/szpt) */
+export type SzptUnit = 'kg' | 'l' | '10pcs'
+
+/** Цена за кг / л / 10 шт; считает бэк, округлено до 2 знаков */
+export type UnitPriceDto = { value: number; unit: SzptUnit }
+
+export type SzptGroupDto = {
+  slug: string
+  name: string
+  unit: SzptUnit
+  /** Фасовки в базовой единице группы: граммы, мл или штуки (у молока и кефира граммы = мл) */
+  sizes: number[]
+  count: number
+}
+
+export type SzptProductDto = Omit<ProductCardDto, 'offers'> & {
+  /** Цена за единицу самого дешёвого предложения */
+  unitPrice: UnitPriceDto | null
+  offers: (OfferDto & { unitPrice: UnitPriceDto | null })[]
+}
+
+export type SzptSort = 'price_asc' | 'unit_price_asc'
+
+export type SzptQuery = {
+  group: string
+  sizes?: number[]
+  sort?: SzptSort
+  limit?: number
+  offset?: number
+}
+
 export interface CatalogApi {
   getCategories(): Promise<CategoryDto[]>
   getCategoryFilters(slug: string): Promise<FilterSchemaDto>
@@ -116,6 +147,9 @@ export interface CatalogApi {
   getProducts(query: ProductQuery): Promise<ProductCardDto[]>
   getProduct(id: string): Promise<ProductCardDto>
   getDashboard(): Promise<DashboardDto>
+  getSzptGroups(): Promise<SzptGroupDto[]>
+  /** Массив без total, как getProducts */
+  getSzptProducts(query: SzptQuery): Promise<SzptProductDto[]>
 }
 
 export class ApiError extends Error {

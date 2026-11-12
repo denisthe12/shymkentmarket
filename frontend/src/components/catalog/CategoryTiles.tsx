@@ -12,12 +12,31 @@ import { CATEGORY_TILES, TILE_SHAPE } from './layout'
 // Полными строками — иначе Tailwind не увидит классы. Зелёной пастели нет: зелёный занят «выгоднее»
 const TILE_COLORS = ['bg-tile-1', 'bg-tile-2', 'bg-tile-3', 'bg-tile-4', 'bg-tile-5']
 
+type Props = {
+  categories: CategoryDto[]
+  /** У раздела СЗПТ есть группы в текущем снимке — первой идёт его плитка */
+  szpt: boolean
+}
+
 /** Плитки категорий: цвет по порядку, иконка по слагу */
-export function CategoryTiles({ categories }: { categories: CategoryDto[] }) {
+export function CategoryTiles({ categories, szpt }: Props) {
   const href = useHref()
   const { t } = useTranslation()
   return (
     <ul className={CATEGORY_TILES}>
+      {szpt && (
+        <li className="flex">
+          <Link
+            href={href('/szpt')}
+            prefetch={false}
+            data-testid="szpt-tile"
+            className={`${TILE_SHAPE} bg-tile-szpt justify-between text-sm font-medium text-ink transition-[filter] hover:brightness-95 md:text-[15px]`}
+          >
+            <span className="line-clamp-3 leading-tight">{t('szpt.tile')}</span>
+            <Icon name="basket" size={32} className="shrink-0 self-end text-ink/70" />
+          </Link>
+        </li>
+      )}
       {categories.map((category, index) => (
         <li key={category.id} className="flex">
           <Link

@@ -6,6 +6,9 @@ import {
   type FilterSchemaDto,
   type ProductCardDto,
   type ProductQuery,
+  type SzptGroupDto,
+  type SzptProductDto,
+  type SzptQuery,
 } from './types'
 
 export function createHttpAdapter(baseUrl: string, isServer = false): CatalogApi {
@@ -37,7 +40,20 @@ export function createHttpAdapter(baseUrl: string, isServer = false): CatalogApi
     getProducts: (query) => get<ProductCardDto[]>('/products', toSearchParams(query)),
     getProduct: (id) => get<ProductCardDto>(`/products/${encodeURIComponent(id)}`),
     getDashboard: () => get<DashboardDto>('/dashboard'),
+    getSzptGroups: async () => (await get<{ groups: SzptGroupDto[] }>('/szpt')).groups,
+    getSzptProducts: (query) =>
+      get<SzptProductDto[]>(`/szpt/${encodeURIComponent(query.group)}/products`, toSzptSearchParams(query)),
   }
+}
+
+/** Фасовки повторяются: ?size=800&size=1000. Сортировка по умолчанию (price_asc) в URL не пишется */
+export function toSzptSearchParams(query: SzptQuery): URLSearchParams {
+  const params = new URLSearchParams()
+  for (const size of query.sizes ?? []) params.append('size', String(size))
+  if (query.sort && query.sort !== 'price_asc') params.set('sort', query.sort)
+  if (query.limit !== undefined) params.set('limit', String(query.limit))
+  if (query.offset !== undefined) params.set('offset', String(query.offset))
+  return params
 }
 
 /** Мульти-значения передаются повторением параметра: ?volumeMl=500&volumeMl=1000 */

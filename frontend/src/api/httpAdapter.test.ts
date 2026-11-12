@@ -56,3 +56,25 @@ describe('http adapter', () => {
     expect(error).toMatchObject({ status: 404, message: 'Product not found' })
   })
 })
+
+describe('szpt http adapter', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('repeats sizes, omits the default sort and pages', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response('[]'))
+    vi.stubGlobal('fetch', fetchMock)
+    const api = createHttpAdapter('http://api.test')
+    await api.getSzptProducts({ group: 'rice', sizes: [800, 1000], sort: 'unit_price_asc', limit: 24, offset: 0 })
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'http://api.test/api/szpt/rice/products?size=800&size=1000&sort=unit_price_asc&limit=24&offset=0',
+    )
+    await api.getSzptProducts({ group: 'rice', sort: 'price_asc', limit: 24, offset: 24 })
+    expect(fetchMock.mock.calls[1][0]).toBe('http://api.test/api/szpt/rice/products?limit=24&offset=24')
+  })
+
+  it('unwraps the groups envelope', async () => {
+    const groups = [{ slug: 'rice', name: 'Рис', unit: 'kg', sizes: [800], count: 1 }]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ groups }))))
+    await expect(createHttpAdapter('http://api.test').getSzptGroups()).resolves.toEqual(groups)
+  })
+})

@@ -2,7 +2,7 @@ import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { connection } from 'next/server'
-import { categoriesQuery, dashboardQuery, productQuery, topDealIds } from '../../../../api/queries'
+import { categoriesQuery, dashboardQuery, productQuery, szptGroupsQuery, topDealIds } from '../../../../api/queries'
 import { JsonLd } from '../../../../components/seo/JsonLd'
 import { getI18n, isLanguage } from '../../../../i18n'
 import { pageMetadata } from '../../../../lib/seo'
@@ -28,6 +28,8 @@ export default async function Page({ params }: PageProps<'/[lang]/catalog'>) {
   const [, dashboard] = await Promise.all([
     queryClient.fetchQuery(categoriesQuery()),
     queryClient.fetchQuery(dashboardQuery()),
+    // prefetch не бросает: недоступный /api/szpt не роняет каталог, плитки просто не будет
+    queryClient.prefetchQuery(szptGroupsQuery()),
   ])
   await Promise.all(topDealIds(dashboard).map((id) => queryClient.fetchQuery(productQuery(id))))
 

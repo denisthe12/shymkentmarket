@@ -71,5 +71,8 @@ export async function mockNextNavigation() {
     notFound: () => {
       throw new Error('NEXT_NOT_FOUND')
     },
+    redirect: (url: string) => {
+      throw new Error(`NEXT_REDIRECT ${url}`)
+    },
   }
 }

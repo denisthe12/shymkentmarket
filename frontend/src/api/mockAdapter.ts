@@ -1,5 +1,13 @@
-import { mockCategories, mockDashboard, mockFilters, mockProducts } from '../mocks'
-import { ApiError, type CatalogApi, type ProductCardDto, type ProductQuery } from './types'
+import { mockCategories, mockDashboard, mockFilters, mockProducts, mockSzptGroups, mockSzptProducts } from '../mocks'
+import {
+  ApiError,
+  type CatalogApi,
+  type ProductCardDto,
+  type ProductQuery,
+  type SzptProductDto,
+  type SzptQuery,
+  type SzptUnit,
+} from './types'
 
 type MockOptions = {
   /** Искусственная задержка, чтобы видеть loading-состояния */
@@ -33,7 +41,38 @@ export function createMockAdapter({ delayMs = 250 }: MockOptions = {}): CatalogA
     },
 
     getDashboard: () => respond(mockDashboard),
+
+    getSzptGroups: () => respond(mockSzptGroups),
+
+    getSzptProducts: (query) => {
+      const group = mockSzptGroups.find((g) => g.slug === query.group)
+      if (!group) return fail(404, `SZPT group "${query.group}" not found`)
+      const offset = query.offset ?? 0
+      const matched = querySzpt(mockSzptProducts[group.slug] ?? [], group.unit, query)
+      return respond(query.limit === undefined ? matched.slice(offset) : matched.slice(offset, offset + query.limit))
+    },
   }
+}
+
+/** Фасовка товара в базовой единице группы — так её считает бэк (у молока и кефира граммы = мл) */
+function packSize(product: SzptProductDto, unit: SzptUnit): unknown {
+  const a = product.attributes
+  if (unit === 'kg') return a.weightGrams
+  if (unit === 'l') return a.volumeMl ?? a.weightGrams
+  return a.packageCount
+}
+
+/** Фильтр фасовки и две сортировки СЗПТ, как на бэке: при равенстве — minPrice, затем id */
+export function querySzpt(source: SzptProductDto[], unit: SzptUnit, query: SzptQuery): SzptProductDto[] {
+  const sizes = query.sizes ?? []
+  const unitValue = (p: SzptProductDto) => p.unitPrice?.value ?? Infinity
+  return source
+    .filter((p) => sizes.length === 0 || sizes.includes(packSize(p, unit) as number))
+    .sort((a, b) =>
+      (query.sort === 'unit_price_asc' ? unitValue(a) - unitValue(b) : 0) ||
+      a.minPrice - b.minPrice ||
+      a.id.localeCompare(b.id),
+    )
 }
 
 /** Фильтрация и сортировка так, как их (по нашему предложению) делает бэк */

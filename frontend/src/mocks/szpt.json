@@ -1,0 +1,282 @@
+{
+  "groups": [
+    {
+      "slug": "rice",
+      "name": "Рис",
+      "unit": "kg",
+      "sizes": [
+        500,
+        800,
+        1000
+      ],
+      "count": 3
+    },
+    {
+      "slug": "milk",
+      "name": "Молоко",
+      "unit": "l",
+      "sizes": [
+        900,
+        1000
+      ],
+      "count": 2
+    },
+    {
+      "slug": "eggs",
+      "name": "Яйца I категории",
+      "unit": "10pcs",
+      "sizes": [
+        10,
+        30
+      ],
+      "count": 2
+    }
+  ],
+  "products": {
+    "rice": [
+      {
+        "id": "szpt-rice-500",
+        "name": "Рис Тест 500 г",
+        "brand": null,
+        "category": {
+          "slug": "groats",
+          "name": "Крупы, макароны, мука"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "weightGrams": 500
+        },
+        "minPrice": 420,
+        "unitPrice": {
+          "value": 840,
+          "unit": "kg"
+        },
+        "offers": [
+          {
+            "storeCode": "DINA",
+            "storeName": "Dina Market",
+            "price": 420,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 840,
+              "unit": "kg"
+            }
+          },
+          {
+            "storeCode": "DANA",
+            "storeName": "Dana Market",
+            "price": 455,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 910,
+              "unit": "kg"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      },
+      {
+        "id": "szpt-rice-1000",
+        "name": "Рис Тест 1 кг",
+        "brand": null,
+        "category": {
+          "slug": "groats",
+          "name": "Крупы, макароны, мука"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "weightGrams": 1000
+        },
+        "minPrice": 710,
+        "unitPrice": {
+          "value": 710,
+          "unit": "kg"
+        },
+        "offers": [
+          {
+            "storeCode": "ANVAR",
+            "storeName": "Анвар",
+            "price": 710,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 710,
+              "unit": "kg"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      },
+      {
+        "id": "szpt-rice-800",
+        "name": "Рис Кызылординский 800 г",
+        "brand": null,
+        "category": {
+          "slug": "groats",
+          "name": "Крупы, макароны, мука"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "weightGrams": 800
+        },
+        "minPrice": 600,
+        "unitPrice": {
+          "value": 750,
+          "unit": "kg"
+        },
+        "offers": [
+          {
+            "storeCode": "DINA",
+            "storeName": "Dina Market",
+            "price": 600,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 750,
+              "unit": "kg"
+            }
+          },
+          {
+            "storeCode": "DANA",
+            "storeName": "Dana Market",
+            "price": 640,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 800,
+              "unit": "kg"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      }
+    ],
+    "milk": [
+      {
+        "id": "szpt-milk-1000",
+        "name": "Молоко Петропавловское 3.2% 1 л",
+        "brand": null,
+        "category": {
+          "slug": "milk",
+          "name": "Молоко"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "volumeMl": 1000,
+          "fatPercent": 3.2
+        },
+        "minPrice": 520,
+        "unitPrice": {
+          "value": 520,
+          "unit": "l"
+        },
+        "offers": [
+          {
+            "storeCode": "DINA",
+            "storeName": "Dina Market",
+            "price": 520,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 520,
+              "unit": "l"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      },
+      {
+        "id": "szpt-milk-900",
+        "name": "Молоко DEP 2,5% 900г",
+        "brand": null,
+        "category": {
+          "slug": "milk",
+          "name": "Молоко"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "weightGrams": 900,
+          "fatPercent": 2.5
+        },
+        "minPrice": 478,
+        "unitPrice": {
+          "value": 531.11,
+          "unit": "l"
+        },
+        "offers": [
+          {
+            "storeCode": "DANA",
+            "storeName": "Dana Market",
+            "price": 478,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 531.11,
+              "unit": "l"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      }
+    ],
+    "eggs": [
+      {
+        "id": "szpt-eggs-10",
+        "name": "Яйцо куриное Анвар С1 категория фас 10шт",
+        "brand": null,
+        "category": {
+          "slug": "eggs",
+          "name": "Яйца"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "packageCount": 10
+        },
+        "minPrice": 759,
+        "unitPrice": {
+          "value": 759,
+          "unit": "10pcs"
+        },
+        "offers": [
+          {
+            "storeCode": "ANVAR",
+            "storeName": "Анвар",
+            "price": 759,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 759,
+              "unit": "10pcs"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      },
+      {
+        "id": "szpt-eggs-30",
+        "name": "Яйцо куриное 1 категория фасов 30шт",
+        "brand": null,
+        "category": {
+          "slug": "eggs",
+          "name": "Яйца"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "packageCount": 30
+        },
+        "minPrice": 2249,
+        "unitPrice": {
+          "value": 749.67,
+          "unit": "10pcs"
+        },
+        "offers": [
+          {
+            "storeCode": "ANVAR",
+            "storeName": "Анвар",
+            "price": 2249,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 749.67,
+              "unit": "10pcs"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      }
+    ]
+  }
+}
