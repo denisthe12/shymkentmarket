@@ -56,6 +56,10 @@ test('карточка товара из списка: сразу названи
 test('«Назад» в браузере во время ожидания снимает заглушку и возвращает список', async ({ page }) => {
   await page.goto('/ru/catalog', { waitUntil: 'networkidle' })
   await page.getByTestId('category-card').first().click()
+  // Ждём именно категорию: «Топ разброса» в каталоге — тоже product-card, без этого на медленном CI
+  // тест кликал товар прямо в каталоге, и «Назад» уводил на about:blank
+  await expect(page).toHaveURL(/\/ru\/collections\//)
+  await expect(page.getByTestId('navigation-preview')).toHaveCount(0)
   await expect(page.getByTestId('product-card').first()).toBeVisible()
   await slowNavigations(page, /\/products\//)
   await page.getByTestId('product-card').first().getByRole('link').click()
