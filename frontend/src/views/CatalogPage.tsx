@@ -71,6 +71,7 @@ function TopDeals() {
         {shown.length > 0 && <ProductGrid products={shown} wide />}
         {shown.length > 0 && (
           <LoadMore
+            wide
             hasMore={hasMore}
             loading={products.isPending}
             auto={count / TOP_DEALS < AUTO_PAGES && !products.isError}
@@ -79,5 +80,26 @@ function TopDeals() {
         )}
       </div>
     </section>
+  )
+}
+
+/** Пока сервер готовит каталог (loading.tsx): заголовки настоящие, плитки и карточки — скелетоном */
+export function CatalogPageLoading() {
+  const { t } = useTranslation()
+  return (
+    <>
+      <h1 className="text-h1">{t('home.title')}</h1>
+      <LoadingState>
+        <div className="mt-6 md:mt-8">
+          <CategoryTilesSkeleton />
+        </div>
+      </LoadingState>
+      <section className="mt-8 md:mt-12">
+        <h2 className="text-h2">{t('home.deals')}</h2>
+        <div className="mt-4" aria-hidden="true">
+          <ProductGridSkeleton count={TOP_DEALS} wide />
+        </div>
+      </section>
+    </>
   )
 }

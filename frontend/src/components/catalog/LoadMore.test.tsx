@@ -39,12 +39,19 @@ describe('LoadMore', () => {
     expect(p.onLoad).toHaveBeenCalledTimes(1)
   })
 
-  it('пока грузится — не шлёт второй запрос, кнопка «Загрузка…» недоступна', () => {
+  it('пока грузится — не шлёт второй запрос, вместо кнопки ряд скелетон-карточек', () => {
     const p = props({ loading: true })
     render(<LoadMore {...p} />)
     scrollToButton()
     expect(p.onLoad).not.toHaveBeenCalled()
-    expect(screen.getByTestId('load-more')).toBeDisabled()
+    expect(screen.queryByTestId('load-more')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getAllByTestId('product-card-skeleton')).toHaveLength(3)
+  })
+
+  it('wide — скелетон на ряд из 4 карточек, как сетка без фильтров', () => {
+    render(<LoadMore {...props({ loading: true })} wide />)
+    expect(screen.getAllByTestId('product-card-skeleton')).toHaveLength(4)
   })
 
   it('когда загрузка закончилась, а кнопка всё ещё у экрана — грузит дальше', () => {

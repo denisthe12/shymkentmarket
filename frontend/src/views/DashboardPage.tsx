@@ -23,14 +23,34 @@ const StoreMap = dynamic(() => import('../components/dashboard/StoreMap'), {
   loading: () => <div className="h-full rounded-card bg-surface" />,
 })
 
-export function DashboardPage() {
+function DashboardTitle() {
   const { t } = useTranslation()
-  const dashboard = useDashboard()
-
   return (
     <>
       <h1 className="text-h1">{t('dashboard.title')}</h1>
       <p className="mt-2 max-w-[60ch] text-muted">{t('dashboard.lead')}</p>
+    </>
+  )
+}
+
+/** Пока сервер готовит «Аналитику» (loading.tsx): заголовок сразу, данные — скелетоном */
+export function DashboardPageLoading() {
+  return (
+    <>
+      <DashboardTitle />
+      <LoadingState>
+        <DashboardSkeleton />
+      </LoadingState>
+    </>
+  )
+}
+
+export function DashboardPage() {
+  const dashboard = useDashboard()
+
+  return (
+    <>
+      <DashboardTitle />
 
       {dashboard.isPending && (
         <LoadingState>

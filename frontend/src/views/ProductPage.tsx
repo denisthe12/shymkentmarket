@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useCategoryFilters, useProduct } from '../api/queries'
+import { findCachedProduct } from '../api/cachedProduct'
+import { categoryFiltersQuery, useProduct } from '../api/queries'
 import { ApiError, type FilterDto, type OfferDto, type ProductCardDto } from '../api/types'
 import { BackLink } from '../components/layout/BackLink'
 import { ProductImage } from '../components/product/ProductImage'
@@ -38,11 +40,30 @@ export function ProductPage({ id }: { id: string }) {
       </LoadingState>
     )
   if (product.isError) return <ErrorState onRetry={() => product.refetch()} />
-  return <ProductDetails product={product.data} />
+  return <TrackedDetails product={product.data} />
 }
 
-function ProductDetails({ product }: { product: ProductCardDto }) {
+function TrackedDetails({ product }: { product: ProductCardDto }) {
   useProductView(product.id, product.category.slug)
+  return <ProductDetails product={product} />
+}
+
+/**
+ * Пока сервер готовит страницу (loading.tsx): товар уже есть в кэше — из списка, где по нему нажали, —
+ * показываем его сразу, иначе скелетон. Без запросов и аналитики: их сделает настоящая страница
+ */
+export function ProductPagePreview({ id }: { id: string }) {
+  const client = useQueryClient()
+  // Снимок на момент перехода: превью живёт доли секунды, подписываться на кэш незачем
+  const [cached] = useState(() => findCachedProduct(client, id))
+  return (
+    <LoadingState>
+      {cached ? <ProductDetails product={cached} preview /> : <ProductPageSkeleton />}
+    </LoadingState>
+  )
+}
+
+function ProductDetails({ product, preview = false }: { product: ProductCardDto; preview?: boolean }) {
   const { t } = useTranslation()
   const href = useHref()
   const offers = sortOffers(product.offers)
@@ -103,7 +124,7 @@ function ProductDetails({ product }: { product: ProductCardDto }) {
           </div>
 
           <Offers product={product} offers={offers} compared={compared} />
-          <Attributes product={product} />
+          <Attributes product={product} preview={preview} />
         </div>
       </div>
     </>
@@ -189,9 +210,10 @@ function Offers({ product, offers, compared }: { product: ProductCardDto; offers
 }
 
 /** Подписи атрибутов берём из schema фильтров категории; ключи без подписи не показываем */
-function Attributes({ product }: { product: ProductCardDto }) {
+function Attributes({ product, preview }: { product: ProductCardDto; preview: boolean }) {
   const { t } = useTranslation()
-  const schema = useCategoryFilters(product.category.slug)
+  // В превью — только то, что уже в кэше (со страницы категории): за schema сходит сервер
+  const schema = useQuery({ ...categoryFiltersQuery(product.category.slug), enabled: !preview })
   const rows = (schema.data?.filters ?? []).flatMap((filter: FilterDto) => {
     const value = product.attributes[filter.key]
     return value === undefined || value === null ? [] : [{ key: filter.key, label: filterLabel(t, filter), value }]

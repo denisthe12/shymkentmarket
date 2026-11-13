@@ -121,6 +121,16 @@ backend-down build PASS. Planned URLs: https://aktau.market / https://api.aktau.
 
 ## Журнал
 
+### Сессия 27 — 2026-11-13 (мгновенный переход на слабой сети)
+- Проблема пользователя: на слабом интернете клик по плитке/карточке ничего не показывает, пока сервер не ответит (страницы SSR, данные в HTML).
+- **`loading.tsx` пробовали и отказались:** со стримингом `/collections/nope` отдаёт 200 вместо 404, а в HTML попадает `loading-state` — ломает e2e `pages`/`szpt`/SEO-контракт. Удалены.
+- Решение — клиентская заглушка `components/layout/NavigationPreview.tsx` (в `(site)/layout.tsx` вокруг children): capture-слушатель клика по `<a>` (`lib/navigationPreview.ts`: `clickTarget` — обычный левый клик, тот же origin, другая страница без учёта языка; `previewRoute` — товар/категория/СЗПТ/каталог/аналитика). Через `PREVIEW_DELAY = 120` мс текущая страница скрывается (`hidden`, не размонтируется), на её месте — будущая, скролл наверх. Снимается при смене `usePathname` (сброс во время рендера) и на `popstate`.
+- **Оптимистичный товар:** `api/cachedProduct.ts` `findCachedProduct` ищет `ProductCardDto` в кэше (`['product', id]`, списки `['products']`, `['szpt-products']`) → `ProductPagePreview` рисует настоящий `ProductDetails` (preview: без аналитики, schema только из кэша), иначе `ProductPageSkeleton`. Всё под `LoadingState` (aria-hidden + «Загрузка…»).
+- Категория: `CategoryPageLoading` — шапка с названием из кэша категорий + `CategoryPageSkeleton title={false}`; `CategoryHeader` вынесен. `CatalogPageLoading`, `DashboardPageLoading` — настоящие заголовки + скелетоны.
+- Бесконечная прокрутка: `LoadMore` при загрузке вместо кнопки «Загрузка…» рисует ряд скелетон-карточек (`wide` → 4, иначе 3), продолжающий сетку.
+- `prefetch={false}` на плитках категорий оставлен (e2e `catalog-network` это требует).
+- Проверено: typecheck, oxlint (2 старых), 349 unit (+`NavigationPreview.test` 8, `RouteLoading.test` 7, LoadMore +1), e2e `PW_CHANNEL=chrome` 79 passed (+`e2e/slow-navigation.spec.ts`: RSC задержан на 2.5 с — заглушка < 1 с, товар с названием и ценой, «Назад» снимает заглушку). Не закоммичено.
+
 ### Сессия 26 — 2026-11-12 (бесконечная прокрутка списков)
 - По просьбе пользователя: `components/catalog/LoadMore.tsx` — «Показать ещё» + `IntersectionObserver` (rootMargin 600px). Сами грузим первые `AUTO_PAGES = 5` страниц (24 × 5 = 120 товаров), дальше только по кнопке, чтобы был доступен футер (там email). Не грузим сами после ошибки и пока показан placeholder (смена фильтров); `fetchNextPage({ cancelRefetch: false })` — без дублей запросов. Бэк не менялся: те же limit/offset запросы.
 - Подключено в Category/Szpt/Search и «Топ разброса» на главной (блок последний на странице; по 8 id из `priceSpreads`, каждая карточка — свой запрос, авто до 40 карточек). Аналитика (дашборд) — по-прежнему по кнопке (пользователь: в аналитике не надо).
