@@ -17,22 +17,22 @@ This section is the single source of truth for the active SHA and the rollback
 target. Runbooks and other production docs link here instead of copying SHAs;
 update only this section after a release.
 
-- Active: `a08ff7165f9922b1497c26928aad7fa92e55f948` (Go 1.27.4 rebuild for GO-2026-6859,
-  PR #108; no API code change since `1cbd535`). Manual cutover 2026-11-11 13:41Z; evidence in
-  `docs/production/reports/GO_1_27_4_API_RELEASE_REPORT.md`.
-- Rollback target: `1cbd535562cca1852942683a3c0f0f717db181b3` (image kept on the VPS;
-  release.env backup `/root/adilbaga-release.env.1cbd535.1794404467`).
-- Images kept on the VPS (checked 2026-11-11): `695f7e3`, `e6ef854`, `d6098f6`,
-  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`.
+- Active: `98427c3889cb8bb6844749fe4baa5c7bbc847cf8` (SCRUM-25 SZPT group-rule hotfix, PR #120).
+  Manual cutover 2026-11-13 12:32Z; evidence in `docs/production/reports/SZPT_API_RELEASE_REPORT.md`.
+- Rollback target: `e3fa08ea553e35670fd28e4293522750c0176bc7` (SZPT endpoints, PR #115; image kept
+  on the VPS; release.env backup `/root/adilbaga-release.env.e3fa08e.1794573129`).
+- Images kept on the VPS (checked 2026-11-13): `695f7e3`, `e6ef854`, `d6098f6`,
+  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`, `e3fa08e`, `98427c3`.
 - Deploy broker installed: `/usr/local/lib/adilbaga-deploy/auto_broker.py`
   SHA-256 `7b8f5320…` (PR #104, installed 2026-11-08). Every broker release needs
   a new exact-artifact root approval; see `docs/production/AUTO_DEPLOY_SETUP.md`.
-- Last check 2026-11-11 13:54Z: healthy, 0 restarts, ready 200, cloudflared active,
+- Last check 2026-11-13 12:47Z: healthy, 0 restarts, ready 200, cloudflared active,
   no ERROR/5xx in the new container log.
 
 History: the first Go release was `e6ef854` (2026-10-08, Part15 report); the same-day
 `d6098f6` rollout was rolled back after a public Voice HTTP500. Later releases:
-`438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`. HSTS stays deferred;
+`438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`, `e3fa08e` (SZPT
+endpoints, 2026-11-12), `98427c3` (SZPT group-rule hotfix, 2026-11-13). HSTS stays deferred;
 ingestion is the separate `ops/sync/` units, not part of an API release.
 
 Use curl or an explicitly identified operator User-Agent for edge probes. Generic
