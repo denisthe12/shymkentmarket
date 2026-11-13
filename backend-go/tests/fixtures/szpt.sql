@@ -55,7 +55,18 @@ INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","s
 ('raw-47','dina','47','Fixture',990,'szpt-v1'),
 ('raw-48','dina','48','Fixture',1300,'szpt-v1'),
 ('raw-49','dina','49','Fixture',1100,'szpt-v1'),
-('raw-50','dina','50','Fixture',2133,'szpt-v1');
+('raw-50','dina','50','Fixture',2133,'szpt-v1'),
+('raw-51','dina','51','Fixture',1890,'szpt-v1'),
+('raw-52','dina','52','Fixture',1650,'szpt-v1'),
+('raw-53','dina','53','Fixture',1450,'szpt-v1'),
+('raw-54','dina','54','Fixture',1350,'szpt-v1'),
+('raw-55','dina','55','Fixture',1990,'szpt-v1'),
+('raw-56','dina','56','Fixture',560,'szpt-v1'),
+('raw-57','dina','57','Fixture',540,'szpt-v1'),
+('raw-58','dina','58','Fixture',890,'szpt-v1'),
+('raw-59','dina','59','Fixture',430,'szpt-v1'),
+('raw-60','dina','60','Fixture',1400,'szpt-v1'),
+('raw-61','dina','61','Fixture',1700,'szpt-v1');
 INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('r1','Рис Кызылординский 800 г',NULL,'groats','{"weightGrams":800}'),
 ('r2','Рис Полтава Краснодарский 0.9 кг',NULL,'groats','{"weightGrams":900}'),
@@ -105,7 +116,18 @@ INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('u2','Масло сливочное Крестьянское 72.5% 180 г',NULL,'dairy','{"weightGrams":180,"fatPercent":72.5}'),
 ('u3','Масло сливочное Простоквашино 82.5% 180 г',NULL,'dairy','{"weightGrams":180,"fatPercent":82.5}'),
 ('u4','Масло сливочное солёное 72.5% 200 г',NULL,'dairy','{"weightGrams":200,"fatPercent":72.5}'),
-('u5','Масло спред Златые горы Крестьянское 72,5% вес',NULL,'dairy','{"fatPercent":72.5}');
+('u5','Масло спред Златые горы Крестьянское 72,5% вес',NULL,'dairy','{"fatPercent":72.5}'),
+('h7','Сыр Galbani Mozzarella 45% maxi 725505 250г Италия 1/8',NULL,'dairy','{"weightGrams":250,"fatPercent":45}'),
+('h8','Сыр мягкий Kaserei Champignon Бри 50% 125 г',NULL,'dairy','{"weightGrams":125,"fatPercent":50}'),
+('h9','Сыр President Le Blue 50% 100 г',NULL,'dairy','{"weightGrams":100,"fatPercent":50}'),
+('h10','Сыр Брест-Литовский классический 45% 200 г',NULL,'dairy','{"weightGrams":200,"fatPercent":45}'),
+('h11','Сыр твердый Dziugas пармезан Gold 40% 100 г',NULL,'dairy','{"weightGrams":100,"fatPercent":40}'),
+('c5','Творог Савушкин 101 зерно Малина 5% 130 г',NULL,'dairy','{"weightGrams":130,"fatPercent":5}'),
+('c6','Творог зерненый 101 зерно+сливки 5% 130г',NULL,'dairy','{"weightGrams":130,"fatPercent":5}'),
+('r10','Рис Увелка восточный обработанный паром 800г',NULL,'groats','{"weightGrams":800}'),
+('m8','Молокосодержащий продукт Милоко 3,2% 0,95 л',NULL,'milk','{"volumeMl":950,"fatPercent":3.2}'),
+('h12','Сыр Российский Сырная фабрика 45% 200 г',NULL,'dairy','{"weightGrams":200,"fatPercent":45}'),
+('h13','Сыр Бри Président 50% 125 г',NULL,'dairy','{"weightGrams":125,"fatPercent":50}');
 INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","inStock","snapshotAt","snapshotId") VALUES
 ('off-1','r1','raw-1','dina',600,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-2','r1','raw-2','dana',640,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
@@ -156,4 +178,15 @@ INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldP
 ('off-47','u2','raw-47','dina',990,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-48','u3','raw-48','dina',1300,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-49','u4','raw-49','dina',1100,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
-('off-50','u5','raw-50','dina',2133,NULL,true,'2026-11-11 01:00:00','szpt-v1');
+('off-50','u5','raw-50','dina',2133,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-51','h7','raw-51','dina',1890,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-52','h8','raw-52','dina',1650,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-53','h9','raw-53','dina',1450,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-54','h10','raw-54','dina',1350,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-55','h11','raw-55','dina',1990,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-56','c5','raw-56','dina',560,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-57','c6','raw-57','dina',540,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-58','r10','raw-58','dina',890,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-59','m8','raw-59','dina',430,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-60','h12','raw-60','dina',1400,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-61','h13','raw-61','dina',1700,NULL,true,'2026-11-11 01:00:00','szpt-v1');
