@@ -80,7 +80,7 @@ export function SearchPage() {
               <ProductGrid products={items} wide />
             </div>
           )}
-          <LoadMore {...infiniteLoadMore(products)} />
+          <LoadMore {...infiniteLoadMore(products)} wide />
         </section>
       )}
     </>

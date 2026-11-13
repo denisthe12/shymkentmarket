@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useCategories, useCategoryFilters, useProductPages } from '../api/queries'
+import { categoriesQuery, useCategories, useCategoryFilters, useProductPages } from '../api/queries'
 import { ApiError } from '../api/types'
 import { DynamicFilters } from '../components/catalog/DynamicFilters'
 import { BackLink } from '../components/layout/BackLink'
@@ -28,7 +29,6 @@ import { trackProductEvent, useCategoryView } from '../lib/pilot-analytics'
 /** Schema, категории и первая страница товаров (с фильтрами из URL) приходят с сервера */
 export function CategoryPage({ slug }: { slug: string }) {
   const { t } = useTranslation()
-  const href = useHref()
   const pathname = usePathname()
   const params = useSearchParams()
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -57,28 +57,14 @@ export function CategoryPage({ slug }: { slug: string }) {
   const category = categories.data?.find((c) => c.slug === slug)
   useCategoryView(slug, !!category && schema.isSuccess && products.isSuccess && !products.isPlaceholderData)
   if (schema.error instanceof ApiError && schema.error.status === 404) return <NotFoundPage />
-  if (schema.isPending)
-    return (
-      <LoadingState>
-        <CategoryPageSkeleton />
-      </LoadingState>
-    )
+  if (schema.isPending) return <CategoryLoading name={category && categoryName(t, category)} />
 
   const items = products.data?.pages.flat() ?? []
   const hasFilters = filters.length > 0
 
   return (
     <>
-      {/* «Назад» — как на странице товара: пришли из поиска или с товара — туда, извне — в каталог */}
-      <div className="flex items-center gap-4">
-        <BackLink fallbackHref={href('/catalog')} />
-        <nav aria-label={t('category.breadcrumbs')} className="text-sm text-muted">
-          <Link href={href('/catalog')} className="hover:text-ink">
-            {t('nav.home')}
-          </Link>
-        </nav>
-      </div>
-      <h1 className="mt-3 min-h-[1.2em] text-h1">{category && categoryName(t, category)}</h1>
+      <CategoryHeader name={category && categoryName(t, category)} />
 
       {schema.isError && <ErrorState onRetry={() => schema.refetch()} />}
 
@@ -147,7 +133,7 @@ export function CategoryPage({ slug }: { slug: string }) {
                   <ProductGrid products={items} wide={!hasFilters} />
                 </div>
               )}
-              <LoadMore {...infiniteLoadMore(products)} />
+              <LoadMore {...infiniteLoadMore(products)} wide={!hasFilters} />
             </section>
           </div>
         </div>
@@ -176,4 +162,43 @@ export function CategoryPage({ slug }: { slug: string }) {
       )}
     </>
   )
+}
+
+/** «Назад» — как на странице товара: пришли из поиска или с товара — туда, извне — в каталог */
+function CategoryHeader({ name }: { name: string | undefined }) {
+  const { t } = useTranslation()
+  const href = useHref()
+  return (
+    <>
+      <div className="flex items-center gap-4">
+        <BackLink fallbackHref={href('/catalog')} />
+        <nav aria-label={t('category.breadcrumbs')} className="text-sm text-muted">
+          <Link href={href('/catalog')} className="hover:text-ink">
+            {t('nav.home')}
+          </Link>
+        </nav>
+      </div>
+      <h1 className="mt-3 min-h-[1.2em] text-h1">{name}</h1>
+    </>
+  )
+}
+
+/** Название уже известно (категории в кэше) — шапка настоящая, ниже скелетон фильтров и товаров */
+function CategoryLoading({ name }: { name: string | undefined }) {
+  return (
+    <>
+      {name && <CategoryHeader name={name} />}
+      <LoadingState>
+        <CategoryPageSkeleton title={!name} />
+      </LoadingState>
+    </>
+  )
+}
+
+/** Пока сервер готовит страницу категории (loading.tsx). Без запросов: только то, что уже в кэше */
+export function CategoryPageLoading({ slug }: { slug: string }) {
+  const { t } = useTranslation()
+  const client = useQueryClient()
+  const category = client.getQueryData(categoriesQuery().queryKey)?.find((c) => c.slug === slug)
+  return <CategoryLoading name={category && categoryName(t, category)} />
 }

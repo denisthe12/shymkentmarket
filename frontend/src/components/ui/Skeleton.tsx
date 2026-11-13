@@ -110,11 +110,14 @@ export function ProductPageSkeleton() {
   )
 }
 
-/** Как страница категории: с lg — колонка карточек-фильтров, над товарами — строка управления */
-export function CategoryPageSkeleton() {
+/**
+ * Как страница категории: с lg — колонка карточек-фильтров, над товарами — строка управления.
+ * title={false} — шапка уже настоящая (название известно), скелетон только ниже
+ */
+export function CategoryPageSkeleton({ title = true }: { title?: boolean }) {
   return (
     <div data-testid="category-page-skeleton">
-      <TitleSkeleton />
+      {title && <TitleSkeleton />}
       <div className="mt-6 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
         <div className="hidden flex-col gap-2 lg:flex">
           {[0, 1, 2].map((i) => (
