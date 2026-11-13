@@ -52,7 +52,7 @@ func TestDeterministicSzpt(t *testing.T) {
 			"buckwheat":      {"b1"},
 			"sour-cream":     {"s1"},
 			"cottage-cheese": {"c1", "c2", "c6"},
-			"cheese":         {"h1", "h10", "h11", "h2", "h3"},
+			"cheese":         {"h1", "h10", "h11", "h12", "h2", "h3"},
 			"milk":           {"m1", "m2"},
 			"kefir":          {"k1"},
 			"sunflower-oil":  {"o1"},

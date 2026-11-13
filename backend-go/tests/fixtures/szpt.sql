@@ -64,7 +64,9 @@ INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","s
 ('raw-56','dina','56','Fixture',560,'szpt-v1'),
 ('raw-57','dina','57','Fixture',540,'szpt-v1'),
 ('raw-58','dina','58','Fixture',890,'szpt-v1'),
-('raw-59','dina','59','Fixture',430,'szpt-v1');
+('raw-59','dina','59','Fixture',430,'szpt-v1'),
+('raw-60','dina','60','Fixture',1400,'szpt-v1'),
+('raw-61','dina','61','Fixture',1700,'szpt-v1');
 INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('r1','Рис Кызылординский 800 г',NULL,'groats','{"weightGrams":800}'),
 ('r2','Рис Полтава Краснодарский 0.9 кг',NULL,'groats','{"weightGrams":900}'),
@@ -123,7 +125,9 @@ INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('c5','Творог Савушкин 101 зерно Малина 5% 130 г',NULL,'dairy','{"weightGrams":130,"fatPercent":5}'),
 ('c6','Творог зерненый 101 зерно+сливки 5% 130г',NULL,'dairy','{"weightGrams":130,"fatPercent":5}'),
 ('r10','Рис Увелка восточный обработанный паром 800г',NULL,'groats','{"weightGrams":800}'),
-('m8','Молокосодержащий продукт Милоко 3,2% 0,95 л',NULL,'milk','{"volumeMl":950,"fatPercent":3.2}');
+('m8','Молокосодержащий продукт Милоко 3,2% 0,95 л',NULL,'milk','{"volumeMl":950,"fatPercent":3.2}'),
+('h12','Сыр Российский Сырная фабрика 45% 200 г',NULL,'dairy','{"weightGrams":200,"fatPercent":45}'),
+('h13','Сыр Бри Président 50% 125 г',NULL,'dairy','{"weightGrams":125,"fatPercent":50}');
 INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","inStock","snapshotAt","snapshotId") VALUES
 ('off-1','r1','raw-1','dina',600,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-2','r1','raw-2','dana',640,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
@@ -183,4 +187,6 @@ INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldP
 ('off-56','c5','raw-56','dina',560,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-57','c6','raw-57','dina',540,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-58','r10','raw-58','dina',890,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
-('off-59','m8','raw-59','dina',430,NULL,true,'2026-11-11 01:00:00','szpt-v1');
+('off-59','m8','raw-59','dina',430,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-60','h12','raw-60','dina',1400,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-61','h13','raw-61','dina',1700,NULL,true,'2026-11-11 01:00:00','szpt-v1');
