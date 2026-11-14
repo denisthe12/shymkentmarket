@@ -22,7 +22,7 @@ type szptProductWire struct {
 
 // parseSzptQuery accepts only size (repeated decimal > 0), sort, limit and offset (single).
 func parseSzptQuery(group string, raw url.Values) (szpt.Query, error) {
-	q := szpt.Query{Group: group, Sort: szpt.PriceAsc, Limit: 24}
+	q := szpt.Query{Group: group, Limit: 24}
 	for key, values := range raw {
 		switch key {
 		case "size":

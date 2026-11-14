@@ -24,12 +24,21 @@ type testSzpt struct {
 }
 
 func (r *testSzpt) ListGroups(context.Context) ([]szpt.Group, error) {
-	return []szpt.Group{{Slug: "rice", Name: "Рис", Unit: szpt.Kg, Sizes: []float64{500, 1000}, Count: 2, DefaultSort: szpt.PriceAsc}}, r.err
+	return []szpt.Group{{Slug: "rice", Name: "Рис", Unit: szpt.Kg, Sizes: []float64{500, 1000}, Count: 2, DefaultSort: szpt.PriceAsc},
+		{Slug: "potatoes", Name: "Картофель", Unit: szpt.Kg, Sizes: []float64{}, Count: 3, DefaultSort: szpt.UnitPriceAsc}}, r.err
 }
 func (r *testSzpt) ListProducts(_ context.Context, q szpt.Query) ([]szpt.Product, error) {
 	r.calls++
 	r.query = q
 	unit := szpt.UnitPrice{Value: 840, Unit: szpt.Kg}
+	if q.Group == "potatoes" {
+		return []szpt.Product{{
+			Product:      catalog.Product{ID: "p1", Name: "Картофель", Attributes: map[string]json.RawMessage{}, MinPrice: 300},
+			SoldByWeight: true,
+			UnitPrice:    &unit,
+			Offers:       []szpt.Offer{{Offer: catalog.Offer{StoreCode: catalog.DINA, StoreName: "Dina", Price: 300}, UnitPrice: &unit, SoldByWeight: true}},
+		}}, r.err
+	}
 	return []szpt.Product{{
 		Product: catalog.Product{ID: "r3", Name: "Рис Тест 500 г", Attributes: map[string]json.RawMessage{}, MinPrice: 420,
 			SnapshotAt: time.Date(2026, 11, 11, 1, 0, 51, 947e6, time.UTC)},
@@ -43,9 +52,10 @@ func TestParseSzptQuery(t *testing.T) {
 		raw  string
 		want szpt.Query
 	}{
-		{"", szpt.Query{Group: "rice", Sort: szpt.PriceAsc, Limit: 24}},
-		{"size=800&size=1000", szpt.Query{Group: "rice", Sizes: []float64{800, 1000}, Sort: szpt.PriceAsc, Limit: 24}},
-		{"size=1000.0", szpt.Query{Group: "rice", Sizes: []float64{1000}, Sort: szpt.PriceAsc, Limit: 24}},
+		{"", szpt.Query{Group: "rice", Limit: 24}},
+		{"size=800&size=1000", szpt.Query{Group: "rice", Sizes: []float64{800, 1000}, Limit: 24}},
+		{"size=1000.0", szpt.Query{Group: "rice", Sizes: []float64{1000}, Limit: 24}},
+		{"sort=price_asc", szpt.Query{Group: "rice", Sort: szpt.PriceAsc, Limit: 24}},
 		{"sort=unit_price_asc&limit=5&offset=10", szpt.Query{Group: "rice", Sort: szpt.UnitPriceAsc, Limit: 5, Offset: 10}},
 	}
 	for _, c := range ok {
@@ -83,7 +93,7 @@ func TestSzptRoutes(t *testing.T) {
 	s := szptRouter(repo)
 	w := s.get("GET", "/api/szpt")
 	if w.Code != 200 || w.Header().Get("Content-Type") != "application/json" ||
-		w.Body.String() != `{"groups":[{"slug":"rice","name":"Рис","unit":"kg","sizes":[500,1000],"count":2,"defaultSort":"price_asc"}]}` {
+		w.Body.String() != `{"groups":[{"slug":"rice","name":"Рис","unit":"kg","sizes":[500,1000],"count":2,"defaultSort":"price_asc"},{"slug":"potatoes","name":"Картофель","unit":"kg","sizes":[],"count":3,"defaultSort":"unit_price_asc"}]}` {
 		t.Fatalf("groups: %d %s", w.Code, w.Body.String())
 	}
 	w = s.get("GET", "/api/szpt/rice/products?sort=unit_price_asc")
@@ -99,6 +109,10 @@ func TestSzptRoutes(t *testing.T) {
 	}
 	if strings.Count(body, `"offers"`) != 1 {
 		t.Errorf("catalog offers must be replaced, not duplicated: %s", body)
+	}
+	w = s.get("GET", "/api/szpt/potatoes/products")
+	if w.Code != 200 || repo.query.Sort != "" || strings.Count(w.Body.String(), `"soldByWeight":true`) != 2 {
+		t.Errorf("weighted: %d %+v %s", w.Code, repo.query, w.Body.String())
 	}
 	calls := repo.calls
 	if w := s.get("GET", "/api/szpt/nope/products"); w.Code != 404 || repo.calls != calls {

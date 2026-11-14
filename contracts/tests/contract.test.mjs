@@ -91,7 +91,7 @@ test('szpt query parameters and unit price are frozen', () => {
   const parameters = spec.paths['/api/szpt/{group}/products'].get.parameters;
   const byName = (name) => parameters.find((p) => p.name === name);
   assert.deepEqual(byName('sort').schema,
-    { type: 'string', enum: ['price_asc', 'unit_price_asc'], default: 'price_asc' });
+    { type: 'string', enum: ['price_asc', 'unit_price_asc'] });
   const products = spec.paths['/api/products'].get.parameters;
   for (const name of ['limit', 'offset']) {
     assert.deepEqual(byName(name).schema, products.find((p) => p.name === name).schema);
