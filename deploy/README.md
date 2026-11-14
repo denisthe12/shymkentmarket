@@ -17,22 +17,24 @@ This section is the single source of truth for the active SHA and the rollback
 target. Runbooks and other production docs link here instead of copying SHAs;
 update only this section after a release.
 
-- Active: `98427c3889cb8bb6844749fe4baa5c7bbc847cf8` (SCRUM-25 SZPT group-rule hotfix, PR #120).
-  Manual cutover 2026-11-13 12:32Z; evidence in `docs/production/reports/SZPT_API_RELEASE_REPORT.md`.
-- Rollback target: `e3fa08ea553e35670fd28e4293522750c0176bc7` (SZPT endpoints, PR #115; image kept
-  on the VPS; release.env backup `/root/adilbaga-release.env.e3fa08e.1794573129`).
-- Images kept on the VPS (checked 2026-11-13): `695f7e3`, `e6ef854`, `d6098f6`,
-  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`, `e3fa08e`, `98427c3`.
+- Active: `c7ba31f2a78a9869b5952fdb7345237a8367f7ec` (SZPT phase 2: weighted goods, 25 groups, PR #122;
+  needs migration `20261114000000_offer_price_basis`, applied 2026-11-14). Manual cutover 2026-11-14 14:41Z;
+  evidence in `docs/production/reports/SZPT_WEIGHTED_RELEASE_REPORT.md`.
+- Rollback target: `98427c3889cb8bb6844749fe4baa5c7bbc847cf8` (SZPT group-rule hotfix, PR #120; image kept
+  on the VPS; release.env backup `/root/adilbaga-release.env.98427c3.1794667266`). `98427c3` does not read
+  `offer_price_basis`, so the view may stay after an API rollback; drop the view only after the API rollback.
+- Images kept on the VPS (checked 2026-11-14): `695f7e3`, `e6ef854`, `d6098f6`,
+  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`, `e3fa08e`, `98427c3`, `c7ba31f`.
 - Deploy broker installed: `/usr/local/lib/adilbaga-deploy/auto_broker.py`
   SHA-256 `7b8f5320…` (PR #104, installed 2026-11-08). Every broker release needs
   a new exact-artifact root approval; see `docs/production/AUTO_DEPLOY_SETUP.md`.
-- Last check 2026-11-13 12:47Z: healthy, 0 restarts, ready 200, cloudflared active,
+- Last check 2026-11-14 14:57Z: healthy, 0 restarts, ready PASS, cloudflared active,
   no ERROR/5xx in the new container log.
 
 History: the first Go release was `e6ef854` (2026-10-08, Part15 report); the same-day
 `d6098f6` rollout was rolled back after a public Voice HTTP500. Later releases:
 `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`, `e3fa08e` (SZPT
-endpoints, 2026-11-12), `98427c3` (SZPT group-rule hotfix, 2026-11-13). HSTS stays deferred;
+endpoints, 2026-11-12), `98427c3` (SZPT group-rule hotfix, 2026-11-13), `c7ba31f` (SZPT weighted goods, 2026-11-14). HSTS stays deferred;
 ingestion is the separate `ops/sync/` units, not part of an API release.
 
 Use curl or an explicitly identified operator User-Agent for edge probes. Generic

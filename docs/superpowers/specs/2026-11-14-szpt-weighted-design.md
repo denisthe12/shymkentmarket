@@ -138,8 +138,8 @@ GRANT SELECT ON public.offer_price_basis TO aktau_api_reader;
   `b."snapshotId" = <снимок>` в `ON` левого соединения PostgreSQL проталкивает внутрь view, и `offers` и
   `raw_products` читаются только за один снимок, а не за все 14 хранимых.
 - Откат (только после отката API, иначе новый API упадёт на запросах):
-  `DROP VIEW public.offer_price_basis;`, затем
-  `pnpm exec prisma migrate resolve --rolled-back 20261114000000_offer_price_basis` — иначе `_prisma_migrations`
+  `DROP VIEW public.offer_price_basis;` и
+  `DELETE FROM public._prisma_migrations WHERE migration_name = '20261114000000_offer_price_basis'` в той же транзакции, что и `DROP VIEW` (проверено 2026-11-14 на локальной базе: `prisma migrate resolve --rolled-back` для успешно применённой миграции падает с P3012, а строка с `rolled_back_at` по-прежнему считается применённой) — иначе `_prisma_migrations`
   считает миграцию применённой и следующий `migrate deploy` view не создаст. Данные не трогаются, старый API
   view не читает.
 
@@ -329,8 +329,8 @@ Dina не разбирает — там множитель 1000, Anvar разб�
 
 Откат: фронт — откат деплоя Vercel (не нужен: со старым API он совместим); API — авто-откат cutover-скрипта на
 `98427c3`; view — только после отката API (иначе новый API упадёт на запросах): `DROP VIEW public.offer_price_basis;`,
-затем `pnpm exec prisma migrate resolve --rolled-back 20261114000000_offer_price_basis`, чтобы следующий
-`migrate deploy` создал view заново.
+и в той же транзакции удалить строку миграции из `_prisma_migrations` (`migrate resolve --rolled-back` здесь не
+работает, P3012), чтобы следующий `migrate deploy` создал view заново.
 
 ## Готово, когда
 
