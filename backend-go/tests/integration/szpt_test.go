@@ -132,9 +132,20 @@ func TestDeterministicSzpt(t *testing.T) {
 			slugs = append(slugs, g.Slug)
 			bySlug[g.Slug] = g
 		}
+		// szpt.Groups order, empty groups omitted. Task 4 adds fixture rows for the remaining new groups.
+		present := map[string]bool{}
+		for _, slug := range []string{"rice", "buckwheat", "sour-cream", "cottage-cheese", "cheese", "milk", "kefir",
+			"sunflower-oil", "eggs", "butter", "potatoes", "cucumbers", "sugar", "beef", "minced-meat", "chicken"} {
+			present[slug] = true
+		}
+		for slug := range bySlug {
+			present[slug] = true
+		}
 		order := make([]string, 0, len(szpt.Groups))
 		for _, g := range szpt.Groups {
-			order = append(order, g.Slug)
+			if present[g.Slug] {
+				order = append(order, g.Slug)
+			}
 		}
 		if !reflect.DeepEqual(slugs, order) {
 			t.Fatalf("groups = %v, want %v", slugs, order)
@@ -256,8 +267,135 @@ func TestDeterministicSzpt(t *testing.T) {
 		}
 	})
 
+	find := func(t *testing.T, products []szpt.Product, id string) *szpt.Product {
+		t.Helper()
+		for i := range products {
+			if products[i].ID == id {
+				return &products[i]
+			}
+		}
+		t.Fatalf("%s missing from %v", id, szptIDs(products))
+		return nil
+	}
+	kg := func(v float64) szpt.UnitPrice { return szpt.UnitPrice{Value: v, Unit: szpt.Kg} }
+
+	t.Run("weighted_membership", func(t *testing.T) {
+		equal := map[string][]string{
+			"potatoes":    {"w-pot1", "w-pot2"},
+			"cucumbers":   {"w-cuc1", "w-cuc2"},
+			"minced-meat": {"w-mince-p1", "w-mince-p2", "w-mince-p3", "w-mince-w"},
+		}
+		for slug, ids := range equal {
+			got := szptIDs(list(t, szpt.Query{Group: slug}))
+			sort.Strings(got)
+			if !reflect.DeepEqual(got, ids) {
+				t.Errorf("%s = %v, want %v", slug, got, ids)
+			}
+		}
+		find(t, list(t, szpt.Query{Group: "chicken"}), "w-chk1")
+		find(t, list(t, szpt.Query{Group: "beef"}), "w-beef1")
+		h14 := find(t, list(t, szpt.Query{Group: "cheese"}), "h14")
+		if h14.SoldByWeight || h14.UnitPrice == nil || *h14.UnitPrice != kg(3000) {
+			t.Errorf("h14 = soldByWeight %v, unitPrice %+v; want false, 3000 kg (phase 1, by package)", h14.SoldByWeight, h14.UnitPrice)
+		}
+		for _, o := range h14.Offers {
+			if o.SoldByWeight {
+				t.Errorf("h14 offer %s soldByWeight in a non-weighted group", o.StoreCode)
+			}
+		}
+	})
+
+	t.Run("weighted_prices", func(t *testing.T) {
+		chk := find(t, list(t, szpt.Query{Group: "chicken"}), "w-chk1")
+		if !chk.SoldByWeight || chk.UnitPrice == nil || *chk.UnitPrice != kg(822.22) || chk.MinPrice != 1480 {
+			t.Errorf("w-chk1 = soldByWeight %v, unitPrice %+v, minPrice %d", chk.SoldByWeight, chk.UnitPrice, chk.MinPrice)
+		}
+		if len(chk.Offers) != 1 || !chk.Offers[0].SoldByWeight || chk.Offers[0].UnitPrice == nil || *chk.Offers[0].UnitPrice != kg(822.22) {
+			t.Errorf("w-chk1 offers = %+v", chk.Offers)
+		}
+		cuc := find(t, list(t, szpt.Query{Group: "cucumbers"}), "w-cuc1")
+		if !cuc.SoldByWeight || cuc.UnitPrice == nil || *cuc.UnitPrice != kg(539) || cuc.MinPrice != 539 {
+			t.Errorf("w-cuc1 = soldByWeight %v, unitPrice %+v, minPrice %d", cuc.SoldByWeight, cuc.UnitPrice, cuc.MinPrice)
+		}
+		p1 := find(t, list(t, szpt.Query{Group: "minced-meat"}), "w-mince-p1")
+		if p1.SoldByWeight || p1.UnitPrice == nil || *p1.UnitPrice != kg(2440) || len(p1.Offers) != 1 || p1.Offers[0].SoldByWeight || *p1.Offers[0].UnitPrice != kg(2440) {
+			t.Errorf("w-mince-p1 = %+v", p1)
+		}
+	})
+
+	t.Run("weighted_sorts", func(t *testing.T) {
+		unit := []string{"w-mince-p1", "w-mince-p2", "w-mince-w", "w-mince-p3"}
+		price := []string{"w-mince-p1", "w-mince-p2", "w-mince-p3", "w-mince-w"}
+		cases := []struct {
+			sort szpt.Sort
+			want []string
+		}{{"", unit}, {szpt.UnitPriceAsc, unit}, {szpt.PriceAsc, price}}
+		for _, c := range cases {
+			products := list(t, szpt.Query{Group: "minced-meat", Sort: c.sort})
+			if got := szptIDs(products); !reflect.DeepEqual(got, c.want) {
+				t.Errorf("sort %q = %v, want %v", c.sort, got, c.want)
+			}
+			paged := []string{}
+			for offset := int64(0); offset < 4; offset++ {
+				paged = append(paged, szptIDs(list(t, szpt.Query{Group: "minced-meat", Sort: c.sort, Limit: 1, Offset: offset}))...)
+			}
+			if !reflect.DeepEqual(paged, c.want) {
+				t.Errorf("sort %q paged = %v, want %v", c.sort, paged, c.want)
+			}
+		}
+		want := map[string]szpt.UnitPrice{"w-mince-p1": kg(2440), "w-mince-p2": kg(3928), "w-mince-w": kg(4420), "w-mince-p3": kg(4600)}
+		for _, p := range list(t, szpt.Query{Group: "minced-meat"}) {
+			if p.UnitPrice == nil || *p.UnitPrice != want[p.ID] || p.SoldByWeight != (p.ID == "w-mince-w") {
+				t.Errorf("%s = unitPrice %+v, soldByWeight %v", p.ID, p.UnitPrice, p.SoldByWeight)
+			}
+		}
+	})
+
+	t.Run("weighted_groups", func(t *testing.T) {
+		groups, err := repo.ListGroups(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		bySlug := map[string]szpt.Group{}
+		for _, g := range groups {
+			bySlug[g.Slug] = g
+			rule, _ := szpt.Lookup(g.Slug)
+			if g.DefaultSort != rule.DefaultSort() || g.Sizes == nil {
+				t.Errorf("%s: defaultSort %q, sizes %#v", g.Slug, g.DefaultSort, g.Sizes)
+			}
+		}
+		pot := bySlug["potatoes"]
+		if pot.DefaultSort != szpt.UnitPriceAsc || !reflect.DeepEqual(pot.Sizes, []float64{}) || pot.Count != 2 || pot.Unit != szpt.Kg {
+			t.Errorf("potatoes = %+v", pot)
+		}
+		mince := bySlug["minced-meat"]
+		if !reflect.DeepEqual(mince.Sizes, []float64{450, 500, 1000}) || mince.Count != 4 || mince.DefaultSort != szpt.UnitPriceAsc {
+			t.Errorf("minced-meat = %+v", mince)
+		}
+		if bySlug["rice"].DefaultSort != szpt.PriceAsc {
+			t.Errorf("rice = %+v", bySlug["rice"])
+		}
+		if bySlug["cheese"].Count != 7 {
+			t.Errorf("cheese count = %d, want 7 (with h14)", bySlug["cheese"].Count)
+		}
+	})
+
+	t.Run("weighted_sizes", func(t *testing.T) {
+		if got := szptIDs(list(t, szpt.Query{Group: "minced-meat", Sizes: []float64{450}})); !reflect.DeepEqual(got, []string{"w-mince-p1"}) {
+			t.Errorf("minced-meat size 450 = %v", got)
+		}
+		_, err := repo.ListSzptProducts(ctx, szpt.Query{Group: "potatoes", Sizes: []float64{1000}, Limit: 24})
+		if !errors.Is(err, catalog.ErrInvalidQuery) {
+			t.Errorf("potatoes size 1000: err = %v", err)
+		}
+	})
+
 	// Last: the deletion is not restored.
 	t.Run("empty group omitted", func(t *testing.T) {
+		before, err := repo.ListGroups(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if _, err := admin.Exec(ctx, `DELETE FROM offers WHERE "canonicalProductId"='o1'`); err != nil {
 			t.Fatal(err)
 		}
@@ -270,8 +408,8 @@ func TestDeterministicSzpt(t *testing.T) {
 				t.Fatal("empty group must be omitted")
 			}
 		}
-		if len(groups) != len(szpt.Groups)-1 {
-			t.Errorf("groups = %d, want %d", len(groups), len(szpt.Groups)-1)
+		if len(groups) != len(before)-1 {
+			t.Errorf("groups = %d, want %d", len(groups), len(before)-1)
 		}
 	})
 }
