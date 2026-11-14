@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getI18n } from '../i18n'
-import { formatPackSize, formatUnitPrice } from './szpt'
+import type { SzptGroupDto } from '../api/types'
+import { defaultSortOf, formatPackSize, formatUnitPrice, readSzptState, szptParams } from './szpt'
 
 const t = getI18n('ru').t
 const kk = getI18n('kk').t
@@ -26,5 +27,30 @@ describe('formatUnitPrice', () => {
 
   it('uses Kazakh unit names', () => {
     expect(plain(formatUnitPrice({ value: 690, unit: '10pcs' }, kk))).toBe('690 ₸/10 дана')
+  })
+})
+
+const plainGroup: SzptGroupDto = { slug: 'rice', name: 'Рис', unit: 'kg', sizes: [800, 1000], count: 5 }
+const weightedGroup: SzptGroupDto = { ...plainGroup, slug: 'apples', defaultSort: 'unit_price_asc' }
+
+describe('szpt url state', () => {
+  it('defaults the sort to the group default, price_asc for an old API', () => {
+    expect(defaultSortOf(weightedGroup)).toBe('unit_price_asc')
+    expect(defaultSortOf(plainGroup)).toBe('price_asc')
+    expect(readSzptState(new URLSearchParams(''), weightedGroup).sort).toBe('unit_price_asc')
+    expect(readSzptState(new URLSearchParams(''), plainGroup).sort).toBe('price_asc')
+  })
+
+  it('lets ?sort= override the group default and ignores unknown values', () => {
+    expect(readSzptState(new URLSearchParams('sort=price_asc'), weightedGroup).sort).toBe('price_asc')
+    expect(readSzptState(new URLSearchParams('sort=unit_price_asc'), plainGroup).sort).toBe('unit_price_asc')
+    expect(readSzptState(new URLSearchParams('sort=bogus'), weightedGroup).sort).toBe('unit_price_asc')
+  })
+
+  it('writes sort to the URL only when it differs from the group default', () => {
+    expect(szptParams({ sizes: [], sort: 'price_asc' }, weightedGroup).toString()).toBe('sort=price_asc')
+    expect(szptParams({ sizes: [], sort: 'unit_price_asc' }, weightedGroup).toString()).toBe('')
+    expect(szptParams({ sizes: [], sort: 'price_asc' }, plainGroup).toString()).toBe('')
+    expect(szptParams({ sizes: [800], sort: 'unit_price_asc' }, plainGroup).toString()).toBe('size=800&sort=unit_price_asc')
   })
 })

@@ -27,20 +27,26 @@ export function formatUnitPrice(price: UnitPriceDto, t: TFunction): string {
 
 export type SzptState = { group: string; sizes: number[]; sort: SzptSort }
 
+/** Сортировка группы по умолчанию; старый API без поля — по цене упаковки */
+export function defaultSortOf(group: SzptGroupDto): SzptSort {
+  return group.defaultSort ?? 'price_asc'
+}
+
 /**
  * Состояние страницы группы из URL — одно и то же на сервере (prefetch) и клиенте, иначе ключи запроса
  * разойдутся. Фасовки, которых нет у группы, отбрасываются: API ответил бы на них 400
  */
 export function readSzptState(params: URLSearchParams, group: SzptGroupDto): SzptState {
   const sizes = group.sizes.filter((size) => params.getAll('size').some((raw) => Number(raw) === size))
-  const sort: SzptSort = params.get('sort') === 'unit_price_asc' ? 'unit_price_asc' : 'price_asc'
+  const raw = params.get('sort')
+  const sort: SzptSort = raw === 'price_asc' || raw === 'unit_price_asc' ? raw : defaultSortOf(group)
   return { group: group.slug, sizes, sort }
 }
 
-/** Новые параметры URL: фасовки повторяются, сортировка по умолчанию не пишется */
-export function szptParams({ sizes, sort }: Pick<SzptState, 'sizes' | 'sort'>): URLSearchParams {
+/** Новые параметры URL: фасовки повторяются, сортировка по умолчанию для группы не пишется */
+export function szptParams({ sizes, sort }: Pick<SzptState, 'sizes' | 'sort'>, group: SzptGroupDto): URLSearchParams {
   const params = new URLSearchParams()
   for (const size of sizes) params.append('size', String(size))
-  if (sort !== 'price_asc') params.set('sort', sort)
+  if (sort !== defaultSortOf(group)) params.set('sort', sort)
   return params
 }

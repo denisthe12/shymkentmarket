@@ -60,7 +60,7 @@ describe('http adapter', () => {
 describe('szpt http adapter', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('repeats sizes, omits the default sort and pages', async () => {
+  it('repeats sizes, always sends sort and pages', async () => {
     const fetchMock = vi.fn().mockImplementation(async () => new Response('[]'))
     vi.stubGlobal('fetch', fetchMock)
     const api = createHttpAdapter('http://api.test')
@@ -69,7 +69,7 @@ describe('szpt http adapter', () => {
       'http://api.test/api/szpt/rice/products?size=800&size=1000&sort=unit_price_asc&limit=24&offset=0',
     )
     await api.getSzptProducts({ group: 'rice', sort: 'price_asc', limit: 24, offset: 24 })
-    expect(fetchMock.mock.calls[1][0]).toBe('http://api.test/api/szpt/rice/products?limit=24&offset=24')
+    expect(fetchMock.mock.calls[1][0]).toBe('http://api.test/api/szpt/rice/products?sort=price_asc&limit=24&offset=24')
   })
 
   it('unwraps the groups envelope', async () => {
