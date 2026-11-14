@@ -68,6 +68,97 @@ func TestDeterministicSzpt(t *testing.T) {
 		}
 	})
 
+	// Real catalog names of the 15 new groups: every "in" row is a member of its group, every "out" row is not.
+	// Rows are n-<group>-in|out<N> in fixtures/szpt.sql.
+	t.Run("new_groups_membership", func(t *testing.T) {
+		cases := []struct {
+			id    string
+			group string
+			in    bool
+		}{
+			{"n-flour-in1", "flour", true},
+			{"n-flour-in2", "flour", true},
+			{"n-flour-in3", "flour", true},
+			{"n-flour-in4", "flour", true},
+			{"n-flour-out5", "flour", false},
+			{"n-flour-out6", "flour", false},
+			{"n-flour-out7", "flour", false},
+			{"n-flour-out8", "flour", false},
+			{"n-flour-out9", "flour", false},
+			{"n-bread-in10", "bread", true},
+			{"n-bread-in11", "bread", true},
+			{"n-bread-in12", "bread", true},
+			{"n-bread-in13", "bread", true},
+			{"n-bread-out14", "bread", false},
+			{"n-bread-out15", "bread", false},
+			{"n-bread-out16", "bread", false},
+			{"n-bread-out17", "bread", false},
+			{"n-bread-out18", "bread", false},
+			{"n-pasta-horns-in19", "pasta-horns", true},
+			{"n-pasta-horns-in20", "pasta-horns", true},
+			{"n-pasta-horns-in21", "pasta-horns", true},
+			{"n-pasta-horns-out22", "pasta-horns", false},
+			{"n-pasta-horns-out23", "pasta-horns", false},
+			{"n-sugar-in24", "sugar", true},
+			{"n-sugar-in25", "sugar", true},
+			{"n-sugar-in26", "sugar", true},
+			{"n-sugar-in27", "sugar", true},
+			{"n-sugar-out28", "sugar", false},
+			{"n-sugar-out29", "sugar", false},
+			{"n-sugar-out30", "sugar", false},
+			{"n-sugar-out31", "sugar", false},
+			{"n-sugar-out32", "sugar", false},
+			{"n-carrots-in33", "carrots", true},
+			{"n-carrots-out34", "carrots", false},
+			{"n-onions-in35", "onions", true},
+			{"n-onions-out36", "onions", false},
+			{"n-cabbage-in37", "cabbage", true},
+			{"n-cabbage-out38", "cabbage", false},
+			{"n-tomatoes-in39", "tomatoes", true},
+			{"n-tomatoes-out40", "tomatoes", false},
+			{"n-apples-in41", "apples", true},
+			{"n-apples-out42", "apples", false},
+			{"n-cucumbers-out43", "cucumbers", false},
+			{"n-cucumbers-out44", "cucumbers", false},
+			{"n-beef-in45", "beef", true},
+			{"n-beef-in46", "beef", true},
+			{"n-beef-out47", "beef", false},
+			{"n-beef-out48", "beef", false},
+			{"n-beef-out49", "beef", false},
+			{"n-beef-out50", "beef", false},
+			{"n-beef-out51", "beef", false},
+			{"n-minced-meat-out52", "minced-meat", false},
+			{"n-minced-meat-out53", "minced-meat", false},
+			{"n-chicken-parts-in54", "chicken-parts", true},
+			{"n-chicken-parts-in55", "chicken-parts", true},
+			{"n-chicken-parts-in56", "chicken-parts", true},
+			{"n-chicken-parts-in57", "chicken-parts", true},
+			{"n-chicken-parts-out58", "chicken-parts", false},
+			{"n-chicken-parts-out59", "chicken-parts", false},
+			{"n-chicken-parts-out60", "chicken-parts", false},
+			{"n-chicken-parts-out61", "chicken-parts", false},
+			{"n-chicken-in62", "chicken", true},
+			{"n-chicken-in63", "chicken", true},
+			{"n-chicken-in64", "chicken", true},
+			{"n-chicken-out65", "chicken", false},
+			{"n-chicken-out66", "chicken", false},
+			{"n-chicken-out67", "chicken", false},
+			{"n-chicken-out68", "chicken", false},
+		}
+		members := map[string]map[string]bool{}
+		for _, c := range cases {
+			if members[c.group] == nil {
+				members[c.group] = map[string]bool{}
+				for _, id := range szptIDs(list(t, szpt.Query{Group: c.group})) {
+					members[c.group][id] = true
+				}
+			}
+			if got := members[c.group][c.id]; got != c.in {
+				t.Errorf("%s in %s = %v, want %v", c.id, c.group, got, c.in)
+			}
+		}
+	})
+
 	t.Run("price_basis", func(t *testing.T) {
 		type basis struct {
 			weighted bool
@@ -132,20 +223,10 @@ func TestDeterministicSzpt(t *testing.T) {
 			slugs = append(slugs, g.Slug)
 			bySlug[g.Slug] = g
 		}
-		// szpt.Groups order, empty groups omitted. Task 4 adds fixture rows for the remaining new groups.
-		present := map[string]bool{}
-		for _, slug := range []string{"rice", "buckwheat", "sour-cream", "cottage-cheese", "cheese", "milk", "kefir",
-			"sunflower-oil", "eggs", "butter", "potatoes", "cucumbers", "sugar", "beef", "minced-meat", "chicken"} {
-			present[slug] = true
-		}
-		for slug := range bySlug {
-			present[slug] = true
-		}
+		// Every group has fixture members, so the full szpt.Groups order must come back.
 		order := make([]string, 0, len(szpt.Groups))
 		for _, g := range szpt.Groups {
-			if present[g.Slug] {
-				order = append(order, g.Slug)
-			}
+			order = append(order, g.Slug)
 		}
 		if !reflect.DeepEqual(slugs, order) {
 			t.Fatalf("groups = %v, want %v", slugs, order)
