@@ -24,7 +24,7 @@ type testSzpt struct {
 }
 
 func (r *testSzpt) ListGroups(context.Context) ([]szpt.Group, error) {
-	return []szpt.Group{{Slug: "rice", Name: "Рис", Unit: szpt.Kg, Sizes: []float64{500, 1000}, Count: 2}}, r.err
+	return []szpt.Group{{Slug: "rice", Name: "Рис", Unit: szpt.Kg, Sizes: []float64{500, 1000}, Count: 2, DefaultSort: szpt.PriceAsc}}, r.err
 }
 func (r *testSzpt) ListProducts(_ context.Context, q szpt.Query) ([]szpt.Product, error) {
 	r.calls++
@@ -83,7 +83,7 @@ func TestSzptRoutes(t *testing.T) {
 	s := szptRouter(repo)
 	w := s.get("GET", "/api/szpt")
 	if w.Code != 200 || w.Header().Get("Content-Type") != "application/json" ||
-		w.Body.String() != `{"groups":[{"slug":"rice","name":"Рис","unit":"kg","sizes":[500,1000],"count":2}]}` {
+		w.Body.String() != `{"groups":[{"slug":"rice","name":"Рис","unit":"kg","sizes":[500,1000],"count":2,"defaultSort":"price_asc"}]}` {
 		t.Fatalf("groups: %d %s", w.Code, w.Body.String())
 	}
 	w = s.get("GET", "/api/szpt/rice/products?sort=unit_price_asc")
@@ -91,7 +91,7 @@ func TestSzptRoutes(t *testing.T) {
 		t.Fatalf("products: %d %+v", w.Code, repo.query)
 	}
 	body := w.Body.String()
-	for _, want := range []string{`"minPrice":420,"offers":[{"storeCode":"DINA","storeName":"Dina","price":420,"oldPrice":null,"unitPrice":{"value":840,"unit":"kg"}}]`,
+	for _, want := range []string{`"minPrice":420,"offers":[{"storeCode":"DINA","storeName":"Dina","price":420,"oldPrice":null,"unitPrice":{"value":840,"unit":"kg"},"soldByWeight":false}]`,
 		`"unitPrice":{"value":840,"unit":"kg"}`, `"snapshotAt":"2026-11-11T01:00:51.947Z"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("body lacks %s: %s", want, body)
