@@ -114,6 +114,7 @@ func TestDeterministicSzpt(t *testing.T) {
 			{"n-onions-out36", "onions", false},
 			{"n-cabbage-in37", "cabbage", true},
 			{"n-cabbage-out38", "cabbage", false},
+			{"n-cabbage-out67", "cabbage", false},
 			{"n-tomatoes-in39", "tomatoes", true},
 			{"n-tomatoes-out40", "tomatoes", false},
 			{"n-apples-in41", "apples", true},

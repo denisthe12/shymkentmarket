@@ -115,7 +115,7 @@ var Groups = []Rule{
 		Exclude: exclude(`зел|порей|шалот|перо|крас|ялт|нарезк`)},
 	{Slug: "cabbage", Name: "Капуста белокочанная", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500, Weighted: true,
 		Include: []string{`^капуст`},
-		Exclude: exclude(`цветн|брокк|пекин|краснокоч|савой|кольраб|брюссел|морск|квашен|салат|нарезк`)},
+		Exclude: exclude(`цветн|брокк|пекин|краснокоч|савой|кольраб|брюссел|морск|квашен|салат|нарезк|корей`)},
 	{Slug: "tomatoes", Name: "Помидоры", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200, Weighted: true,
 		Include: []string{`^помидор|^томат`},
 		Exclude: exclude(`черри|cherry|виноград|паст|сок|соус|вялен|сушен`)},

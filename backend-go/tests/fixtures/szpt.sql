@@ -445,3 +445,9 @@ INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldP
 ('off-n-chicken-out66','n-chicken-out66','raw-n-chicken-out66','dina',762,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-n-chicken-out67','n-chicken-out67','raw-n-chicken-out67','dina',769,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-n-chicken-out68','n-chicken-out68','raw-n-chicken-out68','dina',776,NULL,true,'2026-11-11 01:00:00','szpt-v1');
+INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId","rawPayload") VALUES
+('raw-n-cabbage-out67','dina','src-n-cabbage-out67','Капуста корейская',769,'szpt-v1','{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb);
+INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
+('n-cabbage-out67','Капуста корейская',NULL,'vegetables','{}');
+INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","inStock","snapshotAt","snapshotId") VALUES
+('off-n-cabbage-out67','n-cabbage-out67','raw-n-cabbage-out67','dina',769,NULL,true,'2026-11-11 01:00:00','szpt-v1');
