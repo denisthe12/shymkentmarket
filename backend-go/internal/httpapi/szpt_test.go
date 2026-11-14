@@ -114,6 +114,12 @@ func TestSzptRoutes(t *testing.T) {
 	if w.Code != 200 || repo.query.Sort != "" || strings.Count(w.Body.String(), `"soldByWeight":true`) != 2 {
 		t.Errorf("weighted: %d %+v %s", w.Code, repo.query, w.Body.String())
 	}
+	if w := s.get("GET", "/api/szpt/potatoes/products?sort=price_asc"); w.Code != 200 || repo.query.Sort != szpt.PriceAsc {
+		t.Errorf("explicit price_asc: %d %+v", w.Code, repo.query)
+	}
+	if w := s.get("GET", "/api/szpt/potatoes/products"); w.Code != 200 || repo.query.Sort != "" {
+		t.Errorf("no sort: %d %+v", w.Code, repo.query)
+	}
 	calls := repo.calls
 	if w := s.get("GET", "/api/szpt/nope/products"); w.Code != 404 || repo.calls != calls {
 		t.Errorf("unknown group: %d, repository called %d times", w.Code, repo.calls-calls)

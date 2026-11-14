@@ -102,6 +102,15 @@ test('szpt query parameters and unit price are frozen', () => {
   assert.throws(() => validate(ref('UnitPrice'), { value: 0, unit: 'kg' }));
   assert.throws(() => validate(ref('UnitPrice'), { value: 840, unit: 'g' }));
   validate(ref('SzptProductCard'), example('szpt-products')[0]);
+  assert.equal('default' in byName('sort').schema, false);
+});
+test('szpt group requires defaultSort and allows empty sizes', () => {
+  assert.ok(spec.components.schemas.SzptGroup.required.includes('defaultSort'));
+  const potatoes = example('szpt-groups').groups.find((g) => g.slug === 'potatoes');
+  assert.deepEqual(potatoes.sizes, []);
+  validate(ref('SzptGroup'), potatoes);
+  const { defaultSort, ...without } = potatoes;
+  assert.throws(() => validate(ref('SzptGroup'), without));
 });
 test('clients tolerate unknown additive response properties', () => {
   validate(ref('ProductCard'), { ...example('product'), futureAdditive: 'ignored' });
