@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next'
-import type { FilterDto, SzptGroupDto, SzptSort, SzptUnit, UnitPriceDto } from '../api/types'
+import type { FilterDto, ProductCardDto, SzptGroupDto, SzptProductDto, SzptSort, SzptUnit, UnitPriceDto } from '../api/types'
 import { formatAttributeValue } from './attributes'
 import { formatPrice } from './format'
 
@@ -49,4 +49,19 @@ export function szptParams({ sizes, sort }: Pick<SzptState, 'sizes' | 'sort'>, g
   for (const size of sizes) params.append('size', String(size))
   if (sort !== defaultSortOf(group)) params.set('sort', sort)
   return params
+}
+
+/**
+ * Весовой товар как карточка с ценой за кг: у предложения price = округлённая цена за кг, oldPrice масштабируется
+ * тем же множителем (скидка в % сохраняется), minPrice — минимум новых цен. Предложение без unitPrice остаётся как есть
+ */
+export function toPerKgCard(product: SzptProductDto): ProductCardDto {
+  const offers = product.offers.map(({ unitPrice, soldByWeight: _soldByWeight, ...offer }) => {
+    if (!unitPrice) return offer
+    const price = Math.round(unitPrice.value)
+    const oldPrice = offer.oldPrice != null ? Math.round((offer.oldPrice * unitPrice.value) / offer.price) : null
+    return { ...offer, price, oldPrice }
+  })
+  const { unitPrice: _unitPrice, soldByWeight: _sold, ...card } = product
+  return { ...card, offers, minPrice: offers.length > 0 ? Math.min(...offers.map((o) => o.price)) : product.minPrice }
 }

@@ -19,9 +19,11 @@ type Props = {
   product: ProductCardDto
   /** Раздел СЗПТ: цена за кг / л / 10 шт самого дешёвого предложения. Без неё строки нет */
   unitPrice?: UnitPriceDto | null
+  /** Весовой товар: карточка уже в ценах за кг (toPerKgCard), цены подписаны «/кг», упаковки и экономии нет */
+  soldByWeight?: boolean
 }
 
-export function ProductCard({ product, unitPrice }: Props) {
+export function ProductCard({ product, unitPrice, soldByWeight = false }: Props) {
   const { t } = useTranslation()
   const href = useHref()
   const stale = usePriceStale(product.snapshotAt)
@@ -29,7 +31,8 @@ export function ProductCard({ product, unitPrice }: Props) {
   const best = shown[0]
   const oldPrice = best?.oldPrice != null && best.oldPrice > best.price ? best.oldPrice : null
   const discount = discountPercent(best)
-  const saving = savingOf(product.offers)
+  const saving = soldByWeight ? null : savingOf(product.offers)
+  const perKg = soldByWeight ? `/${t('szpt.per.kg')}` : ''
   // Одно предложение — сравнивать не с чем, зелёным не выделяем
   const compared = product.offers.length > 1
 
@@ -51,10 +54,12 @@ export function ProductCard({ product, unitPrice }: Props) {
       <p className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
         <span data-testid="min-price" className="text-price-card">
           {formatPrice(product.minPrice)}
+          {perKg}
         </span>
+        {soldByWeight && <span className="text-meta text-muted">{t('szpt.byWeight')}</span>}
         {oldPrice !== null && <s className="text-meta text-muted tabular">{formatPrice(oldPrice)}</s>}
       </p>
-      {unitPrice && (
+      {unitPrice && !soldByWeight && (
         <p data-testid="unit-price" className="text-meta text-muted tabular">
           {formatUnitPrice(unitPrice, t)}
         </p>
@@ -84,14 +89,16 @@ export function ProductCard({ product, unitPrice }: Props) {
                 {offer.storeName}
                 {isBest && <span className="sr-only">, {t('card.lowest')}</span>}
               </span>
-              <span className="shrink-0 tabular">{formatPrice(offer.price)}</span>
+              <span className="shrink-0 tabular">{formatPrice(offer.price)}
+                {perKg}
+              </span>
             </li>
           )
         })}
       </ul>
       {hiddenCount > 0 && (
         <p data-testid="more-offers" className="mt-1 px-1.5 text-meta text-muted tabular">
-          {t('card.moreOffers', { count: hiddenCount, price: formatPrice(maxPrice) })}
+          {t('card.moreOffers', { count: hiddenCount, price: `${formatPrice(maxPrice)}${perKg}` })}
         </p>
       )}
 

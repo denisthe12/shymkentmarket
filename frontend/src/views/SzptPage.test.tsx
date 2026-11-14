@@ -30,7 +30,7 @@ describe('SzptPage', () => {
   it('shows the section, group chips, pack sizes and unit prices', async () => {
     renderPage(<SzptPage group="rice" />, '/ru/szpt/rice')
     expect(await screen.findByRole('heading', { level: 1, name: 'Социально значимые продукты' })).toBeInTheDocument()
-    expect(await screen.findByText(/10 позиций из перечня СЗПТ \(приказ МТИ РК № 362-нқ\)/)).toBeInTheDocument()
+    expect(await screen.findByText(/5 групп продуктов из перечня СЗПТ \(приказ МТИ РК № 362-нқ\)\./)).toBeInTheDocument()
     expect(screen.getByTestId('szpt-group-rice')).toHaveAttribute('aria-current', 'page')
     expect(screen.getByTestId('szpt-group-milk')).toHaveAttribute('href', '/ru/szpt/milk')
     expect(sizeChip(/^1\s+кг$/)).toBeInTheDocument()
@@ -54,6 +54,17 @@ describe('SzptPage', () => {
     expect(navigation.url).toBe('/ru/szpt/rice?sort=unit_price_asc')
     await expect.poll(() => cardNames()).toEqual(['Рис Тест 1 кг', 'Рис Кызылординский 800 г', 'Рис Тест 500 г'])
     expect(screen.getByTestId('sort-select')).toHaveValue('unit_price_asc')
+  })
+
+  it('shows a weighted group without pack sizes and sorted by price per kg', async () => {
+    renderPage(<SzptPage group="potatoes" />, '/ru/szpt/potatoes')
+    expect(await screen.findByRole('option', { name: 'Выгоднее за кг' })).toBeInTheDocument()
+    expect(await screen.findAllByTestId('product-card')).toHaveLength(2)
+    expect(screen.queryByTestId('filter-sizeGrams')).toBeNull()
+    expect(screen.queryByText('Фасовка')).toBeNull()
+    expect(screen.getByTestId('sort-select')).toHaveValue('unit_price_asc')
+    expect(cardNames()).toEqual(['Картофель мытый', 'Картофель молодой'])
+    expect(screen.getAllByTestId('min-price').map(plain)).toEqual(['299 ₸/кг', '389 ₸/кг'])
   })
 
   it('names the unit of the group in the sort label', async () => {

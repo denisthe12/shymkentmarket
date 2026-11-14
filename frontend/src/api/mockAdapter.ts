@@ -62,14 +62,18 @@ function packSize(product: SzptProductDto, unit: SzptUnit): unknown {
   return a.packageCount
 }
 
-/** Фильтр фасовки и две сортировки СЗПТ, как на бэке: при равенстве — minPrice, затем id */
+/** Фильтр фасовки и две сортировки СЗПТ, как на бэке: при равенстве — minPrice, затем id; весовые в конце price_asc */
 export function querySzpt(source: SzptProductDto[], unit: SzptUnit, query: SzptQuery): SzptProductDto[] {
   const sizes = query.sizes ?? []
   const unitValue = (p: SzptProductDto) => p.unitPrice?.value ?? Infinity
   return source
     .filter((p) => sizes.length === 0 || sizes.includes(packSize(p, unit) as number))
     .sort((a, b) =>
-      (query.sort === 'unit_price_asc' ? unitValue(a) - unitValue(b) : 0) ||
+      // price_asc: штучные по цене упаковки, весовые (у них цена не упаковки) — после них по цене за кг
+      (query.sort === 'unit_price_asc'
+        ? unitValue(a) - unitValue(b)
+        : Number(a.soldByWeight === true) - Number(b.soldByWeight === true) ||
+          (a.soldByWeight ? unitValue(a) - unitValue(b) : 0)) ||
       a.minPrice - b.minPrice ||
       a.id.localeCompare(b.id),
     )

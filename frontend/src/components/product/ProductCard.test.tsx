@@ -132,3 +132,35 @@ describe('ProductCard unit price', () => {
     }
   })
 })
+
+describe('ProductCard sold by weight', () => {
+  const weighted: ProductCardDto = {
+    ...product,
+    name: 'Картофель мытый',
+    attributes: {},
+    minPrice: 822,
+    offers: [
+      { storeCode: 'DINA', storeName: 'Dina', price: 822, oldPrice: 889 },
+      { storeCode: 'ANVAR', storeName: 'Анвар', price: 900, oldPrice: null },
+    ],
+  }
+
+  it('shows per-kg prices with the by-weight mark and no unit or saving lines', () => {
+    render(<ProductCard product={weighted} soldByWeight unitPrice={{ value: 822.22, unit: 'kg' }} />)
+    expect(text(screen.getByTestId('min-price'))).toBe('822 ₸/кг')
+    expect(screen.getByText('на развес')).toBeInTheDocument()
+    expect(screen.queryByTestId('unit-price')).toBeNull()
+    expect(screen.queryByText(/дешевле, чем в/)).toBeNull()
+    const rows = within(screen.getByTestId('offer-list')).getAllByRole('listitem').map((li) => text(li))
+    expect(rows).toEqual(['Dina, самая низкая цена822 ₸/кг', 'Анвар900 ₸/кг'])
+  })
+
+  it('stays exactly as before when soldByWeight is falsy', () => {
+    const base = render(<ProductCard product={product} unitPrice={{ value: 570, unit: 'l' }} />)
+    const html = base.container.innerHTML
+    base.unmount()
+    const falsy = render(<ProductCard product={product} unitPrice={{ value: 570, unit: 'l' }} soldByWeight={false} />)
+    expect(falsy.container.innerHTML).toBe(html)
+    expect(screen.queryByText('на развес')).toBeNull()
+  })
+})

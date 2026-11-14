@@ -1,4 +1,5 @@
 import type { ProductCardDto, SzptProductDto } from '../../api/types'
+import { toPerKgCard } from '../../lib/szpt'
 import { ProductCard } from './ProductCard'
 import { productGridClass } from './layout'
 
@@ -14,7 +15,11 @@ export function ProductGrid({ products, wide = false }: Props) {
     <ul className={productGridClass(wide)}>
       {products.map((product) => (
         <li key={product.id} className="[&>article]:h-full">
-          <ProductCard product={product} unitPrice={'unitPrice' in product ? product.unitPrice : undefined} />
+          {'soldByWeight' in product && product.soldByWeight ? (
+            <ProductCard product={toPerKgCard(product)} unitPrice={product.unitPrice} soldByWeight />
+          ) : (
+            <ProductCard product={product} unitPrice={'unitPrice' in product ? product.unitPrice : undefined} />
+          )}
         </li>
       ))}
     </ul>
