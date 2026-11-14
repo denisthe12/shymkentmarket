@@ -2,9 +2,10 @@
 -- Run BEFORE and AFTER the migration (never during the 01:00 / 13:00 UTC sync):
 --   psql -X -v ON_ERROR_STOP=1 -f ops/postgres/szpt/offer_price_basis_check.sql "$DATABASE_URL"
 -- One file, two parts:
---   PRE  works at any time; uses the inline weighted rule copied from
---        backend/prisma/migrations/20261114000000_offer_price_basis/migration.sql
---        (keep in sync with that CASE and pipeline/src/mapping/weight.ts).
+--   PRE  works at any time; uses the inline weighted rule.
+--        The rule (weighted CASE, defined ONCE in the :basis_cte variable below) must equal the CASE in
+--        backend/prisma/migrations/20261114000000_offer_price_basis/migration.sql and
+--        pipeline/src/mapping/weight.ts.
 --   POST runs only if public.offer_price_basis exists (to_regclass + \if); before the migration
 --        it prints a notice and is skipped.
 -- The whole script is BEGIN READ ONLY ... ROLLBACK: SELECT only, nothing is written.
@@ -18,6 +19,10 @@
 -- (substitute the parameters with literals; see also szptOfferBasisSQL there).
 
 \pset null '(null)'
+-- The ONLY copy of the weighted rule and of the latest-snapshot filter: CTEs snap and basis.
+-- Columns of basis: offer_id, pid, store_id, store, in_stock, price, weighted, by_name_only, basis_grams.
+\set basis_cte 'WITH snap AS (SELECT id FROM public.snapshots WHERE status = ''published'' AND "publishedAt" IS NOT NULL ORDER BY "publishedAt" DESC, id DESC LIMIT 1), basis AS (SELECT o.id AS offer_id, o."canonicalProductId" AS pid, o."storeId" AS store_id, s.code::text AS store, o."inStock" AS in_stock, o.price, w.weighted, (s.code::text = ''DANA'' AND w.weighted AND NOT coalesce(r."rawPayload"->>''priceUnit'' = ''kg'', false)) AS by_name_only, CASE WHEN w.weighted THEN CASE WHEN jsonb_typeof(r."rawPayload"->''pricePerUnitMultiplier'') = ''number'' AND (r."rawPayload"->>''pricePerUnitMultiplier'')::numeric > 0 THEN (r."rawPayload"->>''pricePerUnitMultiplier'')::numeric ELSE 1000 END END AS basis_grams FROM public.offers o JOIN snap ON snap.id = o."snapshotId" JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId" JOIN public.stores s ON s.id = o."storeId" CROSS JOIN LATERAL (SELECT CASE s.code::text WHEN ''DINA'' THEN coalesce(r."rawPayload"->>''price_type'' = ''weight'', false) OR coalesce(r."rawPayload"->>''isWeightProduct'' = ''true'', false) WHEN ''ANVAR'' THEN coalesce(r."rawPayload"->>''priceUnit'' = ''kg'', false) WHEN ''DANA'' THEN coalesce(r."rawPayload"->>''priceUnit'' = ''kg'', false) OR r."rawName" ~* ''(^|[^а-яa-z])вес(ов(ой|ая|ое|ые))?([^а-яa-z]|$)|(^|[^a-z0-9_])PLU\\s*[:;]\\s*[0-9]+'' ELSE false END AS weighted) w)'
+
 BEGIN READ ONLY;
 
 \echo
@@ -29,111 +34,54 @@ ORDER BY "publishedAt" DESC, id DESC LIMIT 1;
 
 \echo
 \echo '=== PRE 1. Per store: offers and weighted offers (inline rule) ==='
--- dana_by_name_only = DANA weighted only by the name (no priceUnit = kg).
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-), basis AS (
-  SELECT s.code::text AS store, o."inStock", w.weighted,
-         (s.code::text = 'DANA' AND w.weighted AND NOT coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)) AS by_name_only
-  FROM public.offers o
-  JOIN snap ON snap.id = o."snapshotId"
-  JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId"
-  JOIN public.stores s ON s.id = o."storeId"
-  CROSS JOIN LATERAL (SELECT CASE s.code::text
-    WHEN 'DINA'  THEN coalesce(r."rawPayload"->>'price_type' = 'weight', false)
-                   OR coalesce(r."rawPayload"->>'isWeightProduct' = 'true', false)
-    WHEN 'ANVAR' THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-    WHEN 'DANA'  THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-                   OR r."rawName" ~* '(^|[^а-яa-z])вес(ов(ой|ая|ое|ые))?([^а-яa-z]|$)|(^|[^a-z0-9_])PLU\s*[:;]\s*[0-9]+'
-    ELSE false END AS weighted) w
-)
-SELECT store, count(*) AS offers, count(*) FILTER (WHERE "inStock") AS in_stock,
+\echo '(dana_by_name_only = DANA weighted only by the name, no priceUnit = kg)'
+:basis_cte
+SELECT store, count(*) AS offers, count(*) FILTER (WHERE in_stock) AS in_stock,
        count(*) FILTER (WHERE weighted) AS weighted,
-       count(*) FILTER (WHERE weighted AND "inStock") AS weighted_in_stock,
+       count(*) FILTER (WHERE weighted AND in_stock) AS weighted_in_stock,
        count(*) FILTER (WHERE by_name_only) AS dana_by_name_only
 FROM basis GROUP BY store ORDER BY store;
 
 \echo
 \echo '=== PRE 2. Weighted offers by pricePerUnitMultiplier (basis_grams; 1000 = missing/invalid) ==='
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-)
-SELECT s.code::text AS store,
-       CASE WHEN jsonb_typeof(r."rawPayload"->'pricePerUnitMultiplier') = 'number'
-                 AND (r."rawPayload"->>'pricePerUnitMultiplier')::numeric > 0
-            THEN (r."rawPayload"->>'pricePerUnitMultiplier')::numeric ELSE 1000 END AS basis_grams,
-       count(*) AS weighted_offers
-FROM public.offers o
-JOIN snap ON snap.id = o."snapshotId"
-JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId"
-JOIN public.stores s ON s.id = o."storeId"
-CROSS JOIN LATERAL (SELECT CASE s.code::text
-    WHEN 'DINA'  THEN coalesce(r."rawPayload"->>'price_type' = 'weight', false)
-                   OR coalesce(r."rawPayload"->>'isWeightProduct' = 'true', false)
-    WHEN 'ANVAR' THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-    WHEN 'DANA'  THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-                   OR r."rawName" ~* '(^|[^а-яa-z])вес(ов(ой|ая|ое|ые))?([^а-яa-z]|$)|(^|[^a-z0-9_])PLU\s*[:;]\s*[0-9]+'
-    ELSE false END AS weighted) w
-WHERE w.weighted
-GROUP BY 1, 2 ORDER BY 1, 2;
+:basis_cte
+SELECT store, basis_grams, count(*) AS weighted_offers
+FROM basis WHERE weighted GROUP BY 1, 2 ORDER BY 1, 2;
 
 \echo
-\echo '=== PRE 3. Products whose in-stock offers are ALL weighted (for information; category and price) ==='
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-), basis AS (
-  SELECT o."canonicalProductId" AS pid, o.price, w.weighted
-  FROM public.offers o
-  JOIN snap ON snap.id = o."snapshotId"
-  JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId"
-  JOIN public.stores s ON s.id = o."storeId"
-  CROSS JOIN LATERAL (SELECT CASE s.code::text
-    WHEN 'DINA'  THEN coalesce(r."rawPayload"->>'price_type' = 'weight', false)
-                   OR coalesce(r."rawPayload"->>'isWeightProduct' = 'true', false)
-    WHEN 'ANVAR' THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-    WHEN 'DANA'  THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-                   OR r."rawName" ~* '(^|[^а-яa-z])вес(ов(ой|ая|ое|ые))?([^а-яa-z]|$)|(^|[^a-z0-9_])PLU\s*[:;]\s*[0-9]+'
-    ELSE false END AS weighted) w
-  WHERE o."inStock" AND o.price > 0
-)
+\echo '=== PRE 3. Live SZPT groups (categories milk, dairy, groats, oil, eggs): products whose in-stock offers are ALL weighted ==='
+\echo '--- count per category'
+:basis_cte
+SELECT c.slug AS category, count(*) AS all_weighted_products FROM (
+  SELECT pid FROM basis WHERE in_stock AND price > 0 GROUP BY pid HAVING bool_and(weighted)) x
+JOIN public.canonical_products p ON p.id = x.pid
+JOIN public.categories c ON c.id = p."categoryId"
+WHERE c.slug IN ('milk', 'dairy', 'groats', 'oil', 'eggs')
+GROUP BY c.slug ORDER BY c.slug;
+\echo '--- list'
+:basis_cte
 SELECT c.slug AS category, p.name, min(b.price) AS min_price, count(*) AS offers
 FROM basis b
 JOIN public.canonical_products p ON p.id = b.pid
 JOIN public.categories c ON c.id = p."categoryId"
+WHERE b.in_stock AND b.price > 0 AND c.slug IN ('milk', 'dairy', 'groats', 'oil', 'eggs')
 GROUP BY c.slug, p.id, p.name
 HAVING bool_and(b.weighted)
-ORDER BY c.slug, p.name COLLATE "ru-x-icu"
-LIMIT 300;
+ORDER BY c.slug, p.name COLLATE "ru-x-icu";
 
 \echo
 \echo '=== PRE 4. Risk: products with >1 in-stock offer from the SAME store in the latest snapshot ==='
 \echo '(offer <-> offer_price_basis matching in the API; same-store duplicates are the risk case)'
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-), dup AS (
-  SELECT o."canonicalProductId" AS pid, o."storeId", count(*) AS n
-  FROM public.offers o JOIN snap ON snap.id = o."snapshotId"
-  WHERE o."inStock" GROUP BY 1, 2 HAVING count(*) > 1
-)
-SELECT (SELECT count(DISTINCT pid) FROM dup) AS products_with_same_store_duplicates;
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-)
-SELECT p.id AS product_id, p.name, s.code::text AS store, count(*) AS in_stock_offers,
-       array_agg(o.price ORDER BY o.price) AS prices
-FROM public.offers o
-JOIN snap ON snap.id = o."snapshotId"
-JOIN public.canonical_products p ON p.id = o."canonicalProductId"
-JOIN public.stores s ON s.id = o."storeId"
-WHERE o."inStock"
-GROUP BY p.id, p.name, s.code
+:basis_cte
+SELECT count(DISTINCT pid) AS products_with_same_store_duplicates FROM (
+  SELECT pid FROM basis WHERE in_stock GROUP BY pid, store_id HAVING count(*) > 1) d;
+:basis_cte
+SELECT p.id AS product_id, p.name, b.store, count(*) AS in_stock_offers, array_agg(b.price ORDER BY b.price) AS prices
+FROM basis b JOIN public.canonical_products p ON p.id = b.pid
+WHERE b.in_stock
+GROUP BY p.id, p.name, b.store_id, b.store
 HAVING count(*) > 1
-ORDER BY p.name COLLATE "ru-x-icu", s.code::text
+ORDER BY p.name COLLATE "ru-x-icu", b.store
 LIMIT 100;
 
 -- POST part: only when the view exists.
@@ -141,28 +89,20 @@ SELECT to_regclass('public.offer_price_basis') IS NOT NULL AS has_view \gset
 \if :has_view
 \echo
 \echo '=== POST 1. offer_price_basis rows vs offers (latest snapshot); offers must equal view_rows ==='
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-)
-SELECT (SELECT count(*) FROM public.offers o JOIN snap ON snap.id = o."snapshotId") AS offers,
-       (SELECT count(*) FROM public.offer_price_basis b JOIN public.offers o ON o.id = b."offerId"
-          JOIN snap ON snap.id = o."snapshotId") AS view_rows,
-       (SELECT count(*) FROM public.offer_price_basis b JOIN public.offers o ON o.id = b."offerId"
-          JOIN snap ON snap.id = o."snapshotId" WHERE b."soldByWeight") AS view_weighted;
+\echo '(view_mismatch = offers where the view disagrees with the inline rule; must be 0)'
+:basis_cte
+SELECT count(*) AS offers,
+       count(v."offerId") AS view_rows,
+       count(*) FILTER (WHERE v."soldByWeight") AS view_weighted,
+       count(*) FILTER (WHERE v."offerId" IS NULL OR v."soldByWeight" IS DISTINCT FROM b.weighted) AS view_mismatch
+FROM basis b LEFT JOIN public.offer_price_basis v ON v."offerId" = b.offer_id;
 
 \echo
 \echo '=== POST 2. Per store: view weighted offers (compare with PRE 1) ==='
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-)
-SELECT s.code::text AS store, count(*) AS offers, count(*) FILTER (WHERE b."soldByWeight") AS weighted
-FROM public.offers o
-JOIN snap ON snap.id = o."snapshotId"
-JOIN public.stores s ON s.id = o."storeId"
-LEFT JOIN public.offer_price_basis b ON b."offerId" = o.id
-GROUP BY s.code ORDER BY s.code::text;
+:basis_cte
+SELECT b.store, count(*) AS offers, count(*) FILTER (WHERE v."soldByWeight") AS weighted
+FROM basis b LEFT JOIN public.offer_price_basis v ON v."offerId" = b.offer_id
+GROUP BY b.store ORDER BY b.store;
 \else
 \echo
 \echo 'POST skipped: public.offer_price_basis does not exist yet (migration not applied).'
@@ -170,28 +110,10 @@ GROUP BY s.code ORDER BY s.code::text;
 
 \echo
 \echo '=== VERDICT (STOP if DINA, ANVAR or DANA has 0 weighted offers in the latest published snapshot) ==='
-WITH snap AS (
-  SELECT id FROM public.snapshots WHERE status = 'published' AND "publishedAt" IS NOT NULL
-  ORDER BY "publishedAt" DESC, id DESC LIMIT 1
-), weighted AS (
-  SELECT s.code::text AS store, count(*) AS n
-  FROM public.offers o
-  JOIN snap ON snap.id = o."snapshotId"
-  JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId"
-  JOIN public.stores s ON s.id = o."storeId"
-  CROSS JOIN LATERAL (SELECT CASE s.code::text
-    WHEN 'DINA'  THEN coalesce(r."rawPayload"->>'price_type' = 'weight', false)
-                   OR coalesce(r."rawPayload"->>'isWeightProduct' = 'true', false)
-    WHEN 'ANVAR' THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-    WHEN 'DANA'  THEN coalesce(r."rawPayload"->>'priceUnit' = 'kg', false)
-                   OR r."rawName" ~* '(^|[^а-яa-z])вес(ов(ой|ая|ое|ые))?([^а-яa-z]|$)|(^|[^a-z0-9_])PLU\s*[:;]\s*[0-9]+'
-    ELSE false END AS weighted) w
-  WHERE w.weighted
-  GROUP BY s.code
-)
+:basis_cte
 SELECT CASE WHEN (SELECT count(*) FROM snap) = 0 THEN 'STOP'
             WHEN EXISTS (SELECT 1 FROM (VALUES ('DINA'),('ANVAR'),('DANA')) v(store)
-                         WHERE coalesce((SELECT n FROM weighted WHERE weighted.store = v.store), 0) = 0)
+                         WHERE (SELECT count(*) FROM basis WHERE basis.store = v.store AND weighted) = 0)
             THEN 'STOP' ELSE 'GO' END AS verdict;
 
 ROLLBACK;
