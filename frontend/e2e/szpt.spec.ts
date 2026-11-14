@@ -43,3 +43,22 @@ test('SZPT group HTML comes from the server and the index redirects', async ({ r
   expect(index.status()).toBe(307)
   expect(index.headers().location).toBe('/ru/szpt/rice')
 })
+
+test('weighted group shows price per kg', async ({ page, isMobile }) => {
+  await page.goto('/ru/szpt/potatoes')
+  const first = page.getByTestId('product-card').first()
+  await expect(first).toContainText('₸/кг')
+  await expect(first).toContainText('на развес')
+  await expect(page.getByTestId('filter-sizeGrams')).toHaveCount(0)
+  if (isMobile) {
+    await page.getByTestId('sort-chip').click()
+    const sheet = page.getByTestId('sort-sheet')
+    await expect(sheet.getByRole('radio', { name: 'Выгоднее за кг' })).toBeChecked()
+    await sheet.getByRole('radio', { name: 'Дешевле за упаковку' }).click()
+  } else {
+    const select = page.getByTestId('sort-select')
+    await expect(select.locator('option:checked')).toHaveText('Выгоднее за кг')
+    await select.selectOption('price_asc')
+  }
+  await expect(page).toHaveURL(/sort=price_asc/)
+})

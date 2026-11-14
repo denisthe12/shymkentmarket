@@ -38,7 +38,7 @@ export function SzptPage({ group: slug }: { group: string }) {
 
   const groups = useSzptGroups()
   const group = groups.data?.find((g) => g.slug === slug)
-  const state = group ? readSzptState(params, group) : { group: slug, sizes: [], sort: 'price_asc' as const }
+  const state = group ? readSzptState(params, group) : { group: slug, sizes: [], sort: 'price_asc' as SzptSort }
   // Без группы (не загрузилась или неизвестна) запрос не нужен — уйдём в 404 или подождём список групп
   const products = useSzptPages({ group: state.group, sizes: state.sizes, sort: state.sort }, Boolean(group))
 
@@ -51,7 +51,7 @@ export function SzptPage({ group: slug }: { group: string }) {
     )
   if (groups.isError || !group) return <ErrorState onRetry={() => groups.refetch()} />
 
-  const update = (next: Pick<typeof state, 'sizes' | 'sort'>) => replaceQuery(pathname, szptParams(next))
+  const update = (next: Pick<typeof state, 'sizes' | 'sort'>) => replaceQuery(pathname, szptParams(next, group))
   const resetSizes = () => update({ sizes: [], sort: state.sort })
   const changeSizes = (_key: string, next: string[]) => update({ sizes: next.map(Number), sort: state.sort })
   const filters = group.sizes.length > 0 ? [sizeFilter(group, t('szpt.size'))] : []
@@ -72,7 +72,7 @@ export function SzptPage({ group: slug }: { group: string }) {
       </div>
       <h1 className="mt-3 text-h1">{t('szpt.title')}</h1>
       <p className="mt-2 text-sm text-muted">
-        {t('szpt.subtitle')}
+        {t('szpt.subtitle', { count: groups.data.length })}
         {items[0] && <> {t('szpt.priceDate', { date: formatDate(items[0].snapshotAt) })}</>}
       </p>
 
@@ -201,10 +201,12 @@ export function SzptPage({ group: slug }: { group: string }) {
 /** Пока сервер готовит страницу группы (заглушка перехода): шапка раздела настоящая, ниже скелетон */
 export function SzptPageLoading() {
   const { t } = useTranslation()
+  const groups = useSzptGroups()
   return (
     <>
       <CategoryHeader name={t('szpt.title')} />
-      <p className="mt-2 text-sm text-muted">{t('szpt.subtitle')}</p>
+      {/* Число групп известно только из API: пока его нет, строку не показываем */}
+      {groups.data && <p className="mt-2 text-sm text-muted">{t('szpt.subtitle', { count: groups.data.length })}</p>}
       <LoadingState>
         <CategoryPageSkeleton title={false} />
       </LoadingState>

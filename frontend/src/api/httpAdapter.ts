@@ -46,11 +46,11 @@ export function createHttpAdapter(baseUrl: string, isServer = false): CatalogApi
   }
 }
 
-/** Фасовки повторяются: ?size=800&size=1000. Сортировка по умолчанию (price_asc) в URL не пишется */
+/** Фасовки повторяются: ?size=800&size=1000. Сортировка уходит всегда: умолчание группы выбирает бэк, но явная не должна от него зависеть */
 export function toSzptSearchParams(query: SzptQuery): URLSearchParams {
   const params = new URLSearchParams()
   for (const size of query.sizes ?? []) params.append('size', String(size))
-  if (query.sort && query.sort !== 'price_asc') params.set('sort', query.sort)
+  if (query.sort) params.set('sort', query.sort)
   if (query.limit !== undefined) params.set('limit', String(query.limit))
   if (query.offset !== undefined) params.set('offset', String(query.offset))
   return params

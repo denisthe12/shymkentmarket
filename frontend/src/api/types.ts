@@ -122,12 +122,16 @@ export type SzptGroupDto = {
   /** Фасовки в базовой единице группы: граммы, мл или штуки (у молока и кефира граммы = мл) */
   sizes: number[]
   count: number
+  /** Сортировка группы по умолчанию; у старого API поля нет — тогда price_asc */
+  defaultSort?: SzptSort
 }
 
 export type SzptProductDto = Omit<ProductCardDto, 'offers'> & {
   /** Цена за единицу самого дешёвого предложения */
   unitPrice: UnitPriceDto | null
-  offers: (OfferDto & { unitPrice: UnitPriceDto | null })[]
+  /** Весовой товар: цена указана за кг, фасовки нет */
+  soldByWeight?: boolean
+  offers: (OfferDto & { unitPrice: UnitPriceDto | null; soldByWeight?: boolean })[]
 }
 
 export type SzptSort = 'price_asc' | 'unit_price_asc'

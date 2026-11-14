@@ -91,7 +91,21 @@ describe('mock adapter szpt', () => {
 
   it('lists groups and rejects unknown groups with 404', async () => {
     const groups = await api.getSzptGroups()
-    expect(groups.map((g) => g.slug)).toEqual(['rice', 'milk', 'eggs'])
+    expect(groups.map((g) => g.slug)).toEqual(['rice', 'milk', 'eggs', 'potatoes', 'minced-meat'])
     await expect(api.getSzptProducts({ group: 'nope' })).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('puts weighted products last by package price and keeps them out of size filters', async () => {
+    const byPrice = await api.getSzptProducts({ group: 'minced-meat', sort: 'price_asc' })
+    expect(byPrice.map((p) => p.soldByWeight === true)).toEqual([false, false, true])
+    const byUnit = await api.getSzptProducts({ group: 'minced-meat', sort: 'unit_price_asc' })
+    expect(byUnit.map((p) => p.unitPrice?.value)).toEqual([1500, 2440, 3500])
+    const sized = await api.getSzptProducts({ group: 'minced-meat', sizes: [450] })
+    expect(sized.map((p) => p.id)).toEqual(['szpt-minced-450'])
+  })
+
+  it('has a weighted group without pack sizes that sorts by unit price by default', async () => {
+    const groups = await api.getSzptGroups()
+    expect(groups.find((g) => g.slug === 'potatoes')).toMatchObject({ sizes: [], defaultSort: 'unit_price_asc' })
   })
 })

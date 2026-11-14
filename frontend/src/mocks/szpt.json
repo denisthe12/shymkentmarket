@@ -30,6 +30,25 @@
         30
       ],
       "count": 2
+    },
+    {
+      "slug": "potatoes",
+      "name": "Картофель",
+      "unit": "kg",
+      "sizes": [],
+      "count": 2,
+      "defaultSort": "unit_price_asc"
+    },
+    {
+      "slug": "minced-meat",
+      "name": "Мясной фарш",
+      "unit": "kg",
+      "sizes": [
+        450,
+        500
+      ],
+      "count": 3,
+      "defaultSort": "unit_price_asc"
     }
   ],
   "products": {
@@ -273,6 +292,176 @@
               "value": 749.67,
               "unit": "10pcs"
             }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      }
+    ],
+    "potatoes": [
+      {
+        "id": "szpt-potatoes-dina",
+        "name": "Картофель мытый",
+        "brand": null,
+        "category": {
+          "slug": "vegetables",
+          "name": "Овощи и фрукты"
+        },
+        "imageUrl": null,
+        "attributes": {},
+        "minPrice": 299,
+        "unitPrice": {
+          "value": 299,
+          "unit": "kg"
+        },
+        "soldByWeight": true,
+        "offers": [
+          {
+            "storeCode": "DINA",
+            "storeName": "Dina Market",
+            "price": 1480,
+            "oldPrice": 1600,
+            "unitPrice": {
+              "value": 822.22,
+              "unit": "kg"
+            },
+            "soldByWeight": true
+          },
+          {
+            "storeCode": "ANVAR",
+            "storeName": "Анвар",
+            "price": 299,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 299,
+              "unit": "kg"
+            },
+            "soldByWeight": true
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      },
+      {
+        "id": "szpt-potatoes-dana",
+        "name": "Картофель молодой",
+        "brand": null,
+        "category": {
+          "slug": "vegetables",
+          "name": "Овощи и фрукты"
+        },
+        "imageUrl": null,
+        "attributes": {},
+        "minPrice": 389,
+        "unitPrice": {
+          "value": 389,
+          "unit": "kg"
+        },
+        "soldByWeight": true,
+        "offers": [
+          {
+            "storeCode": "DANA",
+            "storeName": "Dana Market",
+            "price": 389,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 389,
+              "unit": "kg"
+            },
+            "soldByWeight": true
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      }
+    ],
+    "minced-meat": [
+      {
+        "id": "szpt-minced-450",
+        "name": "Фарш говяжий охлаждённый 450 г",
+        "brand": null,
+        "category": {
+          "slug": "meat",
+          "name": "Мясо и птица"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "weightGrams": 450
+        },
+        "minPrice": 1098,
+        "unitPrice": {
+          "value": 2440,
+          "unit": "kg"
+        },
+        "offers": [
+          {
+            "storeCode": "DINA",
+            "storeName": "Dina Market",
+            "price": 1098,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 2440,
+              "unit": "kg"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      },
+      {
+        "id": "szpt-minced-500",
+        "name": "Фарш домашний 500 г",
+        "brand": null,
+        "category": {
+          "slug": "meat",
+          "name": "Мясо и птица"
+        },
+        "imageUrl": null,
+        "attributes": {
+          "weightGrams": 500
+        },
+        "minPrice": 1750,
+        "unitPrice": {
+          "value": 3500,
+          "unit": "kg"
+        },
+        "offers": [
+          {
+            "storeCode": "DANA",
+            "storeName": "Dana Market",
+            "price": 1750,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 3500,
+              "unit": "kg"
+            }
+          }
+        ],
+        "snapshotAt": "2026-11-11T01:00:51.947Z"
+      },
+      {
+        "id": "szpt-minced-weight",
+        "name": "Фарш говяжий весовой",
+        "brand": null,
+        "category": {
+          "slug": "meat",
+          "name": "Мясо и птица"
+        },
+        "imageUrl": null,
+        "attributes": {},
+        "minPrice": 1500,
+        "unitPrice": {
+          "value": 1500,
+          "unit": "kg"
+        },
+        "soldByWeight": true,
+        "offers": [
+          {
+            "storeCode": "ANVAR",
+            "storeName": "Анвар",
+            "price": 1500,
+            "oldPrice": null,
+            "unitPrice": {
+              "value": 1500,
+              "unit": "kg"
+            },
+            "soldByWeight": true
           }
         ],
         "snapshotAt": "2026-11-11T01:00:51.947Z"
