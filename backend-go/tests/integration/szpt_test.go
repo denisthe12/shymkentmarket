@@ -52,7 +52,7 @@ func TestDeterministicSzpt(t *testing.T) {
 			"buckwheat":      {"b1"},
 			"sour-cream":     {"s1"},
 			"cottage-cheese": {"c1", "c2", "c6"},
-			"cheese":         {"h1", "h10", "h11", "h12", "h2", "h3"},
+			"cheese":         {"h1", "h10", "h11", "h12", "h14", "h2", "h3"},
 			"milk":           {"m1", "m2"},
 			"kefir":          {"k1"},
 			"sunflower-oil":  {"o1"},
@@ -65,6 +65,59 @@ func TestDeterministicSzpt(t *testing.T) {
 			if !reflect.DeepEqual(got, ids) {
 				t.Errorf("%s = %v, want %v", slug, got, ids)
 			}
+		}
+	})
+
+	t.Run("price_basis", func(t *testing.T) {
+		type basis struct {
+			weighted bool
+			grams    *float64
+		}
+		g := func(v float64) *float64 { return &v }
+		want := map[string]basis{
+			"w-pot1": {true, g(1000)}, "w-pot2": {true, g(1000)}, "w-cuc1": {true, g(1000)}, "w-cuc2": {true, g(1000)},
+			"w-chk1": {true, g(1800)}, "w-beef1": {true, g(1000)}, "w-mince-w": {true, g(1000)}, "w-pot-out": {true, g(1000)},
+			"h14":        {true, g(300)},
+			"w-mince-p1": {}, "w-mince-p2": {}, "w-mince-p3": {}, "w-mince-x": {}, "w-sug-fix": {},
+			"r1": {}, "e1": {}, "u1": {}, "h5": {},
+		}
+		rows, err := pool.Query(ctx, `SELECT o."canonicalProductId",b."soldByWeight",b."basisGrams"::float8 FROM offer_price_basis b JOIN offers o ON o.id=b."offerId"`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		got := map[string]basis{}
+		for rows.Next() {
+			var id string
+			var b basis
+			if err := rows.Scan(&id, &b.weighted, &b.grams); err != nil {
+				t.Fatal(err)
+			}
+			got[id] = b
+			if b.weighted != (b.grams != nil) {
+				t.Errorf("%s: soldByWeight=%v but basisGrams=%v", id, b.weighted, b.grams)
+			}
+		}
+		if err := rows.Err(); err != nil {
+			t.Fatal(err)
+		}
+		for id, w := range want {
+			if !reflect.DeepEqual(got[id], w) {
+				t.Errorf("%s = %+v, want %+v", id, got[id], w)
+			}
+		}
+		var views, offers int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM offer_price_basis`).Scan(&views); err != nil {
+			t.Fatal(err)
+		}
+		if err := admin.QueryRow(ctx, `SELECT count(*) FROM offers`).Scan(&offers); err != nil {
+			t.Fatal(err)
+		}
+		if views != offers {
+			t.Errorf("view rows = %d, offers = %d", views, offers)
+		}
+		if _, err := pool.Exec(ctx, `SELECT 1 FROM raw_products LIMIT 1`); err == nil {
+			t.Error("aktau_api_reader must not read raw_products")
 		}
 	})
 

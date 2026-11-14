@@ -1,8 +1,9 @@
 -- SCRUM-25 SZPT fixture: real catalog names with the expected group (plan Task 3 table).
-INSERT INTO stores (id,code,name) VALUES ('dina','DINA','Dina Market'),('dana','DANA','Dana Market'),('anvar','ANVAR','Анвар');
+INSERT INTO stores (id,code,name) VALUES ('dina','DINA','Dina Market'),('dana','DANA','Dana Market'),('anvar','ANVAR','Анвар'),('fix','FIX_PRICE','Fix Price');
 INSERT INTO categories (id,slug,name,"filterSchema") VALUES
 ('milk','milk','Молоко',NULL),('dairy','dairy','Кисломолочные продукты и сыры',NULL),('groats','groats','Крупы, макароны, мука',NULL),
-('oil','oil','Растительные масла',NULL),('eggs','eggs','Яйца',NULL);
+('oil','oil','Растительные масла',NULL),('eggs','eggs','Яйца',NULL),
+('bread','bread','Хлеб и выпечка',NULL),('meat','meat','Мясо и птица',NULL),('vegetables','vegetables','Овощи, фрукты, зелень',NULL),('sugar','sugar','Сахар',NULL);
 INSERT INTO snapshots(id,status,"publishedAt","sourceStats") VALUES
 ('szpt-v0','published','2026-11-10 01:00:00','{"fixture":true}'),('szpt-v1','published','2026-11-11 01:00:00','{"fixture":true}');
 INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES
@@ -190,3 +191,49 @@ INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldP
 ('off-59','m8','raw-59','dina',430,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-60','h12','raw-60','dina',1400,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-61','h13','raw-61','dina',1700,NULL,true,'2026-11-11 01:00:00','szpt-v1');
+-- SZPT phase 2: weighted-goods rows for the offer_price_basis view (rawPayload set; older rows keep NULL).
+INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId","rawPayload") VALUES
+('raw-w-pot1','dana','src-w-pot1','Картофель',217,'szpt-v1','{"priceUnit":"kg"}'::jsonb),
+('raw-w-pot2','dina','src-w-pot2','Картофель молодой',300,'szpt-v1','{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb),
+('raw-w-cuc1','dana','src-w-cuc1','ОГУРЦЫ PLU:1231',539,'szpt-v1','{}'::jsonb),
+('raw-w-cuc2','dana','src-w-cuc2','Огурцы весовые',605,'szpt-v1','{}'::jsonb),
+('raw-w-chk1','dina','src-w-chk1','Цыпленок бройлера KOKO 1.8 кг',1480,'szpt-v1','{"isWeightProduct":true,"priceUnit":"g","pricePerUnitMultiplier":1800}'::jsonb),
+('raw-w-beef1','anvar','src-w-beef1','П/ф Мясо говядины н/к СП Анвар (Соц.)',2780,'szpt-v1','{"priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb),
+('raw-w-mince-w','dina','src-w-mince-w','Фарш говяжий замороженный',4420,'szpt-v1','{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb),
+('raw-w-mince-p1','dana','src-w-mince-p1','Фарш говяжий GEBA 450 г',1098,'szpt-v1','{"priceUnit":null}'::jsonb),
+('raw-w-mince-p2','dana','src-w-mince-p2','Фарш говядина Мясная лавка 500 г',1964,'szpt-v1','{}'::jsonb),
+('raw-w-mince-p3','dana','src-w-mince-p3','Фарш GEBA говяжий 1 кг',4600,'szpt-v1','{}'::jsonb),
+('raw-w-mince-x','dina','src-w-mince-x','Фарш говяжий №1',4420,'szpt-v1','{}'::jsonb),
+('raw-w-sug-fix','fix','src-w-sug-fix','Сахар-песок Fix 1 кг',450,'szpt-v1','{"priceUnit":"kg"}'::jsonb),
+('raw-h14','anvar','src-h14','Сыр Российский Анвар 50% 300 г',900,'szpt-v1','{"priceUnit":"kg","pricePerUnitMultiplier":300}'::jsonb),
+('raw-w-pot-out','dina','src-w-pot-out','Картофель Нет в наличии',250,'szpt-v1','{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb);
+INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
+('w-pot1','Картофель',NULL,'vegetables','{}'),
+('w-pot2','Картофель молодой',NULL,'vegetables','{}'),
+('w-cuc1','ОГУРЦЫ PLU:1231',NULL,'vegetables','{}'),
+('w-cuc2','Огурцы весовые',NULL,'vegetables','{}'),
+('w-chk1','Цыпленок бройлера KOKO 1.8 кг',NULL,'meat','{"weightGrams":2}'),
+('w-beef1','П/ф Мясо говядины н/к СП Анвар (Соц.)',NULL,'meat','{}'),
+('w-mince-w','Фарш говяжий замороженный',NULL,'meat','{}'),
+('w-mince-p1','Фарш говяжий GEBA 450 г',NULL,'meat','{"weightGrams":450}'),
+('w-mince-p2','Фарш говядина Мясная лавка 500 г',NULL,'meat','{"weightGrams":500}'),
+('w-mince-p3','Фарш GEBA говяжий 1 кг',NULL,'meat','{"weightGrams":1000}'),
+('w-mince-x','Фарш говяжий №1',NULL,'meat','{}'),
+('w-sug-fix','Сахар-песок Fix 1 кг',NULL,'sugar','{"weightGrams":1000}'),
+('h14','Сыр Российский Анвар 50% 300 г',NULL,'dairy','{"weightGrams":300,"fatPercent":50}'),
+('w-pot-out','Картофель Нет в наличии',NULL,'vegetables','{}');
+INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","inStock","snapshotAt","snapshotId") VALUES
+('off-w-pot1','w-pot1','raw-w-pot1','dana',217,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-pot2','w-pot2','raw-w-pot2','dina',300,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-cuc1','w-cuc1','raw-w-cuc1','dana',539,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-cuc2','w-cuc2','raw-w-cuc2','dana',605,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-chk1','w-chk1','raw-w-chk1','dina',1480,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-beef1','w-beef1','raw-w-beef1','anvar',2780,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-mince-w','w-mince-w','raw-w-mince-w','dina',4420,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-mince-p1','w-mince-p1','raw-w-mince-p1','dana',1098,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-mince-p2','w-mince-p2','raw-w-mince-p2','dana',1964,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-mince-p3','w-mince-p3','raw-w-mince-p3','dana',4600,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-mince-x','w-mince-x','raw-w-mince-x','dina',4420,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-sug-fix','w-sug-fix','raw-w-sug-fix','fix',450,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-h14','h14','raw-h14','anvar',900,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-w-pot-out','w-pot-out','raw-w-pot-out','dina',250,NULL,false,'2026-11-11 01:00:00','szpt-v1');

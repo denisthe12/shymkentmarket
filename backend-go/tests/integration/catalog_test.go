@@ -464,7 +464,7 @@ func TestBootstrapFailsClosed(t *testing.T) {
 			defer tx.Rollback(context.Background())
 			// Isolate the attribute being tested from the new intentional refusal
 			// of an already activated reader. All temporary revokes roll back.
-			if _, err = tx.Exec(ctx, `REVOKE aktau_api_reader FROM part04_api_login; REVOKE SELECT ON stores,store_locations,categories,canonical_products,offers,snapshots FROM aktau_api_reader; REVOKE USAGE ON SCHEMA public FROM aktau_api_reader`); err != nil {
+			if _, err = tx.Exec(ctx, `REVOKE aktau_api_reader FROM part04_api_login; REVOKE SELECT ON stores,store_locations,categories,canonical_products,offers,snapshots,offer_price_basis FROM aktau_api_reader; REVOKE USAGE ON SCHEMA public FROM aktau_api_reader`); err != nil {
 				t.Fatal("local attribute-test isolation failed")
 			}
 			if _, err = tx.Exec(ctx, string(bootstrap)); err != nil {
