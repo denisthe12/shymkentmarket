@@ -63,7 +63,7 @@ PR 2 (фронт):
 - Test: `backend-go/tests/integration/szpt_test.go`
 
 **Interfaces:**
-- Produces: view `public.offer_price_basis("offerId" text, "soldByWeight" boolean, "basisGrams" numeric NULL)` — одна строка на каждую строку `offers`; `"basisGrams"` не `NULL` тогда и только тогда, когда `"soldByWeight"`.
+- Produces: view `public.offer_price_basis("offerId" text, "soldByWeight" boolean, "basisGrams" numeric NULL, "snapshotId" text)` — одна строка на каждую строку `offers`; `"snapshotId"` = снимок предложения (по нему API фильтрует view); `"basisGrams"` не `NULL` тогда и только тогда, когда `"soldByWeight"`.
 
 - [ ] **Step 1: Расширить фикстуру `szpt.sql`**
 
@@ -193,7 +193,7 @@ t.Run("weighted_sizes", ...) // minced-meat Sizes {450} → только p1; pot
 
 - [ ] **Step 3: Переписать `szptMembersSQL`**
 
-Recordset получает колонку `weighted boolean`. В `usable` — `LEFT JOIN public.offer_price_basis b ON b."offerId"=o.id` и агрегаты `bool_and(coalesce(b."soldByWeight",false)) AS all_weighted`, `min(o.price::numeric*1000/b."basisGrams") FILTER (WHERE b."soldByWeight") AS unit_weight_exact`. В `sized` — `(g.weighted AND u.all_weighted) AS by_weight` (для 10 старых групп всегда `false` → view на них не влияет). Условие `members`: `((NOT by_weight AND size>=min_size) OR by_weight)`; остальные условия — без изменений.
+Recordset получает колонку `weighted boolean`. В `usable` — `LEFT JOIN public.offer_price_basis b ON b."offerId"=o.id AND b."snapshotId"=$2` и агрегаты `bool_and(coalesce(b."soldByWeight",false)) AS all_weighted`, `min(o.price::numeric*1000/b."basisGrams") FILTER (WHERE b."soldByWeight") AS unit_weight_exact`. В `sized` — `(g.weighted AND u.all_weighted) AS by_weight` (для 10 старых групп всегда `false` → view на них не влияет). Условие `members`: `((NOT by_weight AND size>=min_size) OR by_weight)`; остальные условия — без изменений.
 
 - [ ] **Step 4: Запросы групп, фасовок и товаров**
 
@@ -205,7 +205,7 @@ Recordset получает колонку `weighted boolean`. В `usable` — `L
 
 - [ ] **Step 5: Признак у предложений**
 
-Каталожный `attachOffers` и его DTO не трогать. Для `rule.Weighted` и страницы с хотя бы одним `by_weight` — отдельный запрос `szptOfferBasisSQL`: `canonicalProductId, store code, "soldByWeight", "basisGrams"` для `snapshotId=$1 AND canonicalProductId = ANY($2)` (тот же `snapshotReader`); сопоставление с `card.Offers` по `(product id, storeCode)`. Цена предложения: весовое → `PriceOfWeighted(o.Price, basis)`, иначе `PriceOf(o.Price, size, rule.Unit)`. `UnitPrice` товара = `RoundUnit(unit_exact, rule.Unit)`. `SoldByWeight` товара = `by_weight`.
+Каталожный `attachOffers` и его DTO не трогать. Для `rule.Weighted` и страницы с хотя бы одним `by_weight` — отдельный запрос `szptOfferBasisSQL`: `canonicalProductId, store code, "soldByWeight", "basisGrams"` для `snapshotId=$1 AND canonicalProductId = ANY($2)` (view соединяется по `b."offerId"=o.id AND b."snapshotId"=$1`) (тот же `snapshotReader`); сопоставление с `card.Offers` по `(product id, storeCode)`. Цена предложения: весовое → `PriceOfWeighted(o.Price, basis)`, иначе `PriceOf(o.Price, size, rule.Unit)`. `UnitPrice` товара = `RoundUnit(unit_exact, rule.Unit)`. `SoldByWeight` товара = `by_weight`.
 
 - [ ] **Step 6: Run** local CI → PASS, включая подтесты фазы 1 без изменения их ожиданий, кроме `cheese` (+`h14`).
 
@@ -364,7 +364,23 @@ Recordset получает колонку `weighted boolean`. В `usable` — `L
 
 - [ ] **Step 1: Дамп** базы прода (тем же способом, что дамп 2026-11-07); путь и sha256 — в отчёт.
 - [ ] **Step 2: Проверка до миграции** — `offer_price_basis_check.sql` (до-миграционные блоки). `STOP` → не продолжать, разбирать признаки сетей.
-- [ ] **Step 3: Миграция** `prisma migrate deploy` (как `20261107000100_product_identities`): `migrate status` показывает ровно одну неприменённую — `20261114000000_offer_price_basis`. Затем после-миграционные блоки скрипта: строк view = предложений снимка; `aktau_api_reader` читает view и получает `permission denied` на `raw_products`. Расхождение → `DROP VIEW public.offer_price_basis;`, стоп.
-- [ ] **Step 4: Релиз API** ручным путём, как `98427c3`: build-only workflow → артефакт → `scp` → `sha256sum -c` → `docker load` → cutover-скрипт (копия `/root/adilbaga-szpt-hotfix-cutover.sh` с новыми NEW/OLD/binary/backup) в transient unit, авто-откат на `98427c3`. Ручной путь не запускает `PROTECTED_DELTA`; если релиз пойдёт через workflow/broker — сначала отдельный PR с blob-pinned `approvedExceptions` для активного SHA на все изменённые файлы `contracts/` и `backend/prisma/`. Доп. smoke: `/api/szpt` → 200, групп > 10, у `potatoes` (или первой весовой в ответе) `defaultSort = unit_price_asc`; `/api/szpt/rice/products` → 200 и первая страница совпадает с ответом до релиза.
-- [ ] **Step 5: Проверка на проде** — число товаров по группам против оценки спеки (±30%), выборка товаров каждой новой группы на ложные вхождения, 3–5 цен за кг против сайтов сетей. Ложные вхождения → hotfix регулярок отдельным PR.
-- [ ] **Step 6: Закрытие** — «Current release» в `deploy/README.md`, отчёт `docs/production/reports/SZPT_WEIGHTED_RELEASE_REPORT.md`, память (`search-release-state`, `scrum25-szpt-state`). Комментарий в Jira — по решению пользователя.
+- [ ] **Step 3: Миграция** `prisma migrate deploy` (как `20261107000100_product_identities`): `migrate status` показывает ровно одну неприменённую — `20261114000000_offer_price_basis`. Затем скрипт проверки целиком ещё раз: POST 1 `offers = view_rows`, `view_mismatch = 0`, `post_stop = f`, последняя строка `GO`; `aktau_api_reader` читает view и получает `permission denied` на `raw_products`. `STOP` или расхождение → откат view (API ещё старый, view не читает): `DROP VIEW public.offer_price_basis;`, затем тем же способом и с тем же окружением, что `migrate deploy`, — `pnpm exec prisma migrate resolve --rolled-back 20261114000000_offer_price_basis` (иначе `_prisma_migrations` считает миграцию применённой и следующий `migrate deploy` view не создаст); `migrate status` снова показывает её неприменённой; стоп. После релиза API (Step 5) этот откат — только после отката API на `98427c3`.
+- [ ] **Step 4: Гейт латентности (до релиза API).** Новый API соединяет каждый запрос СЗПТ, включая 10 живых групп, с view. Скрипт `ops/postgres/szpt/szpt_members_explain.sql` генерируется тестом `TestSzptExplainScript` из `szptProductsSQL`, `szptOrder` и `szpt.Groups` (тест падает, если файл устарел), то есть это запрос релизного SHA: `EXPLAIN (ANALYZE, BUFFERS)` первой страницы `rice` (живая, `price_asc`) и `potatoes` (весовая, `unit_price_asc`) ровно тем SQL и с теми параметрами, что шлёт API (все правила групп `$1`, последний опубликованный снимок `$2`, `LIMIT 24`), каждый дважды, в транзакции `REPEATABLE READ READ ONLY` с `statement_timeout = 60s` и `ROLLBACK`. Не во время sync (01:00 и 13:00 UTC). Агент кладёт файл и `szpt_members_explain.sql.sha256` из релизного SHA в `~/szpt-release` на VPS (как скрипт проверки в Step 2); `psql` — тот же клиент, что в Step 2. Пользователь вводит на VPS (`b2admin`):
+
+  ```bash
+  cd ~/szpt-release && sha256sum -c szpt_members_explain.sql.sha256
+  # 1) Базовая линия: текущий API (98427c3), /api/szpt, 5 замеров; медиана time_total — третья строка после sort.
+  for i in 1 2 3 4 5; do curl -sS -o /dev/null -w '%{http_code} %{time_total}\n' http://127.0.0.1:8080/api/szpt; done | tee szpt-gate-curl.txt
+  sort -k2 -n szpt-gate-curl.txt | sed -n 3p
+  # 2) EXPLAIN ролью API: DATABASE_URL из /etc/adilbaga/api.env (на экран не печатается).
+  API_DB_URL="$(sudo sed -n 's/^DATABASE_URL=//p' /etc/adilbaga/api.env | sed -e 's/^["'\'']//' -e 's/["'\'']$//')"
+  psql -X -v ON_ERROR_STOP=1 -f szpt_members_explain.sql "$API_DB_URL" > szpt-gate-explain.txt 2>&1; echo "exit $?"
+  unset API_DB_URL
+  grep -A2 '^=== Role' szpt-gate-explain.txt
+  grep -E '^latest published snapshot|^=== (rice|potatoes)|Execution Time' szpt-gate-explain.txt
+  ```
+
+  Ожидаемо: `exit 0`; строка роли — `api_reader = t`, `reads_raw_products = f` (иначе подключились не ролью API — стоп, разобрать); снимок — тот же, что в Step 2; по каждой группе две строки `Execution Time`. **Стоп**, если второе (тёплое) `Execution Time` у `rice` или `potatoes` больше 300 мс **или** больше 3 × медианы `time_total` из шага 1 (секунды × 1000 = мс). При стопе API не выкатывается; view остаётся (старый API её не читает); агент разбирает `szpt-gate-explain.txt` (нет ли прохода `offers`/`raw_products` без фильтра `"snapshotId"`), решение об откате view — у пользователя. Медиана и оба тёплых времени — в отчёт о релизе.
+- [ ] **Step 5: Релиз API** ручным путём, как `98427c3`: build-only workflow → артефакт → `scp` → `sha256sum -c` → `docker load` → cutover-скрипт (копия `/root/adilbaga-szpt-hotfix-cutover.sh` с новыми NEW/OLD/binary/backup) в transient unit, авто-откат на `98427c3`. Ручной путь не запускает `PROTECTED_DELTA`; если релиз пойдёт через workflow/broker — сначала отдельный PR с blob-pinned `approvedExceptions` для активного SHA на все изменённые файлы `contracts/` и `backend/prisma/`. Доп. smoke: `/api/szpt` → 200, групп > 10, у `potatoes` (или первой весовой в ответе) `defaultSort = unit_price_asc`; `/api/szpt/rice/products` → 200 и первая страница совпадает с ответом до релиза.
+- [ ] **Step 6: Проверка на проде** — число товаров по группам против оценки спеки (±30%), выборка товаров каждой новой группы на ложные вхождения, 3–5 цен за кг против сайтов сетей. Ложные вхождения → hotfix регулярок отдельным PR.
+- [ ] **Step 7: Закрытие** — «Current release» в `deploy/README.md`, отчёт `docs/production/reports/SZPT_WEIGHTED_RELEASE_REPORT.md`, память (`search-release-state`, `scrum25-szpt-state`). Комментарий в Jira — по решению пользователя.

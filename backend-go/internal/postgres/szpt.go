@@ -12,6 +12,7 @@ import (
 // size is the first numeric attribute among size_keys (milk/kefir: volumeMl, else weightGrams).
 // by_weight: the group is weighted and every in-stock offer is sold by weight (offer_price_basis). It is
 // always false in non-weighted groups, so the view never changes their membership, prices or order.
+// Every join to the view also filters b."snapshotId", so PostgreSQL reads the view for one snapshot only.
 // A by_weight product needs no package size; unit_weight_exact is its exact per-kg price.
 const szptMembersSQL = `WITH g AS (
  SELECT * FROM jsonb_to_recordset($1::jsonb) AS g(slug text,category text,size_keys text[],min_size numeric,
@@ -23,7 +24,7 @@ const szptMembersSQL = `WITH g AS (
  min(o.price::numeric*1000/b."basisGrams") FILTER (WHERE b."soldByWeight") AS unit_weight_exact
  FROM public.canonical_products p JOIN public.categories c ON c.id=p."categoryId"
  JOIN public.offers o ON o."canonicalProductId"=p.id AND o."inStock" AND o.price>0
- LEFT JOIN public.offer_price_basis b ON b."offerId"=o.id
+ LEFT JOIN public.offer_price_basis b ON b."offerId"=o.id AND b."snapshotId"=$2
  WHERE o."snapshotId"=$2
  GROUP BY p.id,c.slug,c.name
 ), sized AS (
@@ -58,7 +59,7 @@ FROM (SELECT *,CASE WHEN by_weight THEN unit_weight_exact ELSE min_price::numeri
 // Price basis of a page's offers, matched to attachOffers rows by (product, store); same offer filter.
 const szptOfferBasisSQL = `SELECT o."canonicalProductId",s.code,coalesce(b."soldByWeight",false),b."basisGrams"::float8
 FROM public.offers o JOIN public.stores s ON s.id=o."storeId"
-LEFT JOIN public.offer_price_basis b ON b."offerId"=o.id
+LEFT JOIN public.offer_price_basis b ON b."offerId"=o.id AND b."snapshotId"=$1
 WHERE o."snapshotId"=$1 AND o."canonicalProductId"=ANY($2::text[]) AND o."inStock" AND o.price>0`
 
 func szptOrder(s szpt.Sort) (string, error) {

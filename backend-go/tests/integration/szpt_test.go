@@ -173,17 +173,29 @@ func TestDeterministicSzpt(t *testing.T) {
 			"w-mince-p1": {}, "w-mince-p2": {}, "w-mince-p3": {}, "w-mince-x": {}, "w-sug-fix": {},
 			"r1": {}, "e1": {}, "u1": {}, "h5": {},
 		}
-		rows, err := pool.Query(ctx, `SELECT o."canonicalProductId",b."soldByWeight",b."basisGrams"::float8 FROM offer_price_basis b JOIN offers o ON o.id=b."offerId"`)
+		var columns []string
+		if err := pool.QueryRow(ctx, `SELECT array_agg(column_name::text ORDER BY ordinal_position) FROM information_schema.columns
+ WHERE table_schema='public' AND table_name='offer_price_basis'`).Scan(&columns); err != nil {
+			t.Fatal(err)
+		}
+		if want := []string{"offerId", "soldByWeight", "basisGrams", "snapshotId"}; !reflect.DeepEqual(columns, want) {
+			t.Errorf("offer_price_basis columns = %v, want %v", columns, want)
+		}
+		rows, err := pool.Query(ctx, `SELECT o."canonicalProductId",b."soldByWeight",b."basisGrams"::float8,b."snapshotId",o."snapshotId"
+ FROM offer_price_basis b JOIN offers o ON o.id=b."offerId"`)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer rows.Close()
 		got := map[string]basis{}
 		for rows.Next() {
-			var id string
+			var id, viewSnapshot, offerSnapshot string
 			var b basis
-			if err := rows.Scan(&id, &b.weighted, &b.grams); err != nil {
+			if err := rows.Scan(&id, &b.weighted, &b.grams, &viewSnapshot, &offerSnapshot); err != nil {
 				t.Fatal(err)
+			}
+			if viewSnapshot != offerSnapshot {
+				t.Errorf("%s: view snapshotId %q, offer snapshotId %q", id, viewSnapshot, offerSnapshot)
 			}
 			got[id] = b
 			if b.weighted != (b.grams != nil) {

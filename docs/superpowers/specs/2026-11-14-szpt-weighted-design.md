@@ -105,7 +105,8 @@ SELECT o.id AS "offerId",
          CASE WHEN jsonb_typeof(r."rawPayload"->'pricePerUnitMultiplier') = 'number'
                    AND (r."rawPayload"->>'pricePerUnitMultiplier')::numeric > 0
               THEN (r."rawPayload"->>'pricePerUnitMultiplier')::numeric ELSE 1000 END
-       END AS "basisGrams"
+       END AS "basisGrams",
+       o."snapshotId" AS "snapshotId"
 FROM public.offers o
 JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId"
 JOIN public.stores s ON s.id = o."storeId"
@@ -128,12 +129,19 @@ GRANT SELECT ON public.offer_price_basis TO aktau_api_reader;
   иначе `RAISE EXCEPTION` (по образцу guard-блока `rls_runtime_access`). Без этого view молча вернула бы 0 строк.
   Решение агента.
 - View создаётся владельцем таблиц и выполняется с его правами (`security_invoker` не включаем): RLS на
-  `raw_products` для `aktau_api_reader` остаётся закрытой, наружу видны только три столбца. `FORCE ROW LEVEL
+  `raw_products` для `aktau_api_reader` остаётся закрытой, наружу видны только четыре столбца. `FORCE ROW LEVEL
   SECURITY` в проекте не используется (проверка в миграции `rls_runtime_access`), поэтому владелец читает
   `raw_products` через view без политики. `REVOKE ALL ... FROM PUBLIC`, `anon`, `authenticated` — как в
   `price_history`.
 - Prisma схема view не описывает (как и политики); `prisma migrate deploy` применяет SQL как есть.
-- Откат: `DROP VIEW public.offer_price_basis;` — данные не трогаются, старый API view не читает.
+- `"snapshotId"` (столбец `offers`) нужен, чтобы API фильтровал view по снимку: условие
+  `b."snapshotId" = <снимок>` в `ON` левого соединения PostgreSQL проталкивает внутрь view, и `offers` и
+  `raw_products` читаются только за один снимок, а не за все 14 хранимых.
+- Откат (только после отката API, иначе новый API упадёт на запросах):
+  `DROP VIEW public.offer_price_basis;`, затем
+  `pnpm exec prisma migrate resolve --rolled-back 20261114000000_offer_price_basis` — иначе `_prisma_migrations`
+  считает миграцию применённой и следующий `migrate deploy` view не создаст. Данные не трогаются, старый API
+  view не читает.
 
 ## Часть 2. API
 
@@ -156,7 +164,8 @@ GRANT SELECT ON public.offer_price_basis TO aktau_api_reader;
 
 ### Членство товара в группе (SQL `szptMembersSQL`)
 
-В `usable` добавляются, по предложениям текущего снимка в наличии (`LEFT JOIN offer_price_basis` по `offerId`;
+В `usable` добавляются, по предложениям текущего снимка в наличии (`LEFT JOIN offer_price_basis` по `offerId` и
+`snapshotId` = снимок запроса;
 нет строки во view — предложение считается штучным):
 
 - `by_weight` = `bool_and("soldByWeight")` — все предложения товара весовые;
@@ -304,8 +313,11 @@ Dina не разбирает — там множитель 1000, Anvar разб�
      пустые группы API скрывает, тонкие показываются как есть;
    - не во время sync (01:00 и 13:00 UTC).
 4. **Миграция** `prisma migrate deploy` (view + GRANT; guard-блок проверяет владельца и RLS). Проверка:
-   число строк view для последнего снимка = числу его предложений (иначе view молча теряет строки — стоп, `DROP VIEW`);
-   `aktau_api_reader` читает view, но не `raw_products`; старый API работает (view он не использует).
+   число строк view для последнего снимка = числу его предложений и расхождений с правилом 0 (иначе view молча
+   теряет строки — стоп, откат view, как ниже); `aktau_api_reader` читает view, но не `raw_products`; старый API
+   работает (view он не использует). Затем гейт латентности (план, Task 10 Step 4): `EXPLAIN (ANALYZE, BUFFERS)`
+   запроса товаров СЗПТ для живой и весовой группы ролью API; дольше 300 мс или дольше 3× времени текущего
+   `/api/szpt` — стоп, API не выкатывается.
 5. **Релиз API** ручным путём, как `98427c3` (build-only workflow → артефакт → копирование на VPS →
    cutover-скрипт с авто-откатом). Точка отката — активный релиз (`98427c3`). Дополнительные smoke: `GET /api/szpt` →
    200, групп больше 10, у весовой группы `defaultSort = unit_price_asc`; `GET /api/szpt/potatoes/products` → 200.
@@ -316,7 +328,9 @@ Dina не разбирает — там множитель 1000, Anvar разб�
    пользователя.
 
 Откат: фронт — откат деплоя Vercel (не нужен: со старым API он совместим); API — авто-откат cutover-скрипта на
-`98427c3`; view — `DROP VIEW` (только после отката API, иначе новый API упадёт на запросах).
+`98427c3`; view — только после отката API (иначе новый API упадёт на запросах): `DROP VIEW public.offer_price_basis;`,
+затем `pnpm exec prisma migrate resolve --rolled-back 20261114000000_offer_price_basis`, чтобы следующий
+`migrate deploy` создал view заново.
 
 ## Готово, когда
 

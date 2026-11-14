@@ -1,5 +1,6 @@
 -- Price basis per offer: sold by weight (price per kg) or per piece.
--- The view runs with the owner's rights, so the API reader sees three columns and never raw_products.
+-- The view runs with the owner's rights, so the API reader sees four columns and never raw_products.
+-- snapshotId lets callers filter by snapshot; PostgreSQL pushes that filter into offers and raw_products.
 
 DO $guard$
 DECLARE
@@ -28,7 +29,8 @@ SELECT o.id AS "offerId",
          CASE WHEN jsonb_typeof(r."rawPayload"->'pricePerUnitMultiplier') = 'number'
                    AND (r."rawPayload"->>'pricePerUnitMultiplier')::numeric > 0
               THEN (r."rawPayload"->>'pricePerUnitMultiplier')::numeric ELSE 1000 END
-       END AS "basisGrams"
+       END AS "basisGrams",
+       o."snapshotId" AS "snapshotId"
 FROM public.offers o
 JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId"
 JOIN public.stores s ON s.id = o."storeId"
