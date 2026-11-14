@@ -7,15 +7,21 @@ import (
 	"testing"
 )
 
-func TestGroupsOrderAndLookup(t *testing.T) {
-	want := []string{"rice", "buckwheat", "sour-cream", "cottage-cheese", "cheese", "milk", "kefir", "sunflower-oil", "eggs", "butter"}
+var wantSlugs = []string{"rice", "buckwheat", "sour-cream", "cottage-cheese", "cheese", "milk", "kefir", "sunflower-oil", "eggs", "butter",
+	"flour", "bread", "pasta-horns", "potatoes", "carrots", "onions", "cabbage", "tomatoes", "cucumbers", "apples", "sugar",
+	"beef", "minced-meat", "chicken-parts", "chicken"}
+
+func TestGroupOrder(t *testing.T) {
 	got := make([]string, 0, len(Groups))
 	for _, g := range Groups {
 		got = append(got, g.Slug)
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("group order = %v, want %v", got, want)
+	if !reflect.DeepEqual(got, wantSlugs) {
+		t.Fatalf("group order = %v, want %v", got, wantSlugs)
 	}
+}
+
+func TestGroupsLookupAndExclusions(t *testing.T) {
 	milk, ok := Lookup("milk")
 	if !ok || milk.Unit != L || !reflect.DeepEqual(milk.SizeKeys, []string{"volumeMl", "weightGrams"}) {
 		t.Fatalf("milk rule = %+v", milk)
@@ -25,12 +31,44 @@ func TestGroupsOrderAndLookup(t *testing.T) {
 	}
 	lactose := map[string]bool{"sour-cream": true, "cottage-cheese": true, "milk": true, "kefir": true}
 	for _, g := range Groups {
-		if !strings.Contains(g.Exclude, "весов") {
+		if !g.Weighted && !strings.Contains(g.Exclude, "весов") {
 			t.Errorf("%s: weighted exclusion missing", g.Slug)
 		}
 		if strings.Contains(g.Exclude, "безлакт") != lactose[g.Slug] {
 			t.Errorf("%s: lactose exclusion = %v, want %v", g.Slug, !lactose[g.Slug], lactose[g.Slug])
 		}
+	}
+}
+
+func TestWeightedRules(t *testing.T) {
+	weightedSlugs := map[string]bool{"potatoes": true, "carrots": true, "onions": true, "cabbage": true, "tomatoes": true,
+		"cucumbers": true, "apples": true, "beef": true, "minced-meat": true, "chicken-parts": true, "chicken": true}
+	for _, g := range Groups {
+		if g.Weighted != weightedSlugs[g.Slug] {
+			t.Errorf("%s: Weighted = %v, want %v", g.Slug, g.Weighted, weightedSlugs[g.Slug])
+		}
+		if g.Weighted {
+			if g.Unit != Kg {
+				t.Errorf("%s: unit = %s, want kg", g.Slug, g.Unit)
+			}
+			if g.DefaultSort() != UnitPriceAsc {
+				t.Errorf("%s: default sort = %s", g.Slug, g.DefaultSort())
+			}
+			if strings.Contains(g.Exclude, weighted) {
+				t.Errorf("%s: weighted group must not exclude weighted goods", g.Slug)
+			}
+		} else if g.DefaultSort() != PriceAsc {
+			t.Errorf("%s: default sort = %s, want price_asc", g.Slug, g.DefaultSort())
+		}
+	}
+}
+
+func TestPriceOfWeighted(t *testing.T) {
+	if got := PriceOfWeighted(1480, 1800); got != (UnitPrice{Value: 822.22, Unit: Kg}) {
+		t.Errorf("PriceOfWeighted(1480,1800) = %+v", got)
+	}
+	if got := PriceOfWeighted(539, 1000); got != (UnitPrice{Value: 539, Unit: Kg}) {
+		t.Errorf("PriceOfWeighted(539,1000) = %+v", got)
 	}
 }
 

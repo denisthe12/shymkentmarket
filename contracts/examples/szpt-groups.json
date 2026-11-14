@@ -5,21 +5,32 @@
       "name": "Рис",
       "unit": "kg",
       "sizes": [400, 700, 800, 900, 1000, 3000, 5000],
-      "count": 77
+      "count": 77,
+      "defaultSort": "price_asc"
     },
     {
       "slug": "milk",
       "name": "Молоко",
       "unit": "l",
       "sizes": [400, 450, 500, 900, 950, 1000, 1950],
-      "count": 122
+      "count": 122,
+      "defaultSort": "price_asc"
     },
     {
       "slug": "eggs",
       "name": "Яйца I категории",
       "unit": "10pcs",
       "sizes": [1, 10, 30],
-      "count": 5
+      "count": 5,
+      "defaultSort": "price_asc"
+    },
+    {
+      "slug": "potatoes",
+      "name": "Картофель",
+      "unit": "kg",
+      "sizes": [],
+      "count": 24,
+      "defaultSort": "unit_price_asc"
     }
   ]
 }

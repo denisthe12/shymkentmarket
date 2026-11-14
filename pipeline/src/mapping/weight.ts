@@ -10,6 +10,7 @@ const DANA_WEIGHT_MARK = /(?<![а-яa-z])вес(?:ов(?:ой|ая|ое|ые))?(
  * или слово «ВЕС»/«ВЕСОВОЙ» (6 товаров) в выгрузке 2026-10-05; в листинге Aspro (с 2026-11) цена за кг подписана «/кг» (rawPayload.priceUnit).
  * FIX_PRICE: признака нет (поле unit пустое у всех товаров, весовых товаров в каталоге нет) → false.
  */
+// Правило продублировано в SQL: backend/prisma/migrations/20261114000000_offer_price_basis (view offer_price_basis); менять вместе.
 export function isVariableWeight(storeCode: StoreCode, product: Pick<SourceProduct, 'name' | 'rawPayload'>): boolean {
   if (storeCode === 'DINA') return product.rawPayload.price_type === 'weight' || product.rawPayload.isWeightProduct === true
   if (storeCode === 'ANVAR') return product.rawPayload.priceUnit === 'kg'

@@ -33,8 +33,17 @@ type UnitPrice struct {
 
 // PriceOf rounds half-up to 2 decimals for the response only; SQL sorts by the exact value.
 func PriceOf(price int, size float64, u Unit) UnitPrice {
-	exact := float64(price) * float64(u.Factor()) / size
+	return RoundUnit(float64(price)*float64(u.Factor())/size, u)
+}
+
+// RoundUnit rounds an exact unit price half-up to 2 decimals.
+func RoundUnit(exact float64, u Unit) UnitPrice {
 	return UnitPrice{Value: math.Round(exact*100) / 100, Unit: u}
+}
+
+// PriceOfWeighted is the per-kg price of a weighted offer whose price refers to basisGrams.
+func PriceOfWeighted(price int, basisGrams float64) UnitPrice {
+	return RoundUnit(float64(price)*1000/basisGrams, Kg)
 }
 
 type Group struct {
@@ -43,18 +52,22 @@ type Group struct {
 	Unit  Unit      `json:"unit"`
 	Sizes []float64 `json:"sizes"`
 	Count int       `json:"count"`
+	// DefaultSort is the sort applied when the request has none.
+	DefaultSort Sort `json:"defaultSort"`
 }
 
 type Offer struct {
 	catalog.Offer
-	UnitPrice *UnitPrice `json:"unitPrice"`
+	UnitPrice    *UnitPrice `json:"unitPrice"`
+	SoldByWeight bool       `json:"soldByWeight"`
 }
 
 // Product keeps the catalog card shape; the outer Offers field replaces catalog.Product.Offers in JSON.
 type Product struct {
 	catalog.Product
-	Offers    []Offer    `json:"offers"`
-	UnitPrice *UnitPrice `json:"unitPrice"`
+	Offers       []Offer    `json:"offers"`
+	UnitPrice    *UnitPrice `json:"unitPrice"`
+	SoldByWeight bool       `json:"soldByWeight"`
 }
 
 type Sort string

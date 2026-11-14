@@ -10,6 +10,13 @@ LOCK TABLE public.stores, public.store_locations, public.categories,
     public.raw_products, public.canonical_products, public.product_mappings,
     public.offers IN ACCESS EXCLUSIVE MODE;
 
+-- The offer_price_basis view grant is outside the guarded ACL baseline (5 tables): drop it first.
+DO $view$ BEGIN
+    IF to_regclass('public.offer_price_basis') IS NOT NULL THEN
+        REVOKE ALL ON public.offer_price_basis FROM aktau_api_reader;
+    END IF;
+END $view$;
+
 DO $guard$
 DECLARE
     reader pg_catalog.pg_roles%ROWTYPE;

@@ -15,6 +15,16 @@ type Rule struct {
 	Exclude  string   `json:"exclude"`
 	FatMin   *float64 `json:"fat_min"`
 	FatMax   *float64 `json:"fat_max"`
+	// Weighted groups also take goods sold by weight (no package size); their default sort is per-kg price.
+	Weighted bool `json:"weighted"`
+}
+
+// DefaultSort is the sort used when the request has none.
+func (r Rule) DefaultSort() Sort {
+	if r.Weighted {
+		return UnitPriceAsc
+	}
+	return PriceAsc
 }
 
 const (
@@ -85,6 +95,51 @@ var Groups = []Rule{
 		Include: []string{`^масло.*сливоч|^сливочное масло`},
 		Exclude: exclude(`спред|растит|(^|[^а-яё])сол[её]н|шоколад|наполн|какао`, weighted),
 		FatMin:  butterMin, FatMax: butterMax},
+	{Slug: "flour", Name: "Мука пшеничная 1 сорта", Category: "groats", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500,
+		Include: []string{`^мука`, `(^|[^а-яё0-9])(1/?с([^а-яё]|$)|1 с([^а-яё ]|$| [^а-яё])|1 сорт|первый сорт)`},
+		Exclude: exclude(`высш|в/с|экстра|кукуруз|ржан|рисов|овсян|гречн|цельнозерн|блин|оладь`, weighted)},
+	{Slug: "bread", Name: "Хлеб пшеничный", Category: "bread", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200,
+		Include: []string{`^хлеб `},
+		Exclude: exclude(`ржан|бородин|литов|рижск|зерн|злак|отруб|солод|тост|сэндвич|лаваш|хлебц|палоч|бездрож|кукуруз|овсян|льнян|фитнес|здоров|клюкв|семеч|сыр|чиабат|багет|bionan`, weighted)},
+	{Slug: "pasta-horns", Name: "Рожки", Category: "groats", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200,
+		Include: []string{`рожк|рожок`},
+		Exclude: exclude(`рисов|цельнозерн|гнезд`, weighted)},
+	{Slug: "potatoes", Name: "Картофель", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500, Weighted: true,
+		Include: []string{`^картоф`},
+		Exclude: exclude(`фри|пюре|чипс|батат|сладк`)},
+	{Slug: "carrots", Name: "Морковь", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200, Weighted: true,
+		Include: []string{`^морков`},
+		Exclude: exclude(`корей|нарезк|мини|сок`)},
+	{Slug: "onions", Name: "Лук репчатый", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200, Weighted: true,
+		Include: []string{`^лук`},
+		Exclude: exclude(`зел|порей|шалот|перо|крас|ялт|нарезк`)},
+	{Slug: "cabbage", Name: "Капуста белокочанная", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500, Weighted: true,
+		Include: []string{`^капуст`},
+		Exclude: exclude(`цветн|брокк|пекин|краснокоч|савой|кольраб|брюссел|морск|квашен|салат|нарезк|корей`)},
+	{Slug: "tomatoes", Name: "Помидоры", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200, Weighted: true,
+		Include: []string{`^помидор|^томат`},
+		Exclude: exclude(`черри|cherry|виноград|паст|сок|соус|вялен|сушен`)},
+	{Slug: "cucumbers", Name: "Огурцы", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200, Weighted: true,
+		Include: []string{`^огур`},
+		Exclude: exclude(`корнишон|маринов|сол[её]н|консерв`)},
+	{Slug: "apples", Name: "Яблоки", Category: "vegetables", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500, Weighted: true,
+		Include: []string{`^яблок`},
+		Exclude: exclude(`сок|чипс|сушен|пюре|джем|повид`)},
+	{Slug: "sugar", Name: "Сахар-песок", Category: "sugar", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500,
+		Include: []string{`^сахар`},
+		Exclude: exclude(`рафин|пудр|ванил|тростн|коричн|кусков|стик|порцион|демерар`, weighted)},
+	{Slug: "beef", Name: "Говядина", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500, Weighted: true,
+		Include: []string{`говя`},
+		Exclude: exclude(`фарш|котлет|люля|шашлык|марин|стейк|язык|печень|(^|[^а-яё])ног[аиу]?([^а-яё]|$)|^кост|суповой|студн|казы`)},
+	{Slug: "minced-meat", Name: "Мясной фарш", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200, Weighted: true,
+		Include: []string{`фарш`},
+		Exclude: exclude(`кур|индей|манты|котлетн`)},
+	{Slug: "chicken-parts", Name: "Мясо кур (бедро, голень, окорочка)", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 300, Weighted: true,
+		Include: []string{`бедр|голен|окороч|четверт|ножк`},
+		Exclude: exclude(`утк|утин|утён|утен|марин|барбекю|запеч|филе`)},
+	{Slug: "chicken", Name: "Куры (тушка)", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 1000, Weighted: true,
+		Include: []string{`тушк|^куры|^курица|цыпл[её]н.*бройлер|бройлер`},
+		Exclude: exclude(`табака|гриль|бульон|грудк|крыл|филе|бедр|голен|окороч|четверт|ножк|утк|утин|рагу|рулет|шашлык`)},
 }
 
 func Lookup(slug string) (Rule, bool) {

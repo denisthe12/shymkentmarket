@@ -202,7 +202,7 @@ paths:
         for 10pcs groups, where size is the package size in the group's base unit.
         value is rounded half-up to 2 decimals in the response only; sorting uses the
         exact value. Product unitPrice belongs to the minPrice offer.
-        price_asc sorts by minPrice; unit_price_asc by the exact unit price of the
+        Without sort the group's defaultSort applies. price_asc sorts by minPrice; unit_price_asc by the exact unit price of the
         minPrice offer, then minPrice; ties use id ASC. size repeats (OR) and accepts
         only values listed in the group's sizes. Unknown group returns 404; unknown
         parameters, repeated single parameters or a size outside sizes return 400.
@@ -220,8 +220,8 @@ paths:
           schema: { type: array, items: { type: number, exclusiveMinimum: 0 } }
         - name: sort
           in: query
-          description: Single sort value
-          schema: { type: string, enum: [price_asc, unit_price_asc], default: price_asc }
+          description: Single sort value; without the parameter the group's defaultSort applies
+          schema: { type: string, enum: [price_asc, unit_price_asc] }
         - name: limit
           in: query
           description: Single decimal integer; 101 returns 400
@@ -508,18 +508,22 @@ components:
       properties:
         value: { type: number, exclusiveMinimum: 0, description: Rounded half-up to 2 decimals }
         unit: { $ref: '#/components/schemas/SzptUnit' }
+    SzptSort:
+      type: string
+      enum: [price_asc, unit_price_asc]
     SzptGroup:
       type: object
-      required: [slug, name, unit, sizes, count]
+      required: [slug, name, unit, sizes, count, defaultSort]
       properties:
         slug: { type: string }
         name: { type: string }
         unit: { $ref: '#/components/schemas/SzptUnit' }
         sizes:
           type: array
-          minItems: 1
+          description: Package sizes in the base unit; empty for weighted groups
           items: { type: number, exclusiveMinimum: 0 }
         count: { type: integer, minimum: 1 }
+        defaultSort: { $ref: '#/components/schemas/SzptSort' }
     SzptGroups:
       type: object
       required: [groups]
@@ -531,23 +535,25 @@ components:
       allOf:
         - $ref: '#/components/schemas/Offer'
         - type: object
-          required: [unitPrice]
+          required: [unitPrice, soldByWeight]
           properties:
             unitPrice:
               oneOf:
                 - $ref: '#/components/schemas/UnitPrice'
                 - type: 'null'
+            soldByWeight: { type: boolean }
     SzptProductCard:
       description: ProductCard plus unitPrice of the minPrice offer and of every offer
       allOf:
         - $ref: '#/components/schemas/ProductCard'
         - type: object
-          required: [unitPrice, offers]
+          required: [unitPrice, soldByWeight, offers]
           properties:
             unitPrice:
               oneOf:
                 - $ref: '#/components/schemas/UnitPrice'
                 - type: 'null'
+            soldByWeight: { type: boolean }
             offers:
               type: array
               minItems: 1

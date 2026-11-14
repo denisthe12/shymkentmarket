@@ -13,20 +13,23 @@
     },
     "minPrice": 420,
     "unitPrice": { "value": 840, "unit": "kg" },
+    "soldByWeight": false,
     "offers": [
       {
         "storeCode": "DINA",
         "storeName": "Dina Market",
         "price": 420,
         "oldPrice": null,
-        "unitPrice": { "value": 840, "unit": "kg" }
+        "unitPrice": { "value": 840, "unit": "kg" },
+        "soldByWeight": false
       },
       {
         "storeCode": "DANA",
         "storeName": "Dana Market",
         "price": 455,
         "oldPrice": 490,
-        "unitPrice": { "value": 910, "unit": "kg" }
+        "unitPrice": { "value": 910, "unit": "kg" },
+        "soldByWeight": false
       }
     ],
     "snapshotAt": "2026-11-11T01:00:51.947Z"
@@ -45,15 +48,42 @@
     },
     "minPrice": 710,
     "unitPrice": { "value": 710, "unit": "kg" },
+    "soldByWeight": false,
     "offers": [
       {
         "storeCode": "ANVAR",
         "storeName": "Анвар",
         "price": 710,
         "oldPrice": null,
-        "unitPrice": { "value": 710, "unit": "kg" }
+        "unitPrice": { "value": 710, "unit": "kg" },
+        "soldByWeight": false
       }
     ],
     "snapshotAt": "2026-11-11T01:02:40.447Z"
+  },
+  {
+    "id": "c14e7b92-5d3a-4a08-b6f1-7e2a9d0c4b18",
+    "name": "Картофель",
+    "brand": null,
+    "category": {
+      "slug": "vegetables",
+      "name": "Овощи и фрукты"
+    },
+    "imageUrl": null,
+    "attributes": {},
+    "minPrice": 260,
+    "unitPrice": { "value": 260, "unit": "kg" },
+    "soldByWeight": true,
+    "offers": [
+      {
+        "storeCode": "DINA",
+        "storeName": "Dina Market",
+        "price": 260,
+        "oldPrice": null,
+        "unitPrice": { "value": 260, "unit": "kg" },
+        "soldByWeight": true
+      }
+    ],
+    "snapshotAt": "2026-11-11T01:00:51.947Z"
   }
 ]
