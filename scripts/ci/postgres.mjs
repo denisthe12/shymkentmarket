@@ -6,7 +6,8 @@ import { root, env, run, wait, localURL, goTestArgs } from './common.mjs';
 
 // No caller-selected database: create a new owned container and derive loopback
 // port from Docker. Only this container can receive setup SQL or be cleaned up.
-export async function postgres(task) {
+export const DATABASES = ['part04_fixture', 'part04_security', 'part08', 'part10_security', 'part11_recovery', 'part13_retention', 'part14_identities'];
+export async function postgres(task, databases = DATABASES) {
   const name = `adilbaga-part12-${randomBytes(6).toString('hex')}`;
   let created = false;
   const docker = (label, args, options) => run(label, 'docker', args, options);
@@ -40,7 +41,6 @@ export async function postgres(task) {
     docker('reader bootstrap', ['exec', '-i', name, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-q'],
       { input: readFileSync(join(root, 'backend/prisma/security/aktau_api_reader_role.sql')) });
     run('Prisma frozen install', 'pnpm', ['install', '--frozen-lockfile'], { cwd: join(root, 'backend') });
-    const databases = ['part04_fixture', 'part04_security', 'part08', 'part10_security', 'part11_recovery', 'part13_retention', 'part14_identities'];
     for (const db of databases) {
       docker(`create ${db}`, ['exec', name, 'createdb', '-U', 'postgres', db]);
       const target = url(db); localURL(target);
@@ -49,8 +49,8 @@ export async function postgres(task) {
       const applied = sql(db, 'SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name;');
       if (applied !== '20260923000000_init\n20261004000000_rls_runtime_access\n20261005000000_snapshot_history\n20261006000000_catalog_taxonomy\n20261021000000_scrum19_milk_taxonomy\n20261102000000_store_anvar_enum\n20261102000100_store_anvar_rows\n20261102000200_anvar_taxonomy\n20261107000000_price_history\n20261107000100_product_identities\n20261114000000_offer_price_basis') throw new Error('migration chain mismatch');
     }
-    const login = (user, parent) => sql('part04_fixture', `CREATE ROLE ${user} LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD 'ci-local-only'; GRANT ${parent} TO ${user} WITH ADMIN FALSE, INHERIT TRUE, SET FALSE;`);
-    login('part04_api_login', 'aktau_api_reader');
+    const login = (user, parent) => sql(databases[0], `CREATE ROLE ${user} LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD 'ci-local-only'; GRANT ${parent} TO ${user} WITH ADMIN FALSE, INHERIT TRUE, SET FALSE;`);
+    if (databases.includes('part04_fixture')) login('part04_api_login', 'aktau_api_reader');
     const fixture = readFileSync(join(root, 'backend-go/tests/fixtures/catalog.sql'));
     // The taxonomy migration seeds production categories; the INSERT-only fixture needs a catalog with only its own rows.
     const load = db => sql(db, `TRUNCATE categories CASCADE;\n${fixture}`);

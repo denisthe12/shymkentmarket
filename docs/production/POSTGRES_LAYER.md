@@ -101,6 +101,11 @@ connection-local controls, not production schema/data mutations.
   has lock_timeout5s and statement_timeout10s. No retry or partial apply.
 - `backend/prisma/security/rollback_aktau_api_reader_access.sql`: operator-only,
   transactionally guarded emergency rollback, never an automatic migration.
+  Guards count only the reader's own policies and grants: six SELECT policies and
+  grants (five Part04 runtime tables plus `snapshots`); the `offer_price_basis` view
+  grant is revoked first. CI runs it on a database with every migration and the
+  ingest writer's policies (`scripts/ci/run-db-integration.mjs`); never run it on
+  production outside an approved emergency.
 
 Future order, **not executed on Supabase in Phase A**:
 
