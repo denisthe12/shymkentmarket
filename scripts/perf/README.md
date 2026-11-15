@@ -11,11 +11,11 @@ and key material out of report/logs. Runner requires the accepted Part11 checksu
 and counts/fingerprints; a newer backup needs provenance review, not data overwrites.
 
 ```sh
-rtk proxy node --test scripts/perf/helpers.test.mjs
+node --test scripts/perf/helpers.test.mjs
 # Privately source owner environment with tracing off and export first.
-rtk proxy node scripts/perf/run-local.mjs
+node scripts/perf/run-local.mjs
 # Safe numeric aggregates from ignored generated results (no raw SQL/inputs).
-rtk proxy node scripts/perf/summarize.mjs
+node scripts/perf/summarize.mjs
 ```
 
 Quality before representative load: Go unit/race/vet/pinned staticcheck, local

@@ -24,9 +24,9 @@ reinstall; they no longer describe a pending activation.
 From the repository root (no private configuration needed):
 
 ```bash
-rtk proxy node scripts/ops/monitor-go-production.mjs --offline
-rtk proxy node scripts/ops/check-go-release.mjs --offline
-rtk proxy node --test scripts/ops/monitor-go-production.test.mjs scripts/ops/check-go-release.test.mjs
+node scripts/ops/monitor-go-production.mjs --offline
+node scripts/ops/check-go-release.mjs --offline
+node --test scripts/ops/monitor-go-production.test.mjs scripts/ops/check-go-release.test.mjs
 ```
 
 Default monitor/checker execution is offline, no state/network/delivery I/O.
@@ -60,7 +60,7 @@ In HTTPS mode these private process variables are consumed by explicit `--run`:
 Manual one-shot (as the monitor user, with the environment injected):
 
 ```bash
-rtk proxy node scripts/ops/monitor-go-production.mjs --run
+node scripts/ops/monitor-go-production.mjs --run
 ```
 
 One invocation uses the existing Part19 verifier unchanged: at most5 sequential
@@ -267,6 +267,38 @@ Order matters: sync starts writing run files first, then the report is installed
    the previous SHA and previous units. Report —
    `sudo systemctl disable --now aktau-sync-report.timer`.
 
+### Releases on the VPS (checked 2026-11-15)
+
+The monitor and the report may run from different release directories:
+
+- `aktau-go-monitor.service` → `/opt/aktau-monitor/releases/502656d…` (PR #125, failure
+  detail in the journal; since 2026-11-15 12:37Z);
+- `aktau-sync-report.service` → `/opt/aktau-monitor/releases/ae69e01…` (PR #109;
+  `sync-report.mjs` has not changed since).
+
+Old directories `00c2bd6…` and `4d8e3c0…` are still in `releases/`; no unit uses them.
+Check the current state with
+`systemctl cat aktau-go-monitor.service aktau-sync-report.service --no-pager | grep -E '^(ExecStart|WorkingDirectory)='`.
+
+### Monitor-only release (no state change)
+
+When a release changes only monitor modules and keeps the state format (as PR #125):
+
+1. Bundle the new SHA to the sync checkout as above (the sync checkout itself may stay
+   on its SHA; only the git objects are needed).
+2. `cp -a` the current monitor release directory to `releases/<new sha>`, replace the
+   changed modules from the git objects of the new SHA, and compare sha256 of every
+   module with `git show <new sha>:<path> | sha256sum`.
+3. Render the units for the new release directory, keep a copy of the installed
+   monitor unit in `/var/lib/aktau-monitor/quarantine/aktau-go-monitor.service.<old sha7>-<date>`,
+   install only `aktau-go-monitor.service`, `systemd-analyze verify`, `daemon-reload`.
+4. With the timer stopped, a manual `systemctl start aktau-go-monitor.service` must print
+   `OK` with `"queued":0`; then start the timer again.
+5. Rollback: put the saved unit copy back, `daemon-reload`. No state restore is needed
+   while the state format is unchanged.
+
+Leave the report unit on its release unless `sync-report.mjs` changed.
+
 **Why the 2000 ms Node flag.** The VPS has no IPv6 route and about 20% of IPv4
 connects to Cloudflare need a 1 s SYN retry. Node's default 250 ms per-address
 attempt limit caused false probe failures.
@@ -279,9 +311,9 @@ The latter two are the existing clean Git-export recipe, not a new manifest form
 
 ```bash
 # LOCAL artifacts only; replace placeholders, never use credentials/backup paths.
-rtk proxy node scripts/ops/check-go-release.mjs --check /absolute/review/candidate FULL40SHA
+node scripts/ops/check-go-release.mjs --check /absolute/review/candidate FULL40SHA
 # Optional independent local rollback bundle and its different full SHA:
-rtk proxy node scripts/ops/check-go-release.mjs --check /absolute/review/candidate FULL40SHA /absolute/review/rollback PREVIOUS40SHA
+node scripts/ops/check-go-release.mjs --check /absolute/review/candidate FULL40SHA /absolute/review/rollback PREVIOUS40SHA
 ```
 
 Read-only, fixed filenames/caps, no symlink traversal, strict manifest/duplicate

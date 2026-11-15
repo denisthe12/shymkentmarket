@@ -67,7 +67,7 @@ func TestVoiceHTTP(t *testing.T) {
 			if w.Code != tt.status || w.Header().Get("Cache-Control") != "no-store" {
 				t.Fatalf("unexpected status %d", w.Code)
 			}
-			if strings.Contains(logs.String(), "private-text") || strings.Contains(logs.String(), "43.6") {
+			if strings.Contains(logs.String(), "private-text") || strings.Contains(logsWithoutTimestamps(logs.String()), "43.6") {
 				t.Fatal("logs leaked")
 			}
 			if tt.status == 400 && f.calls != 0 {

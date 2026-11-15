@@ -1,6 +1,6 @@
 # Ingestion (sync) failed
 
-## LOCAL NOW
+## General rules (local and VPS)
 
 Inspect safe ingestion_complete mode/phase/error_code/duration and counts, then
 operator-only snapshot/SourceRun state using scoped read-only diagnostics.

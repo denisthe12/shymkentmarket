@@ -1,11 +1,11 @@
 # API unavailable
 
-## LOCAL NOW
+## General rules (local and VPS)
 
 Symptoms: connection failure, unhealthy container, repeated 5xx. Probe the
 known local origin's /health/live (process) and /health/ready (DB/runtime ability).
 live200/ready503 is dependency degradation, not proof of process death. Use
-RTK curl and inspect only your owned process/container. Read structured JSON
+curl and inspect only your owned process/container. Read structured JSON
 logs by request_id, route template and bounded error_code; do not dump env,
 request bodies or container Env. Reproduce locally with private loopback config.
 
@@ -47,4 +47,5 @@ Use curl or a clearly identified operator client for edge diagnostics. Generic
 Python-urllib currently gets Cloudflare1010/403 despite healthy origin, not proof
 of DB/process failure. Do not impersonate a browser or weaken WAF automatically;
 review edge policy separately if a required actual client is affected.
-Physical Siri remains NOT RUN.
+Physical Siri is not covered by the monitor or by any automated check; it is checked
+by hand on an iPhone (root README, «Проверка проекта»).

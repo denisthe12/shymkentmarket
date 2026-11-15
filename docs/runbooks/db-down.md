@@ -1,6 +1,6 @@
 # PostgreSQL unavailable
 
-## LOCAL NOW
+## General rules (local and VPS)
 
 Expected outage: live200, ready503; recovery must restore ready200 without API
 restart. Begin with read-only diagnostics: provider availability, connect timeout,

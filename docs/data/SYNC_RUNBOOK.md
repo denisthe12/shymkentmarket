@@ -12,7 +12,7 @@ pnpm sync (словарь data/mapping/dictionary.json) →  data/sync/bundle.js
 go run ./cmd/ingest -bundle data/sync/bundle.json [-apply]   →  новый snapshot (staging, quality gates, атомарный publish)
 ```
 
-- Скраперы идут параллельно, весь прогон занимает около 4 минут (замер 2026-10-13): критический путь — HTML-скрапер Dana (после задачи 4.1 локально ~70–75 с вместо ~280 с; приёмка на VPS ещё не выполнена), Dina и Fix Price — по ~22 с. Каждая строка вывода помечена сетью (`[dina]`, `[dana]`, `[fixprice]`, `[anvar]`), итог сети — `[sync] <сеть> exit=<код> took=<N>s`.
+- Скраперы идут параллельно, весь прогон занимает около 3 минут (журнал VPS, 13–15.11.2026): Dina 23–28 с, Fix Price 42–45 с, Dana 104–134 с (пул запросов после задачи 4.1; до неё ~280 с), Анвар 144–158 с — критический путь. Каждая строка вывода помечена сетью (`[dina]`, `[dana]`, `[fixprice]`, `[anvar]`), итог сети — `[sync] <сеть> exit=<код> took=<N>s`.
 - Dina скрапится батчами: один GraphQL-запрос содержит до 20 страниц (`DINA_BATCH_PAGES`, максимум 20: больше 20, ноль или мусор — 20 с предупреждением; `1` возвращает прежнее поведение «страница = запрос»), и только по категориям из `data/mapping/dina-scope-categories.json`. Нет файла, он пуст или посчитан без какой-то из публикуемых сейчас категорий — обход по `DINA_SCOPE_ROOTS`. Выбранный режим — строка `[DINA] mode: ...` в журнале.
 - Dana качает страницы пулом из `DANA_CONCURRENCY` запросов (по умолчанию 3, максимум 4; мусор, ноль или дробное — 3, больше 4 — 4, с предупреждением `[DANA]`; при `HTTP 429/5xx` от Dana снизить до `1` в env-файле). Обходит только подразделы «Продуктов питания» из `data/mapping/dana-scope-sections.json` (`pnpm scope:dana`). Нет файла, он пуст или посчитан без какой-то из публикуемых категорий — обход корня тем же пулом. Режим — строка `[DANA] mode: sections|legacy root|full` в журнале. `Crawl-delay: 3` из `robots.txt` Dana осознанно игнорируется (решение владельца 2026-10-16), пауза 0,3 с на запрос остаётся.
 - Fix Price обходит только `FIXPRICE_SCOPE_ALIASES` (сейчас `produkty-i-napitki`).
@@ -42,7 +42,7 @@ bash pipeline/scripts/daily-sync.sh
 | Таймер / юнит | Когда | Что делает | Лимит |
 |---|---|---|---|
 | `aktau-sync.timer` → `aktau-sync.service` | 06:00 и 18:00 по Актау (UTC+5 → `01:00` и `13:00` UTC) | `daily-sync.sh`: узкий параллельный скрап, sync, ingest с публикацией | `TimeoutStartSec=20min` |
-| `aktau-sync-full.timer` → `aktau-sync-full.service` | воскресенье 22:00 UTC (понедельник 03:00 по Актау), `Persistent=true` | `weekly-full-scrape.sh`: полный скрап, `scope:dina`, `scope:dana`, `sync` (упавший scope-шаг не пропускает `sync`, но даёт код 1 и строку `[full] failed scope steps: ...`); **без ingest и публикации** | `TimeoutStartSec=2h` |
+| `aktau-sync-full.timer` → `aktau-sync-full.service` | воскресенье 22:00 UTC (понедельник 03:00 по Актау), `Persistent=true` | `weekly-full-scrape.sh`: полный скрап Dina, Dana, Fix Price (без Анвара), `scope:dina`, `scope:dana`, `sync` (упавший scope-шаг не пропускает `sync`, но даёт код 1 и строку `[full] failed scope steps: ...`); **без ingest и публикации** | `TimeoutStartSec=2h` |
 
 Файлы: `aktau-sync.service`, `aktau-sync.timer`, `aktau-sync-full.service`, `aktau-sync-full.timer`, `aktau-sync.env.example`.
 
@@ -80,7 +80,7 @@ SELECT "month", count(*) FROM public.price_history GROUP BY 1 ORDER BY 1;
 
 ## 5. Еженедельный полный прогон и новые товары
 
-`aktau-sync-full` (`weekly-full-scrape.sh`) раз в неделю скрапит каталог целиком (`SCRAPE_ALL=1`) и ничего не публикует. Он пишет в отдельные каталоги, чтобы не затереть узкие ежедневные файлы:
+`aktau-sync-full` (`weekly-full-scrape.sh`) раз в неделю скрапит каталог целиком (`SCRAPE_ALL=1`) у Dina, Dana и Fix Price (Анвар не входит) и ничего не публикует. Он пишет в отдельные каталоги, чтобы не затереть узкие ежедневные файлы:
 
 - `data/sources-full/*.json` — полные source-файлы;
 - `data/sources-full/dina-scope-categories.candidate.json` — кандидат нового набора категорий Dina (результат `pnpm scope:dina`, минимальное покрытие товаров, попадающих по словарю в публикуемые категории);

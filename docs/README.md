@@ -7,8 +7,9 @@
 - **Исторические.** Фиксируют момент времени: план, отчёт, передачу работы. Их не
   переписывают задним числом; в шапке такого файла стоит пометка «Исторический документ».
 
-Состояние production на 2026-11-11: Go API на VPS за Cloudflare Tunnel, фронтенд на
-Vercel, БД Supabase, sync цен по таймерам на VPS, монитор API и ежедневный отчёт в Telegram.
+Состояние production на 2026-11-15: Go API на VPS за Cloudflare Tunnel, фронтенд на
+Vercel, БД Supabase, sync цен по таймерам на VPS, монитор API и ежедневный отчёт в Telegram,
+раздел СЗПТ (25 групп, с 2026-11-12).
 NestJS удалён из репозитория (PR #106/#107); C2 удалён (PR #93).
 
 ## Живые документы
@@ -24,7 +25,8 @@ NestJS удалён из репозитория (PR #106/#107); C2 удалён 
 | Sync цен на VPS: таймеры, коды выхода, обновление кода | [ops/sync/README.md](../ops/sync/README.md), [data/SYNC_RUNBOOK.md](data/SYNC_RUNBOOK.md) |
 | Монитор API и ежедневный отчёт | [ops/monitor/README.md](../ops/monitor/README.md), [production/OBSERVABILITY_ALERT_POLICY.md](production/OBSERVABILITY_ALERT_POLICY.md) |
 | Бэкапы и восстановление БД, роли | [ops/postgres/README.md](../ops/postgres/README.md) |
-| Ревалидация фронтенда | [production/FRONTEND_REVALIDATION.md](production/FRONTEND_REVALIDATION.md) |
+| Ревалидация и сброс кэша фронтенда | [production/FRONTEND_REVALIDATION.md](production/FRONTEND_REVALIDATION.md), [ops/frontend/README.md](../ops/frontend/README.md) |
+| Раздел СЗПТ: группы, весовые товары, как менять | [production/SZPT.md](production/SZPT.md) |
 | Источники магазинов | [data/ANVAR_SOURCE.md](data/ANVAR_SOURCE.md), [data/FIXPRICE_SOURCE.md](data/FIXPRICE_SOURCE.md) |
 | CI, защита веток, staging | [production/GITHUB_BRANCH_PROTECTION.md](production/GITHUB_BRANCH_PROTECTION.md), [production/STAGING_PLAN.md](production/STAGING_PLAN.md) |
 | Рабочий журнал фронтенда | [context/06_FRONTEND_WORKLOG.md](context/06_FRONTEND_WORKLOG.md) |

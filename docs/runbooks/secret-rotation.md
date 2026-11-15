@@ -1,6 +1,6 @@
 # Secret rotation
 
-## LOCAL NOW
+## General rules (local and VPS)
 
 Rotate one class at a time only with separate authorization. Never put values
 in Git, reports, command argv/history, logs or archives. Use private files0600,

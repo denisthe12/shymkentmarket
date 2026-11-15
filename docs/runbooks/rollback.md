@@ -1,6 +1,6 @@
 # Recovery / rollback boundaries
 
-## LOCAL NOW
+## General rules (local and VPS)
 
 Identify which class failed before changing state:
 
@@ -28,6 +28,12 @@ Active release and rollback target: `deploy/README.md` → «Current release»
 so the normal rollback is switching `release.env` to the rollback target and
 recreating the container: `deploy/README.md` → «Rollback». No database rollback;
 check schema compatibility of the target before switching.
+
+After the rollback, once Tunnel is back, flush the frontend cache
+(`sudo python3 -I -B /usr/local/sbin/adilbaga-revalidate-frontend`, expect
+`REVALIDATE_PASS … status=204`; `deploy/README.md` → «Frontend cache flush»).
+Otherwise the site keeps showing the rolled-back release's answers for up to an hour.
+A failed flush does not undo the rollback; retry it or wait for the 3600 s TTL.
 
 A correctly handled Gemini failure alone is not a rollback trigger;
 application/security/network failures are. Never expose origin as emergency
