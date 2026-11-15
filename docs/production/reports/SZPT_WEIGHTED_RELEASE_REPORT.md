@@ -163,7 +163,7 @@ Automatic rollback was armed and not needed. `api.env`, compose, sync, scheduler
   price itself (the site without a delivery address shows another store's prices; the snapshot is 13:03Z).
 - «Лук молодой весовой» in «Лук репчатый» is correct: 110–165 ₸/kg by weight, while green onion is sold
   per piece (305 ₸). Breads «Скандинавия», «Ромашка», «Президентский» are not in the bread group.
-- False member found: **«Капуста красная»** (DANA 433 ₸/kg, ANVAR 1 350 ₸/kg) in «Капуста белокочанная»
+- (Fixed 2026-11-15 by `0a7bf2a`, see «Follow-up hotfix 0a7bf2a».) False member found: **«Капуста красная»** (DANA 433 ₸/kg, ANVAR 1 350 ₸/kg) in «Капуста белокочанная»
   — the exclude list has `краснокоч` but not `красн`. Fix by a separate group-rule hotfix.
 - Questionable, left for the owner: «Мясо Отан Синюга говяжья» in «Говядина»; «Морковь желтая» in «Морковь».
 
@@ -178,6 +178,80 @@ Automatic rollback was armed and not needed. `api.env`, compose, sync, scheduler
 - The cutover script in `/root` and the release.env backup are kept as evidence.
 - Known minors (not blocking): the DANA weighted rule treats «ё» as a word boundary (view and
   `pipeline/src/mapping/weight.ts`); the latency gate command shows the DB URL in the VPS process list while
-  `psql` runs; the reader-role rollback script is stale (see «Before the release»).
+  `psql` runs; the reader-role rollback script is stale (see «Before the release») — fixed by PR #128
+  (2026-11-15), which also runs it in CI.
 - Kazakh names of the 15 groups and the Kazakh subtitle are drafts for a native speaker (PR #123).
 - Jira comment: by the owner's decision.
+
+## Follow-up hotfix 0a7bf2a (2026-11-15)
+
+Release `0a7bf2ae24f8d580429ea3fecce5b946bbac00e8`, MANUAL_DEPLOY_PASS. No migrations, no dump, no latency gate.
+
+### Scope
+
+- PR #126 (group rules). `cabbage`: exclude `краснокоч` → `красн` («Капуста красная», DANA and ANVAR).
+  `beef`: new exclude `синюг` («Мясо Отан Синюга говяжья», owner decision). «Морковь желтая» stays in
+  `carrots` (owner decision), pinned by a fixture row. Before the change the full production members of the
+  three groups were read (`/api/szpt/<slug>/products?limit=100`): no other false members.
+- PR #127: frontend cache flush helper (`ops/frontend/revalidate_frontend.py`, deploy/README «Frontend cache
+  flush»). The cutover script calls it after `RESULT=CUTOVER_PASS` and after an automatic rollback.
+- PR #128: reader-role rollback script fix, run in CI. Not part of the API image.
+- `main` 0a7bf2a = all three merges; `backend-go/` is the same as the #126 merge `8e942dc`.
+
+### Artifact
+
+- CI push run `43719039155` 9/9. Build-only run `43719710838` (mode `build`, rollout skipped). Artifact
+  `14163842249` `adilbaga-api-0a7bf2ae24f8d580429ea3fecce5b946bbac00e8-43719710838-1`, digest
+  `f06249ec…39bb`.
+- `image.tar` `569d84ac22911118babe9352cb2809204c53700b828a733dda4fae2877a81db3` (22 042 624 bytes, = manifest).
+- Workstation Gate L: revision `0a7bf2a…`, linux/amd64, `10001:10001`, entrypoint `/usr/local/bin/api`;
+  rootfs `75f1d965…`, `b00bb46b…`, `a04d1a76…` = manifest; binary
+  `39921cb76255975cd0678c667a1750b8bbd50752c717b2831e1c7f08d9b5718d`, **go1.27.4**.
+
+### VPS
+
+- `scp` to `~/release-0a7bf2a/` (0700); `sha256sum -c` OK for `image.tar`, the script and the helper.
+- Preflight 13:39Z (read-only): `release.env` = `c7ba31f`, healthy, 0 restarts (started 2026-11-14
+  14:41:06Z); cloudflared active; `aktau-sync`/`aktau-sync-full` inactive (13:00Z sync finished); no `*.json`
+  in `/var/lib/adilbaga/deploy/`; 39 GB free.
+- Helper installed as `/usr/local/sbin/adilbaga-revalidate-frontend` (root, 0755, SHA-256 `015e1de8…eddc`);
+  a test run on the old API gave `REVALIDATE_PASS host=aktau.market status=204`.
+- After `docker load`, Gate L on the VPS matched the workstation (revision, platform, user, entrypoint,
+  three layers, binary `39921cb7…`, go1.27.4).
+
+### Cutover
+
+Script `/root/adilbaga-szpt-0a7bf2a-cutover.sh`
+(SHA-256 `e2bf572e562f07f4a32af8b38551d59c7924bcdc458f4c032103b45c060e60f4`) = the phase 2 script
+(`90f0202a…`) with `NEW`, `OLD`, `NEW_BINARY_SHA`, the temporary binary path and the backup prefix changed,
+plus: the helper must exist (root-owned, executable) in the preflight, and the cache flush runs after
+`CUTOVER_PASS` and after an automatic rollback (its result is logged, it is not a gate). Transient unit
+`adilbaga-szpt-0a7bf2a-cutover` (invocation `71ab4d6f…`), exit 0, runtime 2 min 3 s.
+
+Sequence: preflight PASS 13:40:31Z → baseline local smoke on `c7ba31f` PASS → backup
+`/root/adilbaga-release.env.c7ba31f.1794750059` 13:40:59Z → tunnel stop 13:40:59Z → healthy 13:41:06Z →
+readiness and local smoke PASS → local SZPT PASS (`25 11 potatoes`) 13:41:41Z → tunnel start 13:41:42Z
+(public outage ≈43 s) → public smoke and SZPT PASS 13:42:32Z → `RESULT=CUTOVER_PASS` →
+`REVALIDATE_PASS host=aktau.market status=204` 13:42:33Z. Automatic rollback was armed and not needed.
+`cp -n` printed a coreutils portability warning; the backup was written and checked.
+
+### Acceptance
+
+- Baseline of all 25 groups (members of every page, `defaultSort`) taken on `c7ba31f` at 13:40:06Z, after the
+  13:00Z sync; compared at 13:43:51Z on `0a7bf2a`: `cabbage` 3 → 2 (only «Капуста красная» gone), `beef`
+  19 → 18 (only «Мясо Отан Синюга говяжья» gone); the other 23 groups have identical members and
+  `defaultSort`. «Морковь желтая» is still in `carrots` (4).
+- Frontend right after the flush (13:44Z): `/ru/szpt/cabbage`, `/kk/szpt/cabbage`, `/ru/szpt/beef` no longer
+  show the removed products and still list the others; subtitle «25 групп продуктов» / «25 өнім тобы».
+
+### Observation
+
+13:57:53Z (≈17 min after the start): `0a7bf2a`, healthy, 0 restarts (started 13:41:00Z), cloudflared active,
+ready 200; 347 log lines since start, 0 `ERROR` level, 0 `status` 5xx. 14 API images on the VPS, including
+`c7ba31f` (rollback) and `0a7bf2a`.
+
+### Left as is
+
+- `~/release-0a7bf2a/` (b2admin home) can be deleted; the image is loaded.
+- The cutover script in `/root` and the release.env backup are kept as evidence.
+
