@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { root } from './common.mjs';
+import { root, env } from './common.mjs';
 import { postgres } from './postgres.mjs';
 
 await postgres(async ({ url, sql, login, load, go }) => {
@@ -62,3 +63,41 @@ await postgres(async ({ url, sql, login, load, go }) => {
   }
 });
 
+
+// Emergency reader rollback (operator tool, never run on production by CI) on a database with every
+// migration and the ingest writer's policies, as in production. Own container: aktau_api_reader is a
+// cluster-wide role and the container above grants it in every database, so DROP ROLE could not pass there.
+await postgres(async ({ name, sql, login, load }) => {
+  const db = 'part04_reader_rollback';
+  const rollback = readFileSync(join(root, 'backend/prisma/security/rollback_aktau_api_reader_access.sql'));
+  load(db);
+  sql(db, readFileSync(join(root, 'backend/prisma/security/aktau_ingest_writer_role.sql')));
+  login('part04_rollback_api', 'aktau_api_reader');
+  const counts = `SELECT string_agg(t || '=' || n, ',' ORDER BY t) FROM (
+    SELECT 'stores' t, count(*) n FROM stores UNION ALL SELECT 'store_locations', count(*) FROM store_locations
+    UNION ALL SELECT 'categories', count(*) FROM categories UNION ALL SELECT 'raw_products', count(*) FROM raw_products
+    UNION ALL SELECT 'canonical_products', count(*) FROM canonical_products UNION ALL SELECT 'product_mappings', count(*) FROM product_mappings
+    UNION ALL SELECT 'offers', count(*) FROM offers UNION ALL SELECT 'snapshots', count(*) FROM snapshots
+    UNION ALL SELECT 'offer_price_basis', count(*) FROM offer_price_basis) x;`;
+  const readerState = `SELECT (SELECT count(*) FROM pg_policy WHERE polname = 'aktau_api_reader_select') || ',' ||
+    (SELECT count(*) FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid WHERE c.relnamespace = 'public'::regnamespace) || ',' ||
+    has_table_privilege('aktau_api_reader', 'offer_price_basis', 'SELECT');`;
+  const before = sql(db, counts);
+  if (sql(db, readerState) !== '6,23,true') throw new Error('reader rollback fixture is not the production policy layout');
+  // A runtime LOGIN member is still present: the guard must refuse, and the whole transaction rolls back.
+  const refused = spawnSync('docker', ['exec', '-i', name, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', db, '-qAt'],
+    { env, input: rollback, encoding: 'utf8', timeout: 60_000 });
+  if (refused.status === 0 || !/Remove runtime members/.test(refused.stderr)) throw new Error('reader rollback did not refuse a runtime member');
+  if (sql(db, readerState) !== '6,23,true') throw new Error('refused reader rollback was not atomic');
+  sql(db, 'DROP ROLE part04_rollback_api;');
+  sql(db, rollback);
+  if (sql(db, "SELECT to_regrole('aktau_api_reader') IS NULL;") !== 't') throw new Error('reader rollback left aktau_api_reader behind');
+  if (sql(db, "SELECT (SELECT count(*) FROM pg_policy WHERE polname = 'aktau_api_reader_select') || ',' || (SELECT count(*) FROM pg_policy WHERE polname LIKE 'aktau_ingest_writer_%');") !== '0,17') {
+    throw new Error('reader rollback removed the wrong policies');
+  }
+  if (sql(db, counts) !== before) throw new Error('reader rollback changed data');
+  // The role bootstrap must apply again after the rollback.
+  sql(db, readFileSync(join(root, 'backend/prisma/security/aktau_api_reader_role.sql')));
+  if (sql(db, "SELECT NOT rolcanlogin FROM pg_roles WHERE rolname = 'aktau_api_reader';") !== 't') throw new Error('reader role did not re-apply');
+  console.log(`reader rollback: PASS (${before})`);
+}, ['part04_reader_rollback']);
