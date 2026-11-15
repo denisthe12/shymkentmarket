@@ -14,6 +14,7 @@ import { runMonitor, createNotifier, main, trimQueue } from './monitor-go-produc
 
 const healthy = () => ({ outcome: 'PASS', requests: 5, records: ['live','ready','categories','products','dashboard'].map(endpoint => ({ endpoint, outcome: 'PASS', schemaClass: 'valid', statusClass: '2xx' })) });
 const bad = () => ({ outcome: 'BLOCKED', reason: 'PRIVATE_SENTINEL', records: [] });
+const BAD_FAILURE = { endpoint: 'none', reason: 'incomplete', statusClass: 'none', latencyMs: null };
 function fixture(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aktau-monitor-test-')); fs.chmodSync(dir, 0o700);
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -47,7 +48,7 @@ test('zero-success-ever and a single failure followed by success', async t => {
 test('undelivered ALERT keeps probing and arrives before RECOVERED', async t => {
   const f = fixture(t); f.failing(true); let probes = 0; const good = () => { probes++; return healthy() };
   assert.equal((await f.run(bad)).outcome, 'DEGRADED');
-  assert.deepEqual(await f.run(bad), { outcome: 'INCIDENT', reason: 'probe_unavailable', queued: 1 });
+  assert.deepEqual(await f.run(bad), { outcome: 'INCIDENT', reason: 'probe_unavailable', failure: BAD_FAILURE, queued: 1 });
   assert.deepEqual(await f.run(good), { outcome: 'RECOVERED', reason: 'probe_complete', queued: 2 }); assert.equal(probes, 1);
   f.failing(false);
   assert.deepEqual(await f.run(good), { outcome: 'OK', reason: 'probe_complete', queued: 0 });
@@ -59,7 +60,7 @@ test('at most two sends per run, oldest first', async t => {
   const f = fixture(t); f.failing(true);
   await f.run(bad); await f.run(bad); await f.run(); await f.run(bad); const r = await f.run(bad); // o1 r1 o2 queued
   assert.equal(r.queued, 3); f.sends.length = 0; f.failing(false);
-  assert.deepEqual(await f.run(bad), { outcome: 'INCIDENT', reason: 'probe_unavailable', queued: 1 });
+  assert.deepEqual(await f.run(bad), { outcome: 'INCIDENT', reason: 'probe_unavailable', failure: BAD_FAILURE, queued: 1 });
   assert.deepEqual(f.sends.map(x => x.type), ['incident_opened', 'incident_recovered']);
   assert.equal((await f.run(bad)).queued, 0);
   assert.deepEqual(f.sends.map(x => [x.type, x.attempts]), [['incident_opened', 5], ['incident_recovered', 1], ['incident_opened', 1]]);
@@ -125,7 +126,7 @@ test('foreign ancestor ownership is rejected before opening any files', async t 
 test('persist attempt before send; crash-like send throw retains same event', async t => {
   const f = fixture(t); await f.run(bad);
   const result = await f.run(bad, { notify: async () => { const s = JSON.parse(fs.readFileSync(path.join(f.dir, 'state.json'))); assert.equal(s.queue[0].attempts, 1); throw Error('PRIVATE_SENTINEL') } });
-  assert.deepEqual(result, { outcome: 'INCIDENT', reason: 'probe_unavailable', queued: 1 }); assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+  assert.deepEqual(result, { outcome: 'INCIDENT', reason: 'probe_unavailable', failure: BAD_FAILURE, queued: 1 }); assert.ok(!JSON.stringify(result).includes('PRIVATE'));
 });
 test('clock rollback blocks before probe/delivery; no freshness from snapshotAt', async t => {
   const f = fixture(t); await f.run();
@@ -240,4 +241,31 @@ for (const kind of ['success', 'redirect', 'timeout', 'error', 'shutdown']) test
   assert.ok(!body.includes('PRIVATE_SENTINEL')); assert.ok(body.length < 256);
   assert.deepEqual(Object.keys(JSON.parse(body)).sort(), ['category','timestamp','type']);
   if (kind === 'timeout' || kind === 'shutdown') assert.equal(destroyed, true);
+});
+test('unhealthy probe names the failed endpoint with whitelisted fields only', async t => {
+  const f = fixture(t);
+  const ready503 = () => ({ outcome: 'FAIL', reason: 'http_status', requests: 2, records: [
+    { observedAtUTC: '2026-11-15T05:02:49.000Z', endpoint: 'live', statusClass: '2xx', latencyMs: 12, schemaClass: 'valid', outcome: 'PASS', reason: 'none' },
+    { observedAtUTC: '2026-11-15T05:02:49.100Z', endpoint: 'ready', statusClass: '5xx', latencyMs: 5003.7, schemaClass: 'not_checked', outcome: 'BLOCKED', reason: 'http_status' }] });
+  assert.deepEqual(await f.run(ready503), { outcome: 'DEGRADED', reason: 'probe_unavailable',
+    failure: { endpoint: 'ready', reason: 'http_status', statusClass: '5xx', latencyMs: 5004 }, queued: 0 });
+  const timeout = () => ({ outcome: 'BLOCKED', reason: 'timeout', requests: 1, records: [
+    { endpoint: 'live', statusClass: 'none', latencyMs: 8000, outcome: 'BLOCKED', reason: 'timeout' }] });
+  assert.deepEqual(await f.run(timeout), { outcome: 'INCIDENT', reason: 'probe_unavailable',
+    failure: { endpoint: 'live', reason: 'timeout', statusClass: 'none', latencyMs: 8000 }, queued: 0 });
+  assert.deepEqual((await f.run()), { outcome: 'RECOVERED', reason: 'probe_complete', queued: 0 });
+});
+test('failure detail never echoes unknown values from the probe', async t => {
+  const f = fixture(t);
+  const hostile = () => ({ outcome: 'FAIL', reason: 'PRIVATE_SENTINEL', records: [
+    { endpoint: 'PRIVATE_SENTINEL', statusClass: 'PRIVATE', latencyMs: 'PRIVATE', outcome: 'FAIL', reason: 'PRIVATE_SENTINEL' }] });
+  const result = await f.run(hostile);
+  assert.deepEqual(result.failure, { endpoint: 'unknown', reason: 'unknown', statusClass: 'unknown', latencyMs: null });
+  assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+  assert.deepEqual((await f.run(() => { throw Error('PRIVATE_SENTINEL') })).failure,
+    { endpoint: 'none', reason: 'probe_error', statusClass: 'none', latencyMs: null });
+  assert.deepEqual((await f.run(() => ({ outcome: 'PASS' }))).failure,
+    { endpoint: 'none', reason: 'incomplete', statusClass: 'none', latencyMs: null });
+  assert.deepEqual((await f.run(() => ({ outcome: 'BLOCKED', reason: 'global_deadline', records: [] }))).failure,
+    { endpoint: 'none', reason: 'global_deadline', statusClass: 'none', latencyMs: null });
 });

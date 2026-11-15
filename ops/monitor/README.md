@@ -129,7 +129,13 @@ runs. Concurrent invocations never check/send. No stale-lock-by-age/PID removal.
 Wall clock rollback blocks before probes/delivery (`clock_discontinuity`).
 
 Output: `{"outcome":"OK"|"DEGRADED"|"INCIDENT"|"RECOVERED","reason":"probe_complete"|"probe_unavailable","queued":<n>}`
-or `BLOCKED` with a fixed reason. `RECOVERED` is printed in the run that records
+or `BLOCKED` with a fixed reason. An unhealthy probe (`probe_unavailable`) also
+prints `"failure":{"endpoint","reason","statusClass","latencyMs"}` for the first
+failed request, e.g. `{"endpoint":"ready","reason":"http_status","statusClass":"5xx","latencyMs":5004}`.
+Every field is whitelisted: endpoint is one of the five probe names, reason is a
+fixed verifier reason (`transport`, `timeout`, `http_status`, …) or `probe_error`/
+`incomplete`, and anything else prints `unknown`. It goes to the journal only, not
+into the Telegram event. `RECOVERED` is printed in the run that records
 the recovery, independent of delivery. The old `PENDING`/`DELIVERED` outcomes and
 the `delivery_reconciliation_required` reason no longer exist. Exit0: OK/RECOVERED;
 exit1: DEGRADED/INCIDENT; exit2: arguments/config/state/clock/cancellation BLOCKED.
