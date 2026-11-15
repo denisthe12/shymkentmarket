@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -411,8 +412,10 @@ func TestFullLiveVoice(t *testing.T) {
 		}
 		post("continue", map[string]any{"sessionId": id, "text": "ещё"}, 404)
 	})
+	// The slog time field (for example "…:51.123Z") can contain a coordinate sentinel; drop it first.
+	scrubbed := regexp.MustCompile(`"timestamp":"[^"]*"`).ReplaceAllString(logs.String(), "")
 	for _, secret := range append(ownSessions, append(cfg.GeminiKeys, cfg.UpstashURL, cfg.UpstashToken, "43.6", "51.1", "молоко")...) {
-		if secret != "" && strings.Contains(logs.String(), secret) {
+		if secret != "" && strings.Contains(scrubbed, secret) {
 			t.Fatal("live runtime privacy violation")
 		}
 	}

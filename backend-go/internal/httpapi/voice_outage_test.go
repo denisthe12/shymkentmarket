@@ -10,10 +10,17 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 )
+
+// logTimestamp matches the slog time field. Its milliseconds (for example "…:51.123Z") can
+// contain a coordinate sentinel such as "51.1", so privacy checks drop it first.
+var logTimestamp = regexp.MustCompile(`"timestamp":"[^"]*"`)
+
+func logsWithoutTimestamps(s string) string { return logTimestamp.ReplaceAllString(s, "") }
 
 type voiceRepository struct{ testRepository }
 
@@ -98,7 +105,7 @@ func TestVoiceProviderOutages(t *testing.T) {
 				}
 			}
 			for _, v := range []string{"private-provider-error", "private-session-sentinel", "молоко", "43.6", "51.1"} {
-				if strings.Contains(logs.String(), v) {
+				if strings.Contains(logsWithoutTimestamps(logs.String()), v) {
 					t.Fatal("outage privacy leak")
 				}
 			}
@@ -129,5 +136,13 @@ func TestVoiceAdditionalRateLimit(t *testing.T) {
 		if w.Code != tt.want {
 			t.Fatal("voice limiter/global behavior mismatch")
 		}
+	}
+}
+
+func TestLogsWithoutTimestampsKeepsPayload(t *testing.T) {
+	line := `{"timestamp":"2026-11-15T14:17:51.123Z","level":"INFO","msg":"x","lat":43.6}`
+	got := logsWithoutTimestamps(line)
+	if strings.Contains(got, "51.1") || !strings.Contains(got, "43.6") {
+		t.Fatalf("timestamp not removed or payload lost: %s", got)
 	}
 }
