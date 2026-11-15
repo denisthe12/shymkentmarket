@@ -451,3 +451,16 @@ INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('n-cabbage-out67','Капуста корейская',NULL,'vegetables','{}');
 INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","inStock","snapshotAt","snapshotId") VALUES
 ('off-n-cabbage-out67','n-cabbage-out67','raw-n-cabbage-out67','dina',769,NULL,true,'2026-11-11 01:00:00','szpt-v1');
+-- Hotfix 2026-11-15: production false members (red cabbage, Синюга) and the kept yellow carrot.
+INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId","rawPayload") VALUES
+('raw-n-cabbage-out69','dina','src-n-cabbage-out69','Капуста красная',783,'szpt-v1','{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb),
+('raw-n-beef-out70','dina','src-n-beef-out70','Мясо Отан Синюга говяжья',790,'szpt-v1','{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb),
+('raw-n-carrots-in71','dina','src-n-carrots-in71','Морковь желтая',797,'szpt-v1','{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}'::jsonb);
+INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
+('n-cabbage-out69','Капуста красная',NULL,'vegetables','{}'),
+('n-beef-out70','Мясо Отан Синюга говяжья','Отан','meat','{}'),
+('n-carrots-in71','Морковь желтая',NULL,'vegetables','{}');
+INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","inStock","snapshotAt","snapshotId") VALUES
+('off-n-cabbage-out69','n-cabbage-out69','raw-n-cabbage-out69','dina',783,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-n-beef-out70','n-beef-out70','raw-n-beef-out70','dina',790,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
+('off-n-carrots-in71','n-carrots-in71','raw-n-carrots-in71','dina',797,NULL,true,'2026-11-11 01:00:00','szpt-v1');
