@@ -4,7 +4,8 @@ Source of truth: [contracts/openapi.yaml](../../contracts/openapi.yaml).
 Version: **1.0.0**, OpenAPI **3.1.0**. Production Part 02. Implemented by the Go API
 in production; the original NestJS reference is removed and replaced by recorded
 responses. No `/api/v1` prefix and no generated SDK.
-Planned origin: `https://api.aktau.market`; public brand remains `Adil Bağa`.
+Production origin: `https://api.aktau.market`; public brand `Aktau Market`.
+The SZPT endpoints were added in 2026-11 as an additive change (the version stays 1.0.0).
 
 ## Endpoints and wire shape
 
@@ -15,6 +16,8 @@ Planned origin: `https://api.aktau.market`; public brand remains `Adil Bağa`.
 | GET /api/products | 200 | ProductCard[], no total/envelope |
 | GET /api/products/{id} | 200 | ProductCard, same shape as list |
 | GET /api/dashboard | 200 | summary, priceSpreads, locations, **baskets** |
+| GET /api/szpt | 200 | `{groups}`: slug, name, unit, sizes, count, defaultSort; fixed order |
+| GET /api/szpt/{group}/products | 200 | SZPT ProductCard[] with unitPrice and soldByWeight; unknown group 404 |
 | POST /api/voice/start | 201 | clarification/result union |
 | POST /api/voice/continue | 201 | same union; missing/expired session 404 |
 
@@ -25,7 +28,7 @@ UUID-shaped. No speculative fields or new search/voice text length limits.
 ProductCard: id/name/brand/category{slug,name}/imageUrl/attributes/minPrice/offers/
 snapshotAt. brand and imageUrl are nullable. Attributes hold string/number/boolean/
 null. Each offer has storeCode/storeName/price/oldPrice; oldPrice nullable;
-storeCode enum `DINA | DANA | FIX_PRICE`. Only usable in-stock positive-price
+storeCode enum `DINA | DANA | FIX_PRICE | ANVAR`. Only usable in-stock positive-price
 offers are exposed, ordered price ASC; minPrice equals their minimum. snapshotAt
 is max usable offer snapshotAt (UTC ISO datetime), not request time. RawProduct
 fields and Offer.inStock are NOT part of v1. Images are nullable strings, without
@@ -78,16 +81,34 @@ latitude/longitude. No speculative id/category/image/store-name fields.
 Required baskets: storeCode/storeName/total/items. Item:
 categorySlug/categoryName/productId/name/price. Missing means productId/name/price
 all null, not 0. Total sums found prices only. Backend selects the cheapest offer
-of the concrete chain. Current fixed configuration milk1l/sugar1kg/oil1l uses
-exact attributes and no category fallback; not a user cart/checkout. Slot slugs
+of the concrete chain. Current fixed configuration has five slots (slot 5 since 2026-11-01):
+`basket-milk` (milk 1 l), `basket-pasta` (pasta 400 g), `basket-rice` (rice 800 g),
+`basket-yogurt` (Fruttis 115 g), `basket-noodles` (Доширак 120 g). Each slot matches
+an exact size attribute and a name pattern inside one category, with no category
+fallback (`backend-go/internal/postgres/dashboard.go`); not a user cart/checkout. Slot slugs
 remain strings, not a closed schema enum that would bar reviewed future configs.
+
+## SZPT (socially significant food)
+
+`/api/szpt` lists groups of the current published snapshot in a fixed order; a group
+without usable products is omitted. Group rules live in code
+(`backend-go/internal/szpt/groups.go`), not in the database. `unit` is `kg`, `l` or
+`10pcs`; `sizes` are package sizes in the base unit (empty for weighted groups);
+`defaultSort` is `unit_price_asc` for weighted groups, otherwise `price_asc`.
+
+`/api/szpt/{group}/products` takes `size` (repeated, OR, only values from `sizes`),
+`sort` (`price_asc | unit_price_asc`, default = the group's `defaultSort`), `limit`
+and `offset` as in product queries. Each card and offer carries `unitPrice
+{value, unit}` (nullable) and `soldByWeight`. Weighted offers use the per-kg basis
+from the `offer_price_basis` view. Full rules: OpenAPI and
+[SZPT.md](SZPT.md).
 
 ## Voice
 
 start: nonblank text, latitude/longitude (JSON numbers OR compatible numeric JSON
 strings). Explicit Number conversion then finite/range check: latitude ±90,
 longitude ±180. continue: opaque nonblank sessionId + nonblank text. Extra request
-properties are rejected by the existing validation pipe.
+properties are rejected with 400 (strict JSON decoding in `backend-go/internal/httpapi/voice.go`).
 
 Clarification: status=needs_clarification, sessionId, question, missingFields.
 Result: status=result, mode=single|list, speech, items. single ≤1; list ≤3;
@@ -103,7 +124,9 @@ unavailable →503. Session payloads/coordinates/text must not be logged.
 Envelope: `{statusCode: integer, message: string | string[], error?: string}`.
 400 validation and 404 missing resources/session are current; 503 current voice
 session failure. 500 compatible internal error, without secrets/stack/provider
-payload. 429 is a **reserved compatible envelope**, not implemented rate limiting.
+payload. 429 uses the same envelope: the Go API limits requests per client
+(`RATE_LIMIT_RPS`/`RATE_LIMIT_BURST`, `backend-go/internal/middleware/ratelimit.go`)
+plus a Voice rate and concurrency gate without queueing (`voice_limit.go`).
 No new error code/requestId field. Reference Cache-Control is not explicitly
 configured; framework ETag behavior is not a frozen application cache policy.
 
@@ -111,7 +134,8 @@ Clients ignore unknown additive response fields. Additive evolution still requir
 review; removing fields, changing nullability/types/semantics, or narrowing input
 needs explicit versioning/review. Do not silently change v1 to simplify Go.
 Contract black-box tests are implementation-agnostic via CONTRACT_API_BASE_URL;
-fixture profile includes voice, live profile is GET-only. See contracts/README.md.
+fixture profile includes voice but has no server since NestJS was removed; live
+profile is GET-only. See [contracts/README.md](../../contracts/README.md).
 
 Frontend Offer.inStock? is retained ONLY as an existing optional mock/SEO consumer
 extension used by structured-data tests. It is not returned or guaranteed by v1,

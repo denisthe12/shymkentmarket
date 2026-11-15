@@ -7,7 +7,7 @@ DATABASE_URL, DIRECT_URL or SMOKE_DATABASE_URL.
 
 ## Backup
 
-Prerequisites: RTK, Node24, PostgreSQL17 client tools matching source major,
+Prerequisites: Node24, PostgreSQL17 client tools matching source major,
 GnuPG with an independently configured recipient. Do not automatically install
 tools. Shell tracing must be off. Privately source a 0600 operator env file:
 
@@ -16,7 +16,7 @@ set +x
 set -a
 source /absolute/private/operator-backup.env
 set +a
-rtk proxy bash ops/postgres/backup.sh
+bash ops/postgres/backup.sh
 ```
 
 Required configuration:
@@ -49,7 +49,7 @@ parameters; use private local credentials. Set BACKUP_FILE to the encrypted
 `.dump.gpg` and BACKUP_GPG_HOME to the outside-repo decryption keyring:
 
 ```bash
-rtk proxy bash ops/postgres/restore-test.sh
+bash ops/postgres/restore-test.sh
 ```
 
 The target must be a freshly created disposable database. The script does **not**
@@ -103,7 +103,7 @@ See [rollback](../../docs/runbooks/rollback.md) and
 Synthetic guard/cleanup tests (no DB/network writes):
 
 ```bash
-rtk proxy node --test ops/postgres/backup.test.mjs
+node --test ops/postgres/backup.test.mjs
 ```
 
 Those test doubles do not prove encryption/restore; the actual PG17/GPG drill

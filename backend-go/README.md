@@ -74,12 +74,12 @@ PART11_OPERATOR_DATABASE_URL and PART11_READER_DATABASE_URL targeting the same
 loopback `part11_recovery` DB; it refuses production/runtime URL fallback:
 
 ```bash
-rtk proxy go test -race -count=1 -tags=integration ./internal/postgres -run '^TestLocalObservability$'
+go test -race -count=1 -tags=integration ./internal/postgres -run '^TestLocalObservability$'
 ```
 
 ## Configuration and local run
 
-Go 1.27.4, Docker and RTK are required. With the owner's WSL installation:
+Go 1.27.4 and Docker are required. With the owner's WSL installation:
 
 ```bash
 export PATH=/usr/local/go/bin:$PATH
@@ -100,13 +100,19 @@ Use only disposable local PostgreSQL for local runs; do not connect to Supabase.
 | LOG_LEVEL | debug/info/warn/error; default info, including startup logs |
 | RATE_LIMIT_RPS | Positive finite number; default 20 |
 | RATE_LIMIT_BURST | Positive integer; default 40 |
+| VOICE_RATE_LIMIT_RPS | Per-client Voice rate, positive finite number; default 2 |
+| VOICE_RATE_LIMIT_BURST | Positive integer; default 4 |
+| VOICE_MAX_CONCURRENCY | Voice requests in flight per instance, positive integer; default 4 |
+
+In production Voice also requires `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`
+and at least one `GEMINI_API_KEY*`; startup fails without them.
 
 `.env.example` contains safe placeholders only. Set DATABASE_URL privately to the
 disposable local database URL (never print it), then:
 
 ```bash
 APP_ENV=development CORS_ALLOWED_ORIGINS=http://localhost:3100 \
-  rtk proxy go run ./cmd/api
+  go run ./cmd/api
 ```
 
 Missing/invalid configuration fails startup. Pool creation is lazy: temporary DB
@@ -128,7 +134,7 @@ The second URL must use local `part04_api_login`: INHERIT login with only
 requires the local operator to prepare existing init + group bootstrap using
 `backend/prisma/security/aktau_api_reader_role.sql` + security migration
 `20261004000000_rls_runtime_access` BEFORE creating the private disposable LOGIN
-and group membership. The tests require that prepared, empty seven-table schema
+and group membership. The tests require that prepared, empty schema (11 public tables after all Prisma migrations, checked by `openPart04Fixture`)
 and insert fixtures; they do not bootstrap an activated reader. Bootstrap and
 migration independently reject pre-existing memberships/direct/default ACLs.
 Fixtures are cleared locally on
@@ -136,7 +142,7 @@ completion; non-local targets are refused before connection/setup. Tests never
 consult runtime DATABASE_URL or backend/.env.
 
 ```bash
-rtk proxy go test -tags=integration ./...
+go test -tags=integration ./...
 ```
 
 `SMOKE_DATABASE_URL` explicitly selects a loopback production clone for read-only
@@ -155,7 +161,7 @@ absent, existing managed ACLs and fixture or restored data. Use two isolated clu
 between the clean migration-built DB and production clone.
 
 ```bash
-rtk proxy go test -count=1 -tags=integration ./tests/integration \
+go test -count=1 -tags=integration ./tests/integration \
   -run '^TestReaderRolloutLifecycle$' -v
 ```
 
@@ -190,25 +196,37 @@ See POSTGRES_LAYER.md for the Phase B runbook (historical; applied).
 - Instance-local rate limiting, resolved client-IP key; health and OPTIONS exempt.
   Hard cap 8192 clients, idle TTL 10 minutes, lazy cleanup at minute intervals.
   At capacity new clients receive 429; active clients are not evicted/reset.
-  This is defense-in-depth, not distributed/edge or voice-specific abuse control.
+  This is defense-in-depth, not distributed/edge abuse control. Voice routes add
+  their own per-client limit and an in-flight cap without queueing (`VoiceGate`,
+  `internal/middleware/voice_limit.go`); over the cap → 429.
 - Max body 1 MiB including unknown-length/chunked bodies, URI 16 KiB;
   bounded body pre-read before routing.
 - ReadHeader 5s, Read 15s, Write 20s, Idle 60s, MaxHeaderBytes 64 KiB.
   Request context deadline 15s; handlers must honor cancellation.
 - SIGINT/SIGTERM → stop accepting, graceful shutdown ≤10s, pool Close, clean exit.
 
+## SZPT section
+
+`/api/szpt` and `/api/szpt/{group}/products` (since 2026-11-12). Group rules are Go
+code in `internal/szpt/groups.go` (25 groups, 11 of them weighted); SQL in
+`internal/postgres/szpt.go` reads the current published snapshot and the
+`offer_price_basis` view (migration `20261114000000_offer_price_basis`) for per-kg
+prices of goods sold by weight. Changing a rule changes production data only after an
+API release; then flush the frontend cache (`deploy/README.md`). Details:
+[docs/production/SZPT.md](../docs/production/SZPT.md).
+
 ## Reproducible quality gates
 
 ```bash
-rtk proxy gofmt -w cmd internal tests
-rtk proxy gofmt -l .                    # must print nothing
-rtk proxy go mod tidy
-rtk proxy go mod verify
-rtk proxy go test ./...
-rtk proxy go test -race ./...
-rtk proxy go vet ./...
-rtk proxy go tool staticcheck ./...
-rtk proxy go tool govulncheck ./...
+gofmt -w cmd internal tests
+gofmt -l .                    # must print nothing
+go mod tidy
+go mod verify
+go test ./...
+go test -race ./...
+go vet ./...
+go tool staticcheck ./...
+go tool govulncheck ./...
 ```
 
 Tools are pinned by go.mod tool directives and go.sum: staticcheck v0.8.1,
@@ -222,7 +240,7 @@ unavailable loopback port 1. Runtime integration smoke below uses disposable PG1
 From repository root:
 
 ```bash
-rtk proxy docker build -t adilbaga-part03-api:review backend-go
+docker build -t adilbaga-part03-api:review backend-go
 ```
 
 Image: Go 1.27.4 Alpine build, CGO disabled/trimpath; minimal Alpine 3.24 runtime
@@ -233,16 +251,16 @@ First confirm the names below do not belong to pre-existing resources. Export
 The following creates only local resources and no application schema/data:
 
 ```bash
-rtk proxy docker network create --driver bridge adilbaga-part03
-rtk proxy docker volume create adilbaga-part03-data
-rtk proxy docker run -d --name adilbaga-part03-postgres \
+docker network create --driver bridge adilbaga-part03
+docker volume create adilbaga-part03-data
+docker run -d --name adilbaga-part03-postgres \
   --network adilbaga-part03 \
   -e POSTGRES_USER=part03 -e POSTGRES_DB=part03 \
   -e POSTGRES_PASSWORD="$PART03_DB_PASSWORD" \
   -v adilbaga-part03-data:/var/lib/postgresql/data postgres:17-alpine
 # Wait for pg_isready exit 0 before probing API readiness.
-rtk proxy docker exec adilbaga-part03-postgres pg_isready -U part03 -d part03
-rtk proxy docker run -d --name adilbaga-part03-api --network adilbaga-part03 \
+docker exec adilbaga-part03-postgres pg_isready -U part03 -d part03
+docker run -d --name adilbaga-part03-api --network adilbaga-part03 \
   --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m \
   --cap-drop=ALL --security-opt=no-new-privileges \
   -p 127.0.0.1:18080:8080 \
@@ -255,7 +273,7 @@ rtk proxy docker run -d --name adilbaga-part03-api --network adilbaga-part03 \
 Use an isolated user-defined bridge: in this smoke environment Docker's internal
 network left the requested host port unpublished (Ports=null).
 DB has no published port; API is localhost-only.
-Use raw RTK proxy when JSON or
+Use the raw command output when JSON or
 exact exit codes are needed for assertions. Never dump docker inspect Env or logs
 that might contain configuration values.
 
@@ -264,22 +282,22 @@ Check Docker health=healthy; live/ready=200; UID from `docker exec ... id -u` is
 404 and POST live JSON 405. Then stop **only** this disposable DB:
 
 ```bash
-rtk proxy docker stop --time 10 adilbaga-part03-postgres
-rtk curl http://127.0.0.1:18080/health/live   # 200
-rtk curl http://127.0.0.1:18080/health/ready  # 503/status=not_ready
-rtk proxy docker start adilbaga-part03-postgres
+docker stop --time 10 adilbaga-part03-postgres
+curl http://127.0.0.1:18080/health/live   # 200
+curl http://127.0.0.1:18080/health/ready  # 503/status=not_ready
+docker start adilbaga-part03-postgres
 # Wait until ready returns 200; API ID/StartedAt must not change, RestartCount=0.
-rtk curl http://127.0.0.1:18080/health/ready
-rtk proxy docker stop --time 12 adilbaga-part03-api
+curl http://127.0.0.1:18080/health/ready
+docker stop --time 12 adilbaga-part03-api
 # Expect clean exit 0 within 10s; inspect only State.ExitCode.
 ```
 
 Finally remove only resources you created, after confirming ownership:
 
 ```bash
-rtk proxy docker rm -v adilbaga-part03-api adilbaga-part03-postgres
-rtk proxy docker volume rm adilbaga-part03-data
-rtk proxy docker network rm adilbaga-part03
+docker rm -v adilbaga-part03-api adilbaga-part03-postgres
+docker volume rm adilbaga-part03-data
+docker network rm adilbaga-part03
 unset PART03_DB_PASSWORD
 ```
 

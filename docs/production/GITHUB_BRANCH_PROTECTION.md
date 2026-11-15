@@ -1,6 +1,6 @@
 # GitHub branch protection — current state
 
-## State on 2026-11-11 (checked through the GitHub API)
+## State on 2026-11-15 (checked through the GitHub API on 2026-11-11 and 2026-11-15)
 
 - `main` has **no branch protection**: `GET repos/kiratonine/AdilBaga/branches/main/protection`
   returns 404.

@@ -1,6 +1,6 @@
 # Voice session dependency unavailable
 
-## LOCAL NOW
+## General rules (local and VPS)
 
 Symptoms: session get/set/delete failures and controlled Voice503. Catalog GET
 and DB readiness must remain available. Inspect fixed session_dependency

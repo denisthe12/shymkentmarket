@@ -101,6 +101,7 @@ Aktau Market сокращает путь от поиска до конкретн
 - 💸 **Сравнение цен** — минимальная цена показывается первой, остальные предложения идут ниже;
 - 🔎 **Поиск и динамические фильтры** — фильтры зависят от реальных характеристик категории;
 - 📊 **Городская аналитика** — ценовой разброс и сравнение фиксированной продуктовой корзины;
+- 🧺 **СЗПТ** — социально значимые продукты по группам (рис, гречка, молоко, мясо, овощи…) с ценой за кг, литр или 10 шт., включая весовые товары;
 - 🗺 **Карта магазинов** — физические точки сетей в Актау;
 - 📍 **Ближайший магазин** — расстояние рассчитывается по геолокации пользователя;
 - 🎙 **Интеграция с Siri** — голосовой запрос возвращает товар, цену, сеть, адрес и изображение;
@@ -145,17 +146,18 @@ Aktau Market сокращает путь от поиска до конкретн
 
 ## Что уже работает? ✅
 
-Числа ниже — по публичному API на 2026-11-11 (snapshot 01:02 UTC); каталог меняется
+Числа ниже — по публичному API на 2026-11-15 (snapshot 13:02 UTC); каталог меняется
 после каждого sync. Исходный snapshot MVP был меньше: 849 товаров, 3 сети, 6 категорий.
 
 - единый snapshot данных магазинов Актау, обновляется автоматически два раза в день;
-- **4 184** canonical products, из них **486** есть больше чем в одной сети;
+- **4 184** canonical products, из них **484** есть больше чем в одной сети;
 - **4** торговые сети;
 - физические точки сетей на карте;
 - **9** публичных категорий;
 - месячная история цен (с ноября 2026);
 - поиск, фильтрация и сортировка;
 - карточка товара с предложениями разных сетей;
+- раздел СЗПТ: **25** групп социально значимых продуктов, цена за единицу, весовые товары;
 - dashboard с ценовым разбросом;
 - фиксированная продуктовая корзина по сетям;
 - карта магазинов;
@@ -260,6 +262,8 @@ GET  /api/categories/:slug/filters
 GET  /api/products
 GET  /api/products/:id
 GET  /api/dashboard
+GET  /api/szpt
+GET  /api/szpt/:group/products
 POST /api/voice/start
 POST /api/voice/continue
 ```
@@ -388,12 +392,12 @@ CI-группы локально: `node scripts/ci/run-checks.mjs <group>`
 ```bash
 cd frontend
 
-rtk proxy pnpm typecheck
-rtk proxy pnpm lint
-NEXT_PUBLIC_API_MODE=mock rtk pnpm test
+pnpm typecheck
+pnpm lint
+NEXT_PUBLIC_API_MODE=mock pnpm test
 # HTTP env из раздела запуска обязателен и для build/start.
-rtk pnpm build
-PW_CHANNEL=chrome rtk pnpm test:e2e  # explicit test-only mock build
+pnpm build
+PW_CHANNEL=chrome pnpm test:e2e  # explicit test-only mock build
 ```
 
 ### Real HTTP E2E
@@ -437,7 +441,7 @@ AdilBaga/
 │   └── screenshots/
 │       ├── catalog.png
 │       ├── analytics.png
-│       └── siri.png
+│       └── siri.PNG
 │
 ├── backend/
 │   └── prisma/                 # Prisma schema, migrations, security SQL
@@ -507,6 +511,7 @@ AdilBaga/
 - [Карта документации: что актуально, что исторично](docs/README.md)
 - [Production API: релиз и откат](deploy/README.md), [runbooks](docs/runbooks/)
 - [Sync цен на VPS](ops/sync/README.md), [монитор API](ops/monitor/README.md)
+- [Раздел СЗПТ](docs/production/SZPT.md), [контракт API v1](docs/production/API_V1_CONTRACT.md)
 - Исторические: [ТЗ MVP](docs/00_TECHNICAL_SPEC.md), [риски и решения](docs/01_RISKS_AND_DECISIONS.md) — описывают NestJS-версию MVP
 
 ---
