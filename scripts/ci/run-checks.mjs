@@ -53,6 +53,7 @@ if (group === 'contracts') {
     ]));
 } else if (group === 'security') {
   console.log(run('release broker regressions', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'scripts/deploy', '-p', 'auto_*_test.py']));
+  console.log(run('frontend cache flush helper', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'ops/frontend', '-p', '*_test.py']));
   console.log(run('release transport guards', 'node', ['--test', 'scripts/deploy/auto-gate.test.mjs']));
   console.log(run('disposable CI database guards', 'node', ['--test', 'scripts/ci/guard.test.mjs']));
   console.log(run('staging parity no-skip guard', 'node', ['--test', 'scripts/ci/parity-output.test.mjs']).split('\n').slice(-8).join('\n'));
