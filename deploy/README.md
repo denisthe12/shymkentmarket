@@ -139,6 +139,24 @@ Run the local smoke (installed `auto_smoke.py`) before starting cloudflared, the
 update «Current release». Before every new release keep both the current and the
 previous SHA images and check DB compatibility of the rollback target.
 
+## Frontend cache flush
+
+The frontend server caches API answers for up to one hour (tag `catalog-data`). After an
+API cutover or rollback that changes data, flush that cache, otherwise pages show the old
+answer for up to an hour (2026-11-14: `/ru/szpt/rice` showed 10 groups after the 25-group
+release). Only a signed `POST /internal/revalidate` does this; the helper
+`ops/frontend/revalidate_frontend.py` signs it with the secret from `/etc/aktau-sync.env`
+and never prints it. Installed once as `/usr/local/sbin/adilbaga-revalidate-frontend`
+(`ops/frontend/README.md`). Cutover scripts call it after `RESULT=CUTOVER_PASS`; a failed
+flush does not roll the API back. By hand:
+
+```bash
+sudo python3 -I -B /usr/local/sbin/adilbaga-revalidate-frontend
+```
+
+Expect `REVALIDATE_PASS host=aktau.market status=204`, then check that a page shows the
+new API data right away (for example `/ru/szpt/rice` and the changed group page).
+
 ### Emergency stop (last resort)
 
 Only if no retained image is healthy: return to the Part14B zero-application state
