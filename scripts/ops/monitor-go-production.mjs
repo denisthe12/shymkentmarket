@@ -43,6 +43,20 @@ function healthy(v) {
   return v?.outcome === 'PASS' && v.requests === 5 && Array.isArray(v.records) && v.records.length === 5
     && v.records.every((r, i) => r.endpoint === endpoints[i] && r.outcome === 'PASS' && r.schemaClass === 'valid' && r.statusClass === '2xx');
 }
+// Journal-only failure detail. Every field is whitelisted so probe text never reaches the output.
+const ENDPOINTS = ['live','ready','categories','products','dashboard'];
+const PROBE_REASONS = ['transport','timeout','global_deadline','access_blocked','redirect','http_status',
+  'content_type','body_limit','invalid_json','schema','partial_body','already_used'];
+const pick = (value, allowed) => allowed.includes(value) ? value : 'unknown';
+export function describeFailure(v, threw = false) {
+  const none = reason => ({ endpoint: 'none', reason, statusClass: 'none', latencyMs: null });
+  if (threw) return none('probe_error');
+  const row = Array.isArray(v?.records) ? v.records.find(r => r?.outcome !== 'PASS') : undefined;
+  if (!row) return none(PROBE_REASONS.includes(v?.reason) ? v.reason : 'incomplete');
+  return { endpoint: pick(row.endpoint, ENDPOINTS), reason: pick(row.reason, PROBE_REASONS),
+    statusClass: /^(?:[1-5]xx|none)$/.test(row.statusClass) ? row.statusClass : 'unknown',
+    latencyMs: Number.isFinite(row.latencyMs) && row.latencyMs >= 0 ? Math.round(row.latencyMs) : null };
+}
 export async function runMonitor({ directory, check = () => createVerifier()(), notify, now = Date.now, storeFactory = openState, signal } = {}) {
   let store, answer = result('BLOCKED', 'state_unavailable');
   try {
@@ -52,8 +66,9 @@ export async function runMonitor({ directory, check = () => createVerifier()(), 
     const time = now();
     if (!Number.isSafeInteger(time) || time < 0 || time >= 8639999999940000 || (s.lastUTC !== null && time < s.lastUTC)) answer = result('BLOCKED', 'clock_discontinuity');
     else {
-      let ok = false;
-      try { ok = healthy(await check()); } catch { /* inaccessible/partial data is unsuccessful, never healthy */ }
+      let ok = false, failure = null;
+      try { const v = await check(); ok = healthy(v); if (!ok) failure = describeFailure(v); }
+      catch { failure = describeFailure(null, true); /* inaccessible/partial data is unsuccessful, never healthy */ }
       if (signal?.aborted) answer = result('BLOCKED', 'cancelled');
       else {
         const previous = s.phase; s.lastUTC = time;
@@ -71,7 +86,8 @@ export async function runMonitor({ directory, check = () => createVerifier()(), 
           if (!accepted) break;
           s.queue.shift(); store.save(s);
         }
-        answer = { ...result(type === 'incident_recovered' ? 'RECOVERED' : s.phase, ok ? 'probe_complete' : 'probe_unavailable'), queued: s.queue.length };
+        answer = { ...result(type === 'incident_recovered' ? 'RECOVERED' : s.phase, ok ? 'probe_complete' : 'probe_unavailable'),
+          ...(ok ? {} : { failure }), queued: s.queue.length };
       }
     }
   } catch { answer = result('BLOCKED', 'state_unavailable'); }
