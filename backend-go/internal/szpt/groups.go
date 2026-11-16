@@ -156,7 +156,7 @@ var Groups = []Rule{
 	{Slug: "black-tea", Name: "Чай чёрный", Category: "tea-coffee", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 40,
 		Include: []string{`^чай`, `ч[её]рн|гранул|байхов|кени|ассам|цейлон|индийск|black|kenya|assam|ceylon`},
 		Exclude: exclude(`пакет|пак([^а-яё]|$)|пирамид|саше|\d+\s*[*xх×]\s*\d|зел|(^|[^а-яё])бел|улун|пуэр|травян|фрукт|ягод|бергамот|earl grey|лимон|мят|чабрец|имбир|малин|клубник|персик|манго|ананас|вишн|апельсин|роз|жасмин|карамел|ванил|специ|масала|молок|3 ?в ?1|напит|холодн|каркаде|мате|ройбуш|смородин|тропич`,
-			`(^|[^a-z])green([^a-z]|$)|rose|tropic|berry|fruit|lemon|mint|peach|mango|vanil|caramel|citrus|barberry`, weighted)},
+			`(^|[^a-z])green([^a-z]|$)|rose|tropic|berry|fruit|lemon|mint|peach|mango|vanil|caramel|citrus|barberry|pleasure|orange|lime|cherry|apple|spice|spicy|ginger|bergamot|jasmin|thyme|honey|chocolate|cinnamon|blossom`, weighted)},
 	// Table salt except «Экстра» (order 362-нқ) and non-food salt.
 	{Slug: "salt", Name: "Соль поваренная пищевая", Category: "salt", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200,
 		Include: []string{`^соль|^тұз`},
