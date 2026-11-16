@@ -65,3 +65,11 @@ export function toPerKgCard(product: SzptProductDto): ProductCardDto {
   const { unitPrice: _unitPrice, soldByWeight: _sold, ...card } = product
   return { ...card, offers, minPrice: offers.length > 0 ? Math.min(...offers.map((o) => o.price)) : product.minPrice }
 }
+
+/** Все группы раздела: 30 групп покрывают все 31 позицию приказа 362-нқ («Говядина» — за две позиции) */
+export const SZPT_ALL_GROUPS = 30
+
+/** Подзаголовок раздела: «все 31 позиция» — только когда API отдал все группы (пустая группа в ответ не попадает) */
+export function szptSubtitle(count: number, t: TFunction): string {
+  return count === SZPT_ALL_GROUPS ? t('szpt.subtitleAll') : t('szpt.subtitle', { count })
+}

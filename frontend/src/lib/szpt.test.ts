@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getI18n } from '../i18n'
 import type { SzptGroupDto } from '../api/types'
 import type { SzptProductDto } from '../api/types'
-import { defaultSortOf, formatPackSize, formatUnitPrice, readSzptState, szptParams, toPerKgCard } from './szpt'
+import { defaultSortOf, formatPackSize, formatUnitPrice, readSzptState, szptParams, szptSubtitle, toPerKgCard } from './szpt'
 
 const t = getI18n('ru').t
 const kk = getI18n('kk').t
@@ -95,5 +95,14 @@ describe('szpt.subtitle', () => {
       '25 групп продуктов из перечня СЗПТ (приказ МТИ РК № 362-нқ).',
     ])
     expect(kk('szpt.subtitle', { count: 25 })).toBe('ӘМАТ тізімінен 25 өнім тобы (ҚР СИМ № 362-нқ бұйрығы).')
+  })
+})
+
+describe('szptSubtitle', () => {
+  it('says all 31 order positions only when the API returns all 30 groups', () => {
+    expect(szptSubtitle(30, t)).toBe('30 групп продуктов — все 31 позиция перечня СЗПТ (приказ МТИ РК № 362-нқ).')
+    expect(szptSubtitle(30, kk)).toBe('ӘМАТ тізімінен 30 өнім тобы — бұйрықтың барлық 31 позициясы (ҚР СИМ № 362-нқ бұйрығы).')
+    expect(szptSubtitle(29, t)).toBe('29 групп продуктов из перечня СЗПТ (приказ МТИ РК № 362-нқ).')
+    expect(szptSubtitle(25, kk)).toBe('ӘМАТ тізімінен 25 өнім тобы (ҚР СИМ № 362-нқ бұйрығы).')
   })
 })
