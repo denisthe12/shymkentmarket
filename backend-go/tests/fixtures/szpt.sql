@@ -547,3 +547,10 @@ INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldP
 ('off-n-salt-out95','n-salt-out95','raw-n-salt-out95','dana',140,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-n-salt-out96','n-salt-out96','raw-n-salt-out96','dina',890,NULL,true,'2026-11-11 01:00:00','szpt-v1'),
 ('off-n-salt-out97','n-salt-out97','raw-n-salt-out97','dina',1990,NULL,true,'2026-11-11 01:00:00','szpt-v1');
+-- SZPT phase 3 production check 2026-11-16: bagged tea counted in pieces (Fix Price).
+INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId","rawPayload") VALUES
+('raw-n-black-tea-out98','fix','src-n-black-tea-out98','Чай чёрный Принцесса Нури 100 г 50 шт.',450,'szpt-v1',NULL);
+INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
+('n-black-tea-out98','Чай чёрный Принцесса Нури 100 г 50 шт.',NULL,'tea-coffee','{"weightGrams":100}');
+INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"oldPrice","inStock","snapshotAt","snapshotId") VALUES
+('off-n-black-tea-out98','n-black-tea-out98','raw-n-black-tea-out98','fix',450,NULL,true,'2026-11-11 01:00:00','szpt-v1');

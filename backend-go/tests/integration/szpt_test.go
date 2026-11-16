@@ -174,6 +174,7 @@ func TestDeterministicSzpt(t *testing.T) {
 			{"n-salt-out95", "salt", false},
 			{"n-salt-out96", "salt", false},
 			{"n-salt-out97", "salt", false},
+			{"n-black-tea-out98", "black-tea", false},
 		}
 		members := map[string]map[string]bool{}
 		for _, c := range cases {
