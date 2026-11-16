@@ -5,7 +5,7 @@ import { isCategorySlug, type CategorySlug } from '../agent/taxonomy.js'
  * Что публикуем на сайт: социально значимые продукты питания (docs/00_TECHNICAL_SPEC.md, 04_BACKEND_2_SCOPE.md §23).
  * Словарь хранит все категории, поэтому набор можно расширить без повторного прогона LLM — через env PUBLISH_CATEGORIES.
  */
-export const DEFAULT_PUBLISH_CATEGORIES: readonly CategorySlug[] = ['milk', 'dairy', 'eggs', 'bread', 'meat', 'vegetables', 'groats', 'sugar', 'oil']
+export const DEFAULT_PUBLISH_CATEGORIES: readonly CategorySlug[] = ['milk', 'dairy', 'eggs', 'bread', 'meat', 'vegetables', 'groats', 'sugar', 'oil', 'salt', 'tea-coffee', 'fish']
 
 export function publishCategories(env: string | undefined = process.env.PUBLISH_CATEGORIES): Set<CategorySlug> {
   if (!env?.trim()) return new Set(DEFAULT_PUBLISH_CATEGORIES)

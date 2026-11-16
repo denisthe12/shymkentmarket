@@ -1,15 +1,18 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-19T11:46:28.172Z",
+  "generatedAt": "2026-11-16T11:43:05.751Z",
   "scope": [
     "bread",
     "dairy",
     "eggs",
+    "fish",
     "groats",
     "meat",
     "milk",
     "oil",
+    "salt",
     "sugar",
+    "tea-coffee",
     "vegetables"
   ],
   "root": "/catalog/483/",
@@ -28,7 +31,7 @@
     "/catalog/577/",
     "/catalog/583/"
   ],
-  "coveredProducts": 1176,
-  "scopeProducts": 1176,
+  "coveredProducts": 1426,
+  "scopeProducts": 1426,
   "unsectionedProducts": 0
 }
