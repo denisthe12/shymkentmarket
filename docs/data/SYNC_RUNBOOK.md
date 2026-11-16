@@ -50,13 +50,17 @@ bash pipeline/scripts/daily-sync.sh
 
 ## 4. Если упало
 
-Смотрите `failureCode` в JSON-выводе `cmd/ingest`:
+`failureCode` есть в JSON-выводе `cmd/ingest` только при успехе. При ошибке `cmd/ingest` печатает лишь строку `ingestion_complete` с `error_code` фазы (например `ingestion_validation_failed`), без причины. Чтобы её узнать, повторите dry-run на том же bundle (read-only), например с `-recluster`: если он проходит и показывает `mergedCanonicalCount`/`splitCanonicalCount` > 0, причина — конфликт карточек.
+
+**После любого ручного `cmd/ingest -apply` в production** сразу выполните `ANALYZE public.offers, public.raw_products, public.canonical_products, public.product_mappings, public.categories, public.snapshots;` ролью владельца. Ручной apply не запускает retention, и autoanalyze может не сработать. Тогда запросы СЗПТ упираются в `statement_timeout` API (инцидент 2026-11-16, `docs/production/reports/SZPT_PHASE3_RELEASE_REPORT.md`).
+
+Коды причин:
 
 | Код / симптом | Что значит и что делать |
 |---|---|
 | `required_source_missing` | в bundle нет ни одного товара обязательной сети. Упавший скрапер к этому больше не приводит: берётся прошлый удачный файл (exit 3), пустой файл не записывается вовсе. Нет source-файла или он старше лимита — `sync` останавливается ещё раньше (`source file missing` / `source file is stale`, строка ниже). Значит, сеть выпала из bundle иначе: `SYNC_STORES` без неё или ни один её товар не попал в публикуемые категории — проверить env и source-файл сети |
 | `store_count_drop` | товаров сети стало заметно меньше (порог `INGEST_MAX_STORE_DROP_PERCENT`) — проверить источник, не публиковать |
-| `canonical_merge_conflict` | словарь меняли (объединили карточки) — запустить `cmd/ingest` с `-recluster` |
+| `canonical_merge_conflict` | словарь меняли (объединили карточки) — разово запустить `cmd/ingest -recluster -apply`, затем `ANALYZE` (см. выше). Так бывает и когда словарь привязывает товары сети, раньше публиковавшиеся отдельными карточками, к существующим карточкам (2026-11-16, Анвар) |
 | `canonical_split_conflict` | карточку в словаре разделили, и две группы претендуют на один прежний ID. Строгий ingest падает, пока не пройдёт разовый `cmd/ingest -recluster -apply`. Скрытие через непубликуемую категорию этой ошибки не вызывает |
 | ошибка `sync` или ingest (exit 1) | snapshot не публикуется, на сайте остаются прошлые цены. Падение одного скрапера сюда не относится: оно даёт exit 3 (следующая строка) |
 | exit 3 — stale stores | snapshot **опубликован**, но сети из строки `[sync] stale stores: <список>` взяты из прошлого удачного файла; юнит в статусе `failed` намеренно. Смотрите `journalctl -u aktau-sync`, ищите `[<сеть>]` с причиной падения скрапера. Цены такой сети устаревают, и через `SYNC_MAX_SOURCE_AGE_HOURS` (36 ч) `sync` откажется их публиковать (`... source file is stale`) — до этого срока скрапер надо починить |

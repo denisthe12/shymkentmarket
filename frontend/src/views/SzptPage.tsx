@@ -20,7 +20,7 @@ import { CategoryPageSkeleton, ProductGridSkeleton } from '../components/ui/Skel
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/States'
 import { szptGroupName } from '../lib/dataLabels'
 import { formatDate } from '../lib/format'
-import { readSzptState, sizeFilter, szptParams } from '../lib/szpt'
+import { readSzptState, sizeFilter, szptParams, szptSubtitle } from '../lib/szpt'
 import { replaceQuery } from '../lib/urlState'
 import { useHref } from '../lib/useLang'
 import { CategoryHeader } from './CategoryPage'
@@ -72,7 +72,7 @@ export function SzptPage({ group: slug }: { group: string }) {
       </div>
       <h1 className="mt-3 text-h1">{t('szpt.title')}</h1>
       <p className="mt-2 text-sm text-muted">
-        {t('szpt.subtitle', { count: groups.data.length })}
+        {szptSubtitle(groups.data.length, t)}
         {items[0] && <> {t('szpt.priceDate', { date: formatDate(items[0].snapshotAt) })}</>}
       </p>
 
@@ -206,7 +206,7 @@ export function SzptPageLoading() {
     <>
       <CategoryHeader name={t('szpt.title')} />
       {/* Число групп известно только из API: пока его нет, строку не показываем */}
-      {groups.data && <p className="mt-2 text-sm text-muted">{t('szpt.subtitle', { count: groups.data.length })}</p>}
+      {groups.data && <p className="mt-2 text-sm text-muted">{szptSubtitle(groups.data.length, t)}</p>}
       <LoadingState>
         <CategoryPageSkeleton title={false} />
       </LoadingState>
