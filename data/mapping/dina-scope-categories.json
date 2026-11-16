@@ -1,21 +1,25 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-13T13:13:54.593Z",
+  "generatedAt": "2026-11-16T11:55:01.800Z",
   "scope": [
     "bread",
     "dairy",
     "eggs",
+    "fish",
     "groats",
     "meat",
     "milk",
     "oil",
+    "salt",
     "sugar",
+    "tea-coffee",
     "vegetables"
   ],
   "categoryIds": [
     "1",
     "2",
     "3",
+    "4",
     "5",
     "6",
     "7",
@@ -23,11 +27,12 @@
     "9",
     "11",
     "13",
+    "14",
+    "15",
     "18",
     "19",
-    "108",
     "1577"
   ],
-  "coveredProducts": 2019,
-  "scopeProducts": 2019
+  "coveredProducts": 2420,
+  "scopeProducts": 2420
 }
