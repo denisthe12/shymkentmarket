@@ -148,6 +148,32 @@ func TestDeterministicSzpt(t *testing.T) {
 			{"n-chicken-out66", "chicken", false},
 			{"n-chicken-out67", "chicken", false},
 			{"n-chicken-out68", "chicken", false},
+			{"n-lamb-in72", "lamb", true},
+			{"n-lamb-in73", "lamb", true},
+			{"n-lamb-out74", "lamb", false},
+			{"n-lamb-out75", "lamb", false},
+			{"n-lamb-out76", "lamb", false},
+			{"n-horse-meat-in77", "horse-meat", true},
+			{"n-horse-meat-in78", "horse-meat", true},
+			{"n-horse-meat-out79", "horse-meat", false},
+			{"n-horse-meat-out80", "horse-meat", false},
+			{"n-horse-meat-out81", "horse-meat", false},
+			{"n-fish-in82", "fish", true},
+			{"n-fish-in83", "fish", true},
+			{"n-fish-out84", "fish", false},
+			{"n-fish-out85", "fish", false},
+			{"n-fish-out86", "fish", false},
+			{"n-black-tea-in87", "black-tea", true},
+			{"n-black-tea-in88", "black-tea", true},
+			{"n-black-tea-out89", "black-tea", false},
+			{"n-black-tea-out90", "black-tea", false},
+			{"n-black-tea-out91", "black-tea", false},
+			{"n-black-tea-out92", "black-tea", false},
+			{"n-salt-in93", "salt", true},
+			{"n-salt-in94", "salt", true},
+			{"n-salt-out95", "salt", false},
+			{"n-salt-out96", "salt", false},
+			{"n-salt-out97", "salt", false},
 		}
 		members := map[string]map[string]bool{}
 		for _, c := range cases {
@@ -474,6 +500,26 @@ func TestDeterministicSzpt(t *testing.T) {
 		}
 		if bySlug["cheese"].Count != 7 {
 			t.Errorf("cheese count = %d, want 7 (with h14)", bySlug["cheese"].Count)
+		}
+	})
+
+	// Phase 3: weighted Anvar carp (priceUnit kg, no package size) is priced per kg; fish sorts by per-kg price.
+	t.Run("phase3_fish_per_kg", func(t *testing.T) {
+		carp := find(t, list(t, szpt.Query{Group: "fish"}), "n-fish-in83")
+		if !carp.SoldByWeight || carp.UnitPrice == nil || *carp.UnitPrice != kg(2990) || carp.MinPrice != 2990 {
+			t.Errorf("n-fish-in83 = soldByWeight %v, unitPrice %+v, minPrice %d", carp.SoldByWeight, carp.UnitPrice, carp.MinPrice)
+		}
+		if len(carp.Offers) != 1 || carp.Offers[0].StoreCode != "ANVAR" || !carp.Offers[0].SoldByWeight {
+			t.Errorf("n-fish-in83 offers = %+v", carp.Offers)
+		}
+		groups, err := repo.ListGroups(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, g := range groups {
+			if g.Slug == "fish" && g.DefaultSort != szpt.UnitPriceAsc {
+				t.Errorf("fish defaultSort = %q, want unit_price_asc", g.DefaultSort)
+			}
 		}
 	})
 
