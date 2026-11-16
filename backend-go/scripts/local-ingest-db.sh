@@ -41,6 +41,7 @@ run $M/20261102000200_anvar_taxonomy/migration.sql
 run $M/20261107000000_price_history/migration.sql
 run $M/20261107000100_product_identities/migration.sql
 run $M/20261114000000_offer_price_basis/migration.sql
+run $M/20261116000000_szpt_phase3_taxonomy/migration.sql
 run ops/postgres/security/aktau_ingest_product_identities_access.sql
 docker exec "$NAME" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q \
   -c "CREATE ROLE ingest_local LOGIN PASSWORD '$PW'"   -c "GRANT aktau_ingest_writer TO ingest_local WITH INHERIT TRUE, SET FALSE" >/dev/null  # cmd/ingest отвергает логин с правом SET ROLE
