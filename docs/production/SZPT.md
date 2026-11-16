@@ -4,6 +4,8 @@
 Проектирование и история — в исторических документах: spec/plan
 [фазы 1](../superpowers/specs/2026-11-12-scrum-25-szpt-design.md) (SCRUM-25) и
 [фазы 2, весовые товары](../superpowers/specs/2026-11-14-szpt-weighted-design.md),
+[фазы 3, соль, чай, рыба, баранина, конина](../superpowers/specs/2026-11-15-szpt-phase3-salt-tea-fish-design.md)
+([план](../superpowers/plans/2026-11-15-szpt-phase3-salt-tea-fish.md)),
 отчёты о релизах [SZPT_API_RELEASE_REPORT](reports/SZPT_API_RELEASE_REPORT.md) и
 [SZPT_WEIGHTED_RELEASE_REPORT](reports/SZPT_WEIGHTED_RELEASE_REPORT.md).
 
@@ -15,14 +17,20 @@
 
 ## Группы
 
-25 групп из перечня СЗПТ (подмножество официального списка, приказ 362-нқ), порядок фиксирован.
-На 2026-11-15 в API все 25:
+30 групп покрывают все 31 позицию перечня СЗПТ (приказ МТИ РК от 23.12.2025 № 362-нқ; «Говядина» —
+за две позиции), порядок фиксирован. Фаза 3 добавила `lamb`, `horse-meat`, `fish`, `black-tea`, `salt`;
+до её релиза API в production отдаёт 25 групп.
 
-- упаковочные (14): `rice`, `buckwheat`, `sour-cream`, `cottage-cheese`, `cheese`, `milk`, `kefir`,
-  `sunflower-oil`, `eggs`, `butter`, `flour`, `bread`, `pasta-horns`, `sugar`;
-- весовые (11, берут и товары на развес, сортировка по умолчанию — цена за кг): `potatoes`,
+- упаковочные (16): `rice`, `buckwheat`, `sour-cream`, `cottage-cheese`, `cheese`, `milk`, `kefir`,
+  `sunflower-oil`, `eggs`, `butter`, `flour`, `bread`, `pasta-horns`, `sugar`, `black-tea`, `salt`;
+- весовые (14, берут и товары на развес, сортировка по умолчанию — цена за кг): `potatoes`,
   `carrots`, `onions`, `cabbage`, `tomatoes`, `cucumbers`, `apples`, `beef`, `minced-meat`,
-  `chicken-parts`, `chicken`.
+  `lamb`, `horse-meat`, `fish`, `chicken-parts`, `chicken`.
+
+Источники данных фазы 3: каталог публикует категории `salt`, `tea-coffee` и `fish` целиком (с кофе,
+какао и всей рыбой). Сырая баранина и конина у Dina лежат в разделах «Готовая еда» и «Полуфабрикаты»;
+в `meat` их переносит правило по названию `pipeline/src/mapping/meat.ts` (`refineMeat`, вызывается
+из `refineCategory`). Баранина и конина есть только у Dina, рыба указанных видов — у Dina и Анвара.
 
 Группа без годных товаров в текущем snapshot в ответ API не попадает.
 
@@ -36,6 +44,7 @@
 | HTTP | `GET /api/szpt`, `GET /api/szpt/{group}/products` — [OpenAPI](../../contracts/openapi.yaml), [API_V1_CONTRACT](API_V1_CONTRACT.md) |
 | Признак «продаётся на вес» и база цены (граммы на цену) | представление `public.offer_price_basis`, миграция `backend/prisma/migrations/20261114000000_offer_price_basis` |
 | То же правило при импорте | `pipeline/src/mapping/weight.ts` (`isVariableWeight`) |
+| Категория сырой баранины и конины Dina | `pipeline/src/mapping/meat.ts`, тесты `pipeline/test/meat.test.ts` |
 | Проверки на production (только чтение) | `ops/postgres/szpt/offer_price_basis_check.sql` (роль владельца), `ops/postgres/szpt/szpt_members_explain.sql` (роль API, сгенерирован тестом) |
 
 Цена за единицу: `price × 1000 / size` для групп в кг и л, `price × 10 / size` для яиц
