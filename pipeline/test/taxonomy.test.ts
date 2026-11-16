@@ -96,10 +96,15 @@ describe('taxonomy', () => {
       }
     }
   })
-  it('phase 3 migration keeps the 9 old rows of the applied anvar migration', () => {
+  it('phase 3 migration keeps the 9 old rows of the applied anvar migration (options only grow)', () => {
+    // Новые товары Анвара в старых разделах (2026-11-16) добавили опции: яйца 30 шт, хлеб 140 г. Убывать опции не должны
     const anvarRows = parseRows(anvarSql)
     expect(anvarRows).toHaveLength(9)
-    for (const prev of anvarRows) expect(rows.find((r) => r.slug === prev.slug), prev.slug).toEqual(prev)
+    for (const prev of anvarRows) {
+      const r = rows.find((x) => x.slug === prev.slug)!
+      expect([r.id, r.name, r.schema.filters.map((f) => f.key)], prev.slug).toEqual([prev.id, prev.name, prev.schema.filters.map((f) => f.key)])
+      for (const f of prev.schema.filters) expect(r.schema.filters.find((x) => x.key === f.key)!.options, `${prev.slug}.${f.key}`).toEqual(expect.arrayContaining(f.options!))
+    }
   })
   it('new categories have servable filters', () => {
     const keys = (slug: string) => rows.find((r) => r.slug === slug)!.schema.filters.map((f) => f.key)
