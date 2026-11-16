@@ -97,8 +97,10 @@ describe('scrapeAnvar', () => {
     const { fetchImpl } = mock({ withMilk: false })
     await expect(scrapeAnvar({ fetchImpl, delayMs: 0, scope })).rejects.toThrow(/scope category 9192 Молоко not found/)
   })
-  it('defines the 19 scope categories from the plan', () => {
-    expect(ANVAR_SCOPE).toHaveLength(19)
+  it('defines the 21 scope categories from the plan', () => {
+    expect(ANVAR_SCOPE).toHaveLength(21)
+    expect(ANVAR_SCOPE).toContainEqual({ id: '9043', name: 'Чай' })
+    expect(ANVAR_SCOPE).toContainEqual({ id: '9140', name: 'Свежая рыба, морепродукты' })
     expect(ANVAR_SCOPE[0]).toEqual({ id: '8971', name: 'Фрукты, овощи, грибы' })
   })
 })

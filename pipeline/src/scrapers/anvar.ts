@@ -28,7 +28,7 @@ export type AnvarItem = {
 export type AnvarScopeCategory = { id: string; name: string }
 
 /**
- * Категории Анвара, соответствующие 9 публикуемым категориям сайта (социально значимые товары).
+ * Категории Анвара, соответствующие публикуемым категориям сайта (социально значимые товары).
  * Скрап Анвара всегда ограничен ими: SCRAPE_ALL его не расширяет.
  */
 export const ANVAR_SCOPE: readonly AnvarScopeCategory[] = [
@@ -51,6 +51,8 @@ export const ANVAR_SCOPE: readonly AnvarScopeCategory[] = [
   { id: '9047', name: 'Супы, лапша, кисели' },
   { id: '9075', name: 'Соль, сахар, сода, уксус' }, // sugar
   { id: '9098', name: 'Растительные масла' }, // oil
+  { id: '9043', name: 'Чай' }, // tea-coffee
+  { id: '9140', name: 'Свежая рыба, морепродукты' }, // fish
 ]
 
 export function assertAnvarShop(shops: { id: string }[], shopId: string): void {

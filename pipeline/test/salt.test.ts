@@ -23,8 +23,8 @@ describe('salt is separated from sugar', () => {
   it('salt cards get the salt category', () => {
     expect(Object.values(d.canonicals).filter((c) => c.category === 'salt').map((c) => c.name)).toEqual(['Соль поваренная 1 кг', 'Соль морская Сахара 500 г', 'Тұз йодированный 1 кг'])
   })
-  it('salt is a category but is not published', () => {
+  it('salt is a published category', () => {
     expect(CATEGORIES.map((c) => c.slug)).toContain('salt')
-    expect(DEFAULT_PUBLISH_CATEGORIES).not.toContain('salt')
+    expect(DEFAULT_PUBLISH_CATEGORIES).toContain('salt')
   })
 })

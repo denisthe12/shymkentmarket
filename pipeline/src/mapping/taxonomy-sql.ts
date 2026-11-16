@@ -3,8 +3,8 @@ import type { Dictionary } from './dictionary.js'
 import { refineCategory } from './milk.js'
 import { DEFAULT_PUBLISH_CATEGORIES } from './scope.js'
 
-/** Путь от корня репозитория; применённую SCRUM-7 миграцию (20261006000000_catalog_taxonomy) не трогаем */
-export const TAXONOMY_MIGRATION = 'backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql'
+/** Путь от корня репозитория; применённые миграции 20261006000000_catalog_taxonomy и 20261102000200_anvar_taxonomy не трогаем */
+export const TAXONOMY_MIGRATION = 'backend/prisma/migrations/20261116000000_szpt_phase3_taxonomy/migration.sql'
 
 type Primitive = string | number
 type FilterDefinition = { key: string; label: string; type: 'multi-select'; options: Primitive[] }

@@ -8,8 +8,10 @@ import { DEFAULT_PUBLISH_CATEGORIES, publishCategories } from '../src/mapping/sc
 import { assertServableSchema, buildTaxonomyMigration, filterSchemaFor, TAXONOMY_MIGRATION } from '../src/mapping/taxonomy-sql.js'
 
 const APPLIED_SCRUM7 = 'backend/prisma/migrations/20261006000000_catalog_taxonomy/migration.sql'
+const APPLIED_ANVAR = 'backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql'
 const sql = readFileSync(new URL(`../../${TAXONOMY_MIGRATION}`, import.meta.url), 'utf8')
 const oldSql = readFileSync(new URL(`../../${APPLIED_SCRUM7}`, import.meta.url), 'utf8')
+const anvarSql = readFileSync(new URL(`../../${APPLIED_ANVAR}`, import.meta.url), 'utf8')
 const dict = readDictionary(fileURLToPath(new URL('../../data/mapping/dictionary.json', import.meta.url)))
 
 type Row = { id: string; slug: string; name: string; schema: { filters: { key: string; label: string; type: string; options?: (string | number)[] }[] } }
@@ -22,11 +24,12 @@ describe('taxonomy', () => {
   it('keeps legacy slugs used by dashboard baskets', () => {
     for (const s of ['milk', 'bread', 'eggs', 'sugar', 'oil', 'other']) expect(isCategorySlug(s)).toBe(true)
   })
-  it('migration contains exactly the 9 published categories, no legacy other and no salt', () => {
+  it('migration contains exactly the 12 published categories, no legacy other', () => {
     expect(rows.map((r) => r.slug).sort()).toEqual([...DEFAULT_PUBLISH_CATEGORIES].sort())
+    expect(rows).toHaveLength(12)
+    for (const s of ['salt', 'tea-coffee', 'fish']) expect(rows.map((r) => r.slug)).toContain(s)
     expect(rows.map((r) => r.id).sort()).toEqual(rows.map((r) => `cat-${r.slug}`).sort())
     expect(sql).not.toContain("'other'")
-    expect(sql).not.toContain("'salt'")
     for (const r of rows) expect(r.name).toBe(CATEGORIES.find((c) => c.slug === r.slug)!.name)
   })
   it('migration updates name and filterSchema of existing rows and keeps their ids (no DO NOTHING)', () => {
@@ -84,13 +87,27 @@ describe('taxonomy', () => {
     const shape = (schema: { filters: { options?: unknown }[] }) => schema.filters.map(({ options: _options, ...rest }) => rest)
     const old = parseRows(oldSql)
     for (const r of rows) {
-      const prev = old.find((o) => o.slug === r.slug)!
+      const prev = old.find((o) => o.slug === r.slug)
+      if (!prev) continue // категории фазы 3 СЗПТ (salt, tea-coffee, fish) в SCRUM-7 не было
       if (r.slug === 'milk' || r.slug === 'dairy') {
         expect([r.name, r.schema], r.slug).not.toEqual([prev.name, prev.schema])
       } else {
         expect([r.name, shape(r.schema)], r.slug).toEqual([prev.name, shape(prev.schema)])
       }
     }
+  })
+  it('phase 3 migration keeps the 9 old rows of the applied anvar migration', () => {
+    const anvarRows = parseRows(anvarSql)
+    expect(anvarRows).toHaveLength(9)
+    for (const prev of anvarRows) expect(rows.find((r) => r.slug === prev.slug), prev.slug).toEqual(prev)
+  })
+  it('new categories have servable filters', () => {
+    const keys = (slug: string) => rows.find((r) => r.slug === slug)!.schema.filters.map((f) => f.key)
+    expect(keys('salt')).toEqual(['weightGrams'])
+    expect(keys('tea-coffee')).toEqual(['brand'])
+    expect(keys('fish')).toEqual(['brand'])
+    for (const slug of ['salt', 'tea-coffee', 'fish'])
+      for (const f of rows.find((r) => r.slug === slug)!.schema.filters) expect(f.options!.length, `${slug}.${f.key}`).toBeGreaterThan(0)
   })
   it('applied SCRUM-7 migration is left untouched', () => {
     expect(oldSql).toContain('Молоко и сливки')
@@ -115,7 +132,7 @@ describe('taxonomy', () => {
     for (const s of slugs) expect(s).toMatch(/^[a-z]+(-[a-z]+)*$/)
   })
   it('PUBLISH_CATEGORIES rejects slugs that have no row in the migration', () => {
-    expect(() => publishCategories('milk,fish')).toThrow(/migration/)
+    expect(() => publishCategories('milk,sausages')).toThrow(/migration/)
     expect(publishCategories('milk,eggs')).toEqual(new Set(['milk', 'eggs']))
   })
 })
