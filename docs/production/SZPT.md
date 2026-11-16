@@ -18,8 +18,9 @@
 ## Группы
 
 30 групп покрывают все 31 позицию перечня СЗПТ (приказ МТИ РК от 23.12.2025 № 362-нқ; «Говядина» —
-за две позиции), порядок фиксирован. Фаза 3 добавила `lamb`, `horse-meat`, `fish`, `black-tea`, `salt`;
-до её релиза API в production отдаёт 25 групп.
+за две позиции), порядок фиксирован. Фаза 3 добавила `lamb`, `horse-meat`, `fish`, `black-tea`, `salt`
+(API e9e4543 с 2026-11-16, [отчёт](reports/SZPT_PHASE3_RELEASE_REPORT.md)). Подзаголовок раздела говорит «все 31
+позиция» только когда API отдаёт все 30 групп (`SZPT_ALL_GROUPS` в `frontend/src/lib/szpt.ts`).
 
 - упаковочные (16): `rice`, `buckwheat`, `sour-cream`, `cottage-cheese`, `cheese`, `milk`, `kefir`,
   `sunflower-oil`, `eggs`, `butter`, `flour`, `bread`, `pasta-horns`, `sugar`, `black-tea`, `salt`;
