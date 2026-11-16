@@ -82,20 +82,22 @@ export function SzptPage({ group: slug }: { group: string }) {
         <aside className="mb-4 self-start lg:mb-0 lg:flex lg:flex-col lg:gap-2">
           <nav
             aria-labelledby="szpt-groups-title"
-            className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0 lg:rounded-card lg:bg-card lg:p-4"
+            className="-mx-4 overflow-x-auto px-4 md:mx-0 md:overflow-visible md:px-0 lg:rounded-card lg:bg-card lg:p-4"
           >
             <h2 id="szpt-groups-title" className="sr-only text-sm font-semibold lg:not-sr-only lg:mb-2.5 lg:block">
               {t('szpt.groupsLabel')}
             </h2>
             <ul className="flex gap-2 md:flex-wrap">
               {groups.data.map((g) => (
-                <li key={g.slug} className="shrink-0">
+                <li key={g.slug} className="shrink-0 md:max-w-full">
                   <Link
                     href={href(`/szpt/${g.slug}`)}
                     prefetch={false}
                     data-testid={`szpt-group-${g.slug}`}
                     aria-current={g.slug === slug ? 'page' : undefined}
-                    className={chipClass(g.slug === slug)}
+                    // С md чипы переносятся строками — длинное название («Рыба (лещ, карась…)») переносится внутри
+                    // чипа, а не распирает колонку горизонтальной прокруткой
+                    className={chipClass(g.slug === slug, 'md:h-auto md:min-h-9 md:py-1.5')}
                   >
                     {szptGroupName(t, g)}
                   </Link>
