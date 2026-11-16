@@ -208,7 +208,7 @@ See POSTGRES_LAYER.md for the Phase B runbook (historical; applied).
 ## SZPT section
 
 `/api/szpt` and `/api/szpt/{group}/products` (since 2026-11-12). Group rules are Go
-code in `internal/szpt/groups.go` (25 groups, 11 of them weighted); SQL in
+code in `internal/szpt/groups.go` (30 groups, 14 of them weighted); SQL in
 `internal/postgres/szpt.go` reads the current published snapshot and the
 `offer_price_basis` view (migration `20261114000000_offer_price_basis`) for per-kg
 prices of goods sold by weight. Changing a rule changes production data only after an

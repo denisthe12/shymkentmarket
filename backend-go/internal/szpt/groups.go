@@ -31,6 +31,8 @@ const (
 	// Weighted goods carry a per-kg price and no package size.
 	weighted = `(^|[^а-яё])вес([^а-яё]|$)|весов`
 	lactose  = `безлакт|низколакт`
+	// Phase 3 moves raw lamb and horse meat into meat; their cuts («ножка», «тушка») must not reach the poultry groups.
+	notPoultry = `баран|конин`
 )
 
 func fat(lo, hi float64) (*float64, *float64) { return &lo, &hi }
@@ -134,12 +136,31 @@ var Groups = []Rule{
 	{Slug: "minced-meat", Name: "Мясной фарш", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200, Weighted: true,
 		Include: []string{`фарш`},
 		Exclude: exclude(`кур|индей|манты|котлетн`)},
+	// Phase 3: spec docs/superpowers/specs/2026-11-15-szpt-phase3-salt-tea-fish-design.md, part 3.
+	{Slug: "lamb", Name: "Баранина", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500, Weighted: true,
+		Include: []string{`баранин|ягнят|ягн[её]н`},
+		Exclude: exclude(`тушен|консерв|кебаб|люля|пельмен|манты|палочк|шашлык|сосиск|колбас|куырдак|котлет|фарш|марин|копч|приправ|специ|корм|чипс|д/баран|для баран`)},
+	{Slug: "horse-meat", Name: "Конина", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 500, Weighted: true,
+		Include: []string{`конин|(^|[^а-яё])жая([^а-яё]|$)`},
+		Exclude: exclude(`тушен|консерв|казы|шужук|колбас|сол[её]н|копч|вял|марин|фарш|чипс|гренк|сухар|арахис`)},
+	{Slug: "fish", Name: "Рыба (лещ, карась, судак, карп, сазан)", Category: "fish", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 300, Weighted: true,
+		Include: []string{`(^|[^а-яё])(лещ|карас|судак|карп|сазан)`},
+		Exclude: exclude(`вял|копч|х/к|г/к|жар|сушен|сол[её]н|с/с|маринов|консерв|пресерв|в масле|котлет|фарш|икр|балык|карпач|чипс|снек|соус`)},
 	{Slug: "chicken-parts", Name: "Мясо кур (бедро, голень, окорочка)", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 300, Weighted: true,
 		Include: []string{`бедр|голен|окороч|четверт|ножк`},
-		Exclude: exclude(`утк|утин|утён|утен|марин|барбекю|запеч|филе`)},
+		Exclude: exclude(`утк|утин|утён|утен|марин|барбекю|запеч|филе`, notPoultry)},
 	{Slug: "chicken", Name: "Куры (тушка)", Category: "meat", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 1000, Weighted: true,
 		Include: []string{`тушк|^куры|^курица|цыпл[её]н.*бройлер|бройлер`},
-		Exclude: exclude(`табака|гриль|бульон|грудк|крыл|филе|бедр|голен|окороч|четверт|ножк|утк|утин|рагу|рулет|шашлык`)},
+		Exclude: exclude(`табака|гриль|бульон|грудк|крыл|филе|бедр|голен|окороч|четверт|ножк|утк|утин|рагу|рулет|шашлык`, notPoultry)},
+	// Black tea without flavours, not in bags: bags are excluded by words, by «N*M» counts and by the 40 g floor.
+	{Slug: "black-tea", Name: "Чай чёрный", Category: "tea-coffee", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 40,
+		Include: []string{`^чай`, `ч[её]рн|гранул|байхов|кени|ассам|цейлон|индийск|black|kenya|assam|ceylon`},
+		Exclude: exclude(`пакет|пак([^а-яё]|$)|пирамид|саше|\d+\s*шт|\d+\s*[*xх×]\s*\d|зел|(^|[^а-яё])бел|улун|пуэр|травян|фрукт|ягод|бергамот|earl grey|лимон|мят|чабрец|имбир|малин|клубник|персик|манго|ананас|вишн|апельсин|роз|жасмин|карамел|ванил|специ|масала|молок|3 ?в ?1|напит|холодн|каркаде|мате|ройбуш|смородин|тропич`,
+			`(^|[^a-z])green([^a-z]|$)|rose|tropic|berry|fruit|lemon|mint|peach|mango|vanil|caramel|citrus|barberry|pleasure|orange|lime|cherry|apple|spice|spicy|ginger|bergamot|jasmin|thyme|honey|chocolate|cinnamon|blossom`, weighted)},
+	// Table salt except «Экстра» (order 362-нқ) and non-food salt.
+	{Slug: "salt", Name: "Соль поваренная пищевая", Category: "salt", Unit: Kg, SizeKeys: []string{"weightGrams"}, MinSize: 200,
+		Include: []string{`^соль|^тұз`},
+		Exclude: exclude(`экстра|extra|(^|[^а-яё])ванн|посуд|таблет|трав|овощ|чеснок|приправ|специ|ч[её]рн|четвергов|копч`, weighted)},
 }
 
 func Lookup(slug string) (Rule, bool) {
