@@ -14,3 +14,9 @@ The installed Frontend unit matched the retained overlay SHA256 `964352e5bcbac02
 | Frontend VPS runbook | Track build, transfer, verification and rollback steps |
 
 The tracked inventory included 158 Markdown paths, with 116 keyword matches. The final PR commit, hosted CI and packaging results are captured independently after publication to avoid a self-referential commit hash.
+
+The dated SZPT design and rollout plans retain the hosting assumptions from their original releases and now point readers to the current runbook.
+
+Local Frontend checks passed with 364 unit tests and 83 Playwright tests. Eleven conditional scenarios skipped. TypeScript, lint, production audit and build passed. The security suite passed. Read-only Compose validation on the VPS passed. Rendering the image reference with the deployed SHA produced a byte-identical match for the installed Compose. The standalone test image reported Next.js 16.4.5, UID 1000 and no private dotenv file in the application root.
+
+The first helper integration failed because a tree archive invoked from the Frontend subdirectory omitted the context. The export now runs from the Git root. This finding concerns the new helper and did not affect production.
