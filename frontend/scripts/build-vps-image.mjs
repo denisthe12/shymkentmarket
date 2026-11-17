@@ -24,6 +24,9 @@ for (const k of keys) args.push('--build-arg',k+'='+env[k]);
 
 if (process.argv.includes('--dry-run')) { console.log(JSON.stringify({sha,tag,overlay,publicBuildKeys:keys,privateBuildKeys:[]})); }
 else {
+ const existing = spawnSync('docker', ['image', 'ls', '--format', '{{.Repository}}:{{.Tag}}', tag], { encoding: 'utf8' });
+ if (existing.status !== 0) throw Error('Docker image inventory unavailable');
+ if (existing.stdout.split('\n').includes(tag)) throw Error('Release tag already exists');
  const context = mkdtempSync(resolve(tmpdir(), 'aktau-frontend-'));
  try {
    const archive = execFileSync('git', ['-C', frontend, 'archive', 'HEAD:frontend'], { maxBuffer: 64 * 1024 * 1024 });

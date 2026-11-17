@@ -24,6 +24,6 @@ sudo python3 -I -B /usr/local/sbin/adilbaga-revalidate-frontend
 When to run: after `RESULT=CUTOVER_PASS` of an API release, and after an API rollback.
 See `deploy/README.md` «Frontend cache flush». Tests: `run-checks.mjs security`.
 
-## Observed VPS release — 2026-11-17
+## Production VPS
 
-Frontend source `34654678857ceabf6d68f968eac2c586dcb88909`, Next16.4.5, BUILD_ID `GzGLeOMZnFUIglDm2u-Dn`. Existing `/opt/aktau-market-frontend/compose.yaml` selects its immutable SHA tag; runtime.env/token stay protected in place. Prior image `a04bee643470753fd0874bc1b53d740a4593e618` and root-private compose backup `/var/backups/aktau-manual-combined-20261117T182318Z` retained. Existing frontend connector/DNS unchanged. Follow shared deployment lock and per-component rollback; wait Docker healthy as well as HTTP readiness. Details: `docs/production/FRONTEND_VPS_DEPLOYMENT.md`. The standalone deployment overlay is retained separately; do not overwrite newer application config with a historical whole config.
+See the [Frontend VPS runbook](../../docs/production/FRONTEND_VPS_DEPLOYMENT.md) for the deployment and rollback procedure and the [release inventory](../../deploy/README.md#current-release) for running revisions. The 2026-11-17 manual release verified one signed flush with HTTP 204. The tracked script is the source for the installed helper.

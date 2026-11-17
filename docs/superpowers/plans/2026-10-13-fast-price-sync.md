@@ -1,5 +1,7 @@
 # Fast Price Sync Implementation Plan
 
+> Historical rollout plan. Use the [current signed revalidation instructions](../../production/FRONTEND_REVALIDATION.md) for runtime configuration.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ежедневный автоматический sync цен на проде за ~1–1,5 мин вместо ~20: узкий скрап по scope, GraphQL-батчинг Dina, параллельный запуск, fallback на последний удачный файл, systemd-таймеры на VPS.
