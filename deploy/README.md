@@ -17,23 +17,11 @@ This section is the single source of truth for the active SHA and the rollback
 target. Runbooks and other production docs link here instead of copying SHAs;
 update only this section after a release.
 
-- Active: `e9e4543b130d212a95f4c60f3e1229b26db6388e` (SZPT phase 3: 30 groups, PR #133). Data-only taxonomy
-  migration `20261116000000_szpt_phase3_taxonomy` applied before it (PR #132). Manual cutover 2026-11-16
-  14:39:16–14:40:48Z, frontend cache flushed by the script; evidence in
-  `docs/production/reports/SZPT_PHASE3_RELEASE_REPORT.md`.
-- Rollback target: `0a7bf2ae24f8d580429ea3fecce5b946bbac00e8` (SZPT hotfix 2, 25 groups; image kept on the VPS;
-  release.env backup `/root/adilbaga-release.env.0a7bf2a.1794839956`). It reads the same schema and simply
-  ignores the new categories; no DB step; flush the frontend cache after a rollback («Frontend cache flush»).
-- Images kept on the VPS (checked 2026-11-16): `695f7e3`, `e6ef854`, `d6098f6`,
-  `438ecdf`, `6a4b4c7`, `b4f4b88`, `49f6823`, `e50de25`, `1cbd535`, `a08ff71`, `e3fa08e`, `98427c3`, `c7ba31f`,
-  `0a7bf2a`, `e9e4543`.
-- Frontend cache flush helper installed: `/usr/local/sbin/adilbaga-revalidate-frontend`
-  SHA-256 `015e1de8…eddc` (PR #127, installed 2026-11-15).
-- Deploy broker installed: `/usr/local/lib/adilbaga-deploy/auto_broker.py`
-  SHA-256 `7b8f5320…` (PR #104, installed 2026-11-08). Every broker release needs
-  a new exact-artifact root approval; see `docs/production/AUTO_DEPLOY_SETUP.md`.
-- Last check 2026-11-16 14:55Z: healthy, 0 restarts, ready 200, cloudflared active,
-  no ERROR/5xx in the new container log.
+- Active: `34654678857ceabf6d68f968eac2c586dcb88909` (PR #137 cancellation fix, PR #138 Next16.4.5, PR #139 performance). Manual administrative SSH release 2026-11-17; exact-main CI44132139520 9/9 SUCCESS; official Go artifact14350911929/build44133366399. No DB change.
+- Rollback target: `e9e4543b130d212a95f4c60f3e1229b26db6388e`, retained on VPS. Root-private rollback references/compose: `/var/backups/aktau-manual-combined-20261117T182318Z`. Keep runtime env in place; no DB rollback.
+- Both candidate and previous API/Frontend images retained. Frontend now uses the same source SHA, Next16.4.5; previous Frontend `a04bee643470753fd0874bc1b53d740a4593e618` retained.
+- The 2026-11-17 release recorded a signed Frontend cache flush (HTTP 204), healthy containers with zero restarts or OOM kills, active connectors, and a passing five-minute monitor. See the [release evidence summary](../docs/production/reports/FRONTEND_VPS_DOCS_INFRA_RECONCILIATION_REPORT.md#manual-release-evidence) and the separate [Frontend deployment runbook](../docs/production/FRONTEND_VPS_DEPLOYMENT.md).
+- This was an Owner-authorized manual SSH release; broker was not invoked. Historical failed broker journal and consumed approval were not changed. Future broker releases still follow `docs/production/AUTO_DEPLOY_SETUP.md`; do not reuse consumed approval.
 
 History: the first Go release was `e6ef854` (2026-10-08, Part15 report); the same-day
 `d6098f6` rollout was rolled back after a public Voice HTTP500. Later releases:

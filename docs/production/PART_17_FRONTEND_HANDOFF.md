@@ -1,5 +1,7 @@
 # Part17 — Frontend handoff: Aktau Market
 
+> Historical planning or activation record. For current production topology and operator instructions, see [Frontend VPS deployment](FRONTEND_VPS_DEPLOYMENT.md).
+
 > **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
 
 ## Этап C — актуальная ответственность и состояние candidate

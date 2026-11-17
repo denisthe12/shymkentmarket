@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/badge/Презентация-Google%20Drive-4285F4?logo=googledrive&logoColor=white" alt="Презентация" />
   </a>
   <a href="https://aktau.market/">
-    <img src="https://img.shields.io/badge/Live%20App-Vercel-000000?logo=vercel&logoColor=white" alt="Live App" />
+    <img src="https://img.shields.io/badge/Live%20App-VPS-206040" alt="Live App" />
   </a>
   <a href="docs/">
     <img src="https://img.shields.io/badge/Документация-docs-17744A" alt="Документация" />
@@ -204,7 +204,7 @@ PostgreSQL
 ### Voice flow
 
 `backend-go/` уже реализует frozen v1 business parity для catalog/dashboard/voice.
-Production frontend: `main` → Vercel → **https://aktau.market**.
+Production frontend runs in standalone Docker on the VPS, behind its own Cloudflare Tunnel at **https://aktau.market**. See [Frontend VPS operations](docs/production/FRONTEND_VPS_DEPLOYMENT.md).
 Production API: immutable Go container на VPS → Cloudflare Tunnel →
 **https://api.aktau.market**; PostgreSQL остаётся Supabase. Railway retired.
 Frozen v1 wire-контракт закреплён записанными ответами в
@@ -246,7 +246,7 @@ Siri speech + notification
 | Voice sessions | Upstash Redis |
 | Geolocation | Haversine distance |
 | Tests | Node Test Runner, Vitest, Playwright |
-| Frontend deploy | Vercel |
+| Frontend deploy | VPS standalone Docker, dedicated Cloudflare Tunnel |
 | Backend production target | VPS / immutable Go container; Cloudflare Tunnel, loopback-only origin |
 | Railway | Retired; not a production target |
 

@@ -1,5 +1,7 @@
 # СЗПТ, фаза 2: весовые товары и 15 новых групп — план реализации
 
+> Historical design or rollout plan. For current deployment and rollback, see the [Frontend VPS runbook](../../production/FRONTEND_VPS_DEPLOYMENT.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Раздел СЗПТ получает 15 новых групп (итого 25), весовые товары с ценой за кг по пометке сети и сортировку «Выгоднее за кг» по умолчанию в весовых группах.

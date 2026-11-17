@@ -1,5 +1,7 @@
 # СЗПТ, фаза 2: весовые товары и новые группы — дизайн
 
+> Historical design or rollout plan. For current deployment and rollback, see the [Frontend VPS runbook](../../production/FRONTEND_VPS_DEPLOYMENT.md).
+
 Дата: 2026-11-14. Статус: согласован в чате, ждёт проверки спецификации пользователем.
 Продолжение [фазы 1](2026-11-12-scrum-25-szpt-design.md) (SCRUM-25, раздел живой с 2026-11-12, прод API `98427c3`).
 

@@ -23,3 +23,7 @@ sudo python3 -I -B /usr/local/sbin/adilbaga-revalidate-frontend
 
 When to run: after `RESULT=CUTOVER_PASS` of an API release, and after an API rollback.
 See `deploy/README.md` «Frontend cache flush». Tests: `run-checks.mjs security`.
+
+## Production VPS
+
+See the [Frontend VPS runbook](../../docs/production/FRONTEND_VPS_DEPLOYMENT.md) for the deployment and rollback procedure and the [release inventory](../../deploy/README.md#current-release) for running revisions. The 2026-11-17 manual release verified one signed flush with HTTP 204. The tracked script is the source for the installed helper.

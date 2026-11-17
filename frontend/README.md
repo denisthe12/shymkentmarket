@@ -31,9 +31,10 @@ pnpm dev --port 3100         # Backend отдельно на :3000
 формат `G-...`) и `NEXT_PUBLIC_YANDEX_METRIKA_ID` (положительный числовой ID).
 Валидный ID автоматически включает соответствующий счётчик; отсутствие или
 невалидность одного не мешает другому. Других env/enable flags нет.
-Оба ID заданы в Vercel Production, счётчики включены: CSP на aktau.market разрешает
-googletagmanager и mc.yandex, а код добавляет их только при валидном ID (проверено 2026-11-15). Не переносить ID в Git. Scope должен
-быть Production/build. Изменение ID требует нового build/deploy.
+Оба счётчика настроены через build-time ID production-образа. При релизе
+2026-11-17 проверили запуск загрузчиков с перехватом запросов. Доставку реальных
+событий в GA4 и Яндекс Метрику отдельно не подтверждали. Храните ID вне Git.
+Изменение ID требует новой сборки и развёртывания.
 
 Скрипты загружаются после hydration только когда browser origin совпадает с
 каноническим HTTPS `NEXT_PUBLIC_SITE_URL`; localhost и preview не отслеживаются.
@@ -122,3 +123,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3100 PW_CHANNEL=chrome pnpm test:e2e
 
 `src/app/globals.css`, блок `@theme`. Golos Text/Montserrat — `next/font/google`;
 build требует доступа к Google Fonts (независимость от Backend не означает полностью офлайн build).
+
+## Production VPS
+
+See the [Frontend VPS deployment runbook](../docs/production/FRONTEND_VPS_DEPLOYMENT.md) for the Docker build, Cloudflare routing, runtime HMAC and rollback.

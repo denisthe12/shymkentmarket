@@ -1,5 +1,7 @@
 # SCRUM-25: раздел «СЗПТ» — дизайн
 
+> Historical design or rollout plan. For current deployment and rollback, see the [Frontend VPS runbook](../../production/FRONTEND_VPS_DEPLOYMENT.md).
+
 Дата: 2026-11-12. Статус: согласован в чате по частям, ждёт проверки спецификации.
 
 ## Зачем
