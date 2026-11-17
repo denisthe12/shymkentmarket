@@ -29,7 +29,7 @@ else {
  if (existing.stdout.split('\n').includes(tag)) throw Error('Release tag already exists');
  const context = mkdtempSync(resolve(tmpdir(), 'aktau-frontend-'));
  try {
-   const archive = execFileSync('git', ['-C', frontend, 'archive', 'HEAD:frontend'], { maxBuffer: 64 * 1024 * 1024 });
+   const archive = execFileSync('git', ['-C', resolve(frontend, '..'), 'archive', 'HEAD:frontend'], { maxBuffer: 64 * 1024 * 1024 });
    execFileSync('tar', ['-xf', '-', '-C', context], { input: archive });
    const result = spawnSync('docker', [...args, context], { stdio: 'inherit' });
    if (result.error) throw Error('Docker startup failed');
