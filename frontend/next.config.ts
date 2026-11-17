@@ -4,6 +4,7 @@ import { siteUrl, validateApiConfig } from './src/lib/config';
 import { securityHeaders } from './src/lib/security-headers';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   // Заголовок X-Powered-By: Next.js — лишняя информация о стеке
   poweredByHeader: false,
   experimental: {

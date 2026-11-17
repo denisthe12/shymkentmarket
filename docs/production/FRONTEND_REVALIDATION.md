@@ -2,12 +2,12 @@
 
 > Приёмка C2 (сходимость за 5 секунд, наблюдатель и ledger) отменена решением команды 2026-11-05. Webhook инвалидации остаётся. Страховка при сбое уведомления: TTL кэша 3600 секунд.
 >
-> **Когда шлётся событие (2026-11-15).** Автоматически — из `cmd/ingest` после каждой публикации snapshot в плановом sync (`aktau-sync.timer`, 01:00/13:00 UTC, секрет в `/etc/aktau-sync.env`). Вручную — после релиза или отката API, который меняет данные: хелпер `/usr/local/sbin/adilbaga-revalidate-frontend` ([ops/frontend](../../ops/frontend/README.md), `deploy/README.md` → «Frontend cache flush»). Он же — способ повторить событие после сбоя Vercel/сети.
+> **Когда шлётся событие (2026-11-15).** Автоматически — из `cmd/ingest` после каждой публикации snapshot в плановом sync (`aktau-sync.timer`, 01:00/13:00 UTC, секрет в `/etc/aktau-sync.env`). Вручную — после релиза или отката API, который меняет данные: хелпер `/usr/local/sbin/adilbaga-revalidate-frontend` ([ops/frontend](../../ops/frontend/README.md), `deploy/README.md` → «Frontend cache flush»). Он же — способ повторить событие после сбоя Frontend/сети.
 
 ## Wire and configuration
 
 Server-only `REVALIDATE_HMAC_SECRET`: at least 32 random bytes of entropy,
-privately provisioned to Vercel Production and the sync env file `/etc/aktau-sync.env` (ingest).
+privately provisioned at runtime via the root-private VPS file `/opt/aktau-market-frontend/runtime.env` and the sync env file `/etc/aktau-sync.env` (ingest). See [Frontend VPS deployment](FRONTEND_VPS_DEPLOYMENT.md).
 Never use NEXT_PUBLIC, Git, reports or shell tracing for its value.
 Ingestion-only `FRONTEND_REVALIDATE_URL=https://aktau.market/internal/revalidate`.
 Examples live in frontend/.env.example and
@@ -55,7 +55,7 @@ remains exit0 (unless an independent summary-output error occurs). There is one
 attempt per publication, no transaction retry, queue or automatic second snapshot
 (the next scheduled sync publishes and notifies again).
 The unchanged3600s fetch/ISR TTL is the safety fallback. A signed event can be
-resent separately after network/Vercel recovery (the helper above); never rerun --apply solely to
+resent separately after network/Frontend recovery (the helper above); never rerun --apply solely to
 invalidate frontend cache. No endpoint/provider response body or URL/secret is
 included in notification errors/logging.
 

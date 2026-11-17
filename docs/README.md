@@ -8,7 +8,7 @@
   переписывают задним числом; в шапке такого файла стоит пометка «Исторический документ».
 
 Состояние production на 2026-11-15: Go API на VPS за Cloudflare Tunnel, фронтенд на
-Vercel, БД Supabase, sync цен по таймерам на VPS, монитор API и ежедневный отчёт в Telegram,
+VPS Docker через отдельный Cloudflare Tunnel ([runbook](production/FRONTEND_VPS_DEPLOYMENT.md)), БД Supabase, sync цен по таймерам на VPS, монитор API и ежедневный отчёт в Telegram,
 раздел СЗПТ (25 групп, с 2026-11-12).
 NestJS удалён из репозитория (PR #106/#107); C2 удалён (PR #93).
 

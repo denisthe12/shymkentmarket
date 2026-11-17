@@ -1,0 +1,15 @@
+[Unit]
+Description=Aktau Market Frontend Cloudflare connector
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate tunnel run --token-file /opt/aktau-market-frontend/cloudflared.token
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

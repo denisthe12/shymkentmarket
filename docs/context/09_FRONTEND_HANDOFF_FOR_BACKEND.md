@@ -1,5 +1,7 @@
 # Фронтенд → бэкенд: что нужно знать при слиянии и переезде на Go
 
+> Historical planning or activation record. For current production topology and operator instructions, see [Frontend VPS deployment](../production/FRONTEND_VPS_DEPLOYMENT.md).
+
 > **Исторический документ.** Фиксирует состояние на момент написания; пути (`backend/src`, NestJS), статусы и цифры могли устареть. Что актуально — [карта документации](../README.md).
 
 Дата: 2026-10-05. Ветка фронта: `feat/frontend` (запушена, последний коммит `a8ee3eb`).

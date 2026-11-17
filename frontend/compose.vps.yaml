@@ -1,0 +1,21 @@
+name: aktau-market-frontend
+services:
+  frontend:
+    image: aktau-market-frontend:${FRONTEND_RELEASE_SHA:?Set the verified full release SHA}
+    container_name: aktau-market-frontend
+    restart: unless-stopped
+    env_file:
+      - /opt/aktau-market-frontend/runtime.env
+    ports:
+      - "127.0.0.1:3000:3000"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 256
+    stop_grace_period: 30s
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"

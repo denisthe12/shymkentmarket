@@ -1,5 +1,7 @@
 # Cloudflare operator artifacts — Part14 Phase A / Part14B
 
+> Historical planning or activation record. For current production topology and operator instructions, see [Frontend VPS deployment](../../docs/production/FRONTEND_VPS_DEPLOYMENT.md).
+
 > **Status 2026-11-11:** this is the Part14/Part15 perimeter record. Tunnel and the Go API are live;
 > the active release SHA and rollback target live only in `deploy/README.md` («Current release»).
 > Release SHAs and «Go API: NOT DEPLOYED» / «NOT STARTED» lines below describe Part14/Part15 at the time;
