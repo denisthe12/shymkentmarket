@@ -20,6 +20,12 @@ type productWire struct {
 func wireProduct(p catalog.Product) productWire {
 	return productWire{p, p.SnapshotAt.UTC().Format("2006-01-02T15:04:05.000Z")}
 }
+func respondRequest(w http.ResponseWriter, r *http.Request, value any, err error) {
+	if middleware.HandleRequestError(w, r, err) {
+		return
+	}
+	respond(w, value, err)
+}
 func respond(w http.ResponseWriter, value any, err error) {
 	if err != nil {
 		status := 500
@@ -42,48 +48,48 @@ func respond(w http.ResponseWriter, value any, err error) {
 }
 func (d Dependencies) categories(w http.ResponseWriter, r *http.Request) {
 	value, err := d.Categories.ListCategories(r.Context())
-	respond(w, value, err)
+	respondRequest(w, r, value, err)
 }
 func (d Dependencies) filters(w http.ResponseWriter, r *http.Request) {
 	value, err := d.Categories.GetFilterSchema(r.Context(), chi.URLParam(r, "slug"))
-	respond(w, value, err)
+	respondRequest(w, r, value, err)
 }
 func (d Dependencies) products(w http.ResponseWriter, r *http.Request) {
 	raw, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
-		respond(w, nil, catalog.ErrInvalidQuery)
+		respondRequest(w, r, nil, catalog.ErrInvalidQuery)
 		return
 	}
 	var definitions []catalog.FilterDefinition
 	if category := raw["category"]; hasDynamicProductFilters(raw) && len(category) == 1 && strings.TrimSpace(category[0]) != "" {
 		schema, err := d.Categories.GetFilterSchema(r.Context(), strings.TrimSpace(category[0]))
 		if err != nil && !errors.Is(err, catalog.ErrNotFound) {
-			respond(w, nil, err)
+			respondRequest(w, r, nil, err)
 			return
 		}
 		definitions = schema.Filters
 	}
 	q, err := parseProductQuery(raw, definitions)
 	if err != nil {
-		respond(w, nil, err)
+		respondRequest(w, r, nil, err)
 		return
 	}
 	products, err := d.Products.ListProducts(r.Context(), q)
 	if err != nil {
-		respond(w, nil, err)
+		respondRequest(w, r, nil, err)
 		return
 	}
 	out := make([]productWire, 0, len(products))
 	for _, p := range products {
 		out = append(out, wireProduct(p))
 	}
-	respond(w, out, nil)
+	respondRequest(w, r, out, nil)
 }
 func (d Dependencies) product(w http.ResponseWriter, r *http.Request) {
 	p, err := d.Products.GetProductByID(r.Context(), chi.URLParam(r, "id"))
-	respond(w, wireProduct(p), err)
+	respondRequest(w, r, wireProduct(p), err)
 }
 func (d Dependencies) dashboard(w http.ResponseWriter, r *http.Request) {
 	value, err := d.Dashboard.GetDashboard(r.Context())
-	respond(w, value, err)
+	respondRequest(w, r, value, err)
 }

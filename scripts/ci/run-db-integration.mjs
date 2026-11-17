@@ -25,7 +25,7 @@ await postgres(async ({ url, sql, login, load, go }) => {
     SNAPSHOT_SECURITY_WRITER_URL: url('part08', 'part08_writer'), SNAPSHOT_ROLLBACK_CONFIRM: '1',
   });
   go(['test', '-count=1', '-race', '-tags=integration', './internal/postgres',
-    '-run', '^(TestLocalPhysicalPoolSessionPolicy|TestLocalClonePlans|TestLocalObservability)$', '-v'], {
+    '-run', '^(TestLocalPhysicalPoolSessionPolicy|TestLocalClonePlans|TestLocalObservability|TestLocalCanceledQuery)$', '-v'], {
     POOL_POLICY_DATABASE_URL: url('part04_security', 'part04_api_login'),
     SMOKE_DATABASE_URL: url('part04_security', 'part04_api_login'),
     PART11_OPERATOR_DATABASE_URL: url('part11_recovery'), PART11_READER_DATABASE_URL: url('part11_recovery', 'aktau_api_runtime'),

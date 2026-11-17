@@ -106,16 +106,26 @@ func AccessLog(logger *slog.Logger, registry ...*observability.Registry) func(ht
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
+			r, outcome := withOutcome(r)
 			ww := chimiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			next.ServeHTTP(ww, r)
 			status := ww.Status()
-			if status == 0 {
-				status = 200
+			var code string
+			if status == 0 && outcome.code.Load() == outcomeCanceled {
+				code = "request_canceled"
+			} else {
+				if status == 0 {
+					status = 200
+				}
+				code = observability.ErrorCode(status)
+				if status == 503 && outcome.code.Load() == outcomeDeadline {
+					code = "request_deadline"
+				}
 			}
 			duration := time.Since(start)
 			route := logPath(r)
-			metrics.HTTP(route, r.Method, status, duration)
-			logger.InfoContext(r.Context(), "http_request", "request_id", RequestIDValue(r.Context()), "method", r.Method, "route", route, "status", status, "duration_ms", duration.Milliseconds(), "error_code", observability.ErrorCode(status))
+			metrics.HTTPOutcome(route, r.Method, status, code, duration)
+			logger.InfoContext(r.Context(), "http_request", "request_id", RequestIDValue(r.Context()), "method", r.Method, "route", route, "status", status, "duration_ms", duration.Milliseconds(), "error_code", code)
 		})
 	}
 }
@@ -139,11 +149,15 @@ func Recover(logger *slog.Logger) func(http.Handler) http.Handler {
 
 func Timeout(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r, outcome := withOutcome(r)
 		ctx, cancel := context.WithTimeout(r.Context(), RequestTimeout)
 		defer cancel()
 		ww := chimiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
 		next.ServeHTTP(ww, r.WithContext(ctx))
-		if ctx.Err() != nil && ww.Status() == 0 {
+		if ctx.Err() != nil && ww.Status() == 0 && outcome.code.Load() != outcomeCanceled {
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				outcome.code.Store(outcomeDeadline)
+			}
 			WriteError(ww, 503)
 		}
 	})
