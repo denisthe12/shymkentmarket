@@ -71,10 +71,18 @@ func (r *Registry) observe(key string, failed bool, duration time.Duration) {
 	r.series[key] = h
 }
 func (r *Registry) HTTP(route, method string, status int, duration time.Duration) {
+	r.HTTPOutcome(route, method, status, "", duration)
+}
+
+// Only fixed internal outcomes; zero denotes no attempted response, not a public status.
+func (r *Registry) HTTPOutcome(route, method string, status int, outcome string, duration time.Duration) {
 	route = oneOf(route, "/health/live", "/health/ready", "/api/categories", "/api/categories/{slug}/filters", "/api/products", "/api/products/{id}", "/api/dashboard", "/api/szpt", "/api/szpt/{group}/products", "/api/voice/start", "/api/voice/continue", "unmatched")
 	method = oneOf(method, "GET", "POST", "OPTIONS", "HEAD", "PUT", "PATCH", "DELETE")
+	outcome = oneOf(outcome, "request_canceled", "request_deadline", "internal_error", "")
 	class := "other"
 	switch {
+	case status == 0 && outcome == "request_canceled":
+		class = "canceled"
 	case status >= 200 && status < 300:
 		class = "2xx"
 	case status >= 300 && status < 400:
@@ -85,6 +93,9 @@ func (r *Registry) HTTP(route, method string, status int, duration time.Duration
 		class = "5xx"
 	}
 	r.observe("http|"+route+"|"+method+"|"+class, status >= 400, duration)
+	if outcome == "request_canceled" || outcome == "request_deadline" || outcome == "internal_error" {
+		r.observe("http_outcome|"+outcome, outcome != "request_canceled", duration)
+	}
 }
 func (r *Registry) Dependency(kind, operation, outcome string, duration time.Duration) {
 	switch kind {
