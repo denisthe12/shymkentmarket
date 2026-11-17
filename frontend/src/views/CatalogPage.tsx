@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TOP_DEALS, topDealIds, useCategories, useDashboard, useProductsByIds, useSzptGroups } from '../api/queries'
+import { TOP_DEALS, topDealIds, useCategories, useDealIds, useProductsByIds, useSzptGroups } from '../api/queries'
 import { CategoryTiles } from '../components/catalog/CategoryTiles'
 import { ProductGrid } from '../components/product/ProductGrid'
 import { LoadMore } from '../components/catalog/LoadMore'
@@ -44,16 +44,16 @@ export function CatalogPage() {
  */
 function TopDeals() {
   const { t } = useTranslation()
-  const dashboard = useDashboard()
+  const deals = useDealIds()
   const [count, setCount] = useState(TOP_DEALS)
-  const ids = topDealIds(dashboard.data, count)
+  const ids = topDealIds(deals.data, count)
   const products = useProductsByIds(ids)
   // Пока догружаются новые — показываем прежний список целиком, а не карточки по одной
-  const shownIds = products.isPending ? topDealIds(dashboard.data, count - TOP_DEALS) : ids
+  const shownIds = products.isPending ? topDealIds(deals.data, count - TOP_DEALS) : ids
   const byId = new Map(products.data.map((p) => [p.id, p]))
   const shown = shownIds.flatMap((id) => byId.get(id) ?? [])
-  const loading = dashboard.isPending || (shownIds.length === 0 && products.isPending)
-  const hasMore = (dashboard.data?.priceSpreads.length ?? 0) > count
+  const loading = deals.isPending || (shownIds.length === 0 && products.isPending)
+  const hasMore = (deals.data?.length ?? 0) > count
 
   return (
     <section aria-labelledby="deals-title" className="mt-8 md:mt-12">
@@ -66,7 +66,7 @@ function TopDeals() {
             <ProductGridSkeleton count={TOP_DEALS} wide />
           </LoadingState>
         )}
-        {dashboard.isError && <ErrorState onRetry={() => dashboard.refetch()} />}
+        {deals.isError && <ErrorState onRetry={() => deals.refetch()} />}
         {products.isError && <ErrorState onRetry={products.refetch} />}
         {shown.length > 0 && <ProductGrid products={shown} wide />}
         {shown.length > 0 && (

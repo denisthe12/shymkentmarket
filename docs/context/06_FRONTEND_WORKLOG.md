@@ -121,6 +121,17 @@ backend-down build PASS. Planned URLs: https://aktau.market / https://api.aktau.
 
 ## Журнал
 
+### Сессия 28 — 2026-11-17 (Lighthouse mobile: производительность каталога)
+- Повод: Lighthouse mobile на проде `/ru/catalog` — Performance 59 (TBT 470 мс, LCP 4,4 с, SI 13,4 с). Свой прогон по проду: LCP — текст `h1`, TBT 1,8 с: гидрация + gtag.js (~250 мс) + Метрика (~200 мс); в HTML лежал весь дашборд (576 `priceSpreads`, 86 КБ JSON) ради 8 id; 6 woff2 (~200 КБ) с preload.
+- **Шрифты** (`app/fonts.ts`): `subsets` в next/font — только preload, @font-face всех наборов остаются в CSS. Preload — только кириллица Golos + Montserrat (2 файла, 44 КБ вместо 6 / 202 КБ). Латиница, ₸, казахские буквы догружаются по unicode-range (display: swap).
+- **Каталог**: новый `dealIdsQuery` (ключ `['deal-ids']`, данные — только id из `priceSpreads`); сервер кладёт в HTML его, а не `dashboardQuery`. `topDealIds(ids, count)` принимает массив id. HTML каталога 264 → 173 КБ (сжатый 61 → 44 КБ). Ключ отдельный, чтобы «Аналитика» не получила из кэша урезанный дашборд.
+- **Аналитика** (`Analytics.tsx`): очереди init/hit — сразу, как раньше; `<Script>` gtag/Метрики вставляются по первому pointerdown/keydown/scroll/touchstart или через `ANALYTICS_IDLE_DELAY` = 5 с после `load`. Теряется только просмотр того, кто ушёл раньше 5 с, ни разу не тронув страницу. E2E `analytics.spec.ts` — хелпер `wakeAnalytics`.
+- Не делали: ленивый `NavigationPreview` (все views в layout-чанке — ~10 КБ gzip, не стоит сложности); `inlineCss` дублирует CSS (~38 КБ) в RSC-payload — осознанный компромисс; bfcache (`no-store` у динамических страниц Next); Legacy JS 13 КБ — полифиллы фреймворка.
+- Вне фронта (сказано пользователю): Cloudflare вставляет `cloudflareinsights` beacon (блокируется CSP → ошибка в консоли, Best Practices) и `email-decode.min.js` — выключить Web Analytics / Email Obfuscation в Cloudflare. Next 16.4.1 — security advisory, есть ветка `fix/nextjs-security-16.4.5`.
+- Замеры: локально (сервер рядом, без аналитики) разница в шуме; эффект аналитики и шрифтов виден только на проде — перемерить после деплоя.
+- Проверено: typecheck, oxlint (2 старых предупреждения), 364 unit, e2e моки 83 passed / 11 skipped.
+- Заметка: `next build` (16.4.1) через раз падает `SecurityFatalError`-напоминанием после успешной сборки — повтор проходит; для e2e собирать заранее и запускать с конфигом без build.
+
 ### Сессия 27 — 2026-11-13 (мгновенный переход на слабой сети)
 - Проблема пользователя: на слабом интернете клик по плитке/карточке ничего не показывает, пока сервер не ответит (страницы SSR, данные в HTML).
 - **`loading.tsx` пробовали и отказались:** со стримингом `/collections/nope` отдаёт 200 вместо 404, а в HTML попадает `loading-state` — ломает e2e `pages`/`szpt`/SEO-контракт. Удалены.

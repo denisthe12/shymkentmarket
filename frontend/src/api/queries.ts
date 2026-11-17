@@ -16,6 +16,7 @@ export const queryKeys = {
   productPages: (query: PagedQuery) => ['products', query] as const,
   product: (id: string) => ['product', id] as const,
   dashboard: ['dashboard'] as const,
+  dealIds: ['deal-ids'] as const,
   szptGroups: ['szpt-groups'] as const,
   szptPages: (query: SzptPagedQuery) => ['szpt-products', query] as const,
 }
@@ -111,5 +112,16 @@ export const useDashboard = () => useQuery(dashboardQuery())
 /** Товары с наибольшим разбросом цен в каталоге: по столько за раз («Показать ещё»). Выбор и порядок делает бэк */
 export const TOP_DEALS = 8
 
-export const topDealIds = (dashboard: DashboardDto | undefined, count = TOP_DEALS): string[] =>
-  dashboard?.priceSpreads.slice(0, count).map((s) => s.productId) ?? []
+export const dealIds = (dashboard: DashboardDto): string[] => dashboard.priceSpreads.map((s) => s.productId)
+
+/**
+ * Каталогу из дашборда нужен только порядок id «выгодных» товаров. Отдельный ключ, чтобы сервер клал в HTML
+ * этот список (~6 КБ), а не весь дашборд (~100 КБ: ~600 разбросов с названиями и ценами) — меньше HTML
+ * и меньше работы главному потоку при гидрации на телефоне
+ */
+export const dealIdsQuery = () =>
+  queryOptions({ queryKey: queryKeys.dealIds, queryFn: () => catalogApi.getDashboard().then(dealIds), ...STATIC })
+
+export const useDealIds = () => useQuery(dealIdsQuery())
+
+export const topDealIds = (ids: string[] | undefined, count = TOP_DEALS): string[] => ids?.slice(0, count) ?? []
