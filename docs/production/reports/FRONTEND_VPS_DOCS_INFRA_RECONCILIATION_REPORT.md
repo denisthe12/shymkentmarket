@@ -20,3 +20,7 @@ The dated SZPT design and rollout plans retain the hosting assumptions from thei
 Local Frontend checks passed with 364 unit tests and 83 Playwright tests. Eleven conditional scenarios skipped. TypeScript, lint, production audit and build passed. The security suite passed. Read-only Compose validation on the VPS passed. Rendering the image reference with the deployed SHA produced a byte-identical match for the installed Compose. The standalone test image reported Next.js 16.4.5, UID 1000 and no private dotenv file in the application root.
 
 The first helper integration failed because a tree archive invoked from the Frontend subdirectory omitted the context. The export now runs from the Git root. This finding concerns the new helper and did not affect production.
+
+## Manual release evidence
+
+The 2026-11-17 combined manual release recorded `DEPLOY_PASS` at 18:30:14 UTC. Signed revalidation returned HTTP 204 at 18:24:59 UTC. The independent VPS snapshot at 18:30:38 UTC confirmed both containers healthy, zero restarts and OOM kills, both connectors active, and 296 API requests with zero ERROR or HTTP 5xx in the sampled logs. Source evidence is the release execution report and retained evidence archive (SHA256 `9a6daa3943aa70a545e1d2542b6b7386ff5627d93fc49afa02b7a64f2527c6f8`). The read-only inventory above is from 2026-11-18.

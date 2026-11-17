@@ -28,7 +28,8 @@ There are no caller-selected tags, paths, product IDs or URLs.
 
 ## Cache strategy
 
-Reuse server fetch tag `catalog-data` (Next 16, installed 16.4.1)
+See the [release inventory](../../deploy/README.md#current-release) for the deployed Next.js version.
+Reuse server fetch tag `catalog-data` with
 `revalidateTag('catalog-data', { expire: 0 })`, not stale-while-revalidate `max`
 and not Server-Action-only updateTag. Explicit fixed
 `revalidatePath('/[lang]/(site)/products/[id]', 'page')` invalidates generated product

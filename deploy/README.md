@@ -20,7 +20,7 @@ update only this section after a release.
 - Active: `34654678857ceabf6d68f968eac2c586dcb88909` (PR #137 cancellation fix, PR #138 Next16.4.5, PR #139 performance). Manual administrative SSH release 2026-11-17; exact-main CI44132139520 9/9 SUCCESS; official Go artifact14350911929/build44133366399. No DB change.
 - Rollback target: `e9e4543b130d212a95f4c60f3e1229b26db6388e`, retained on VPS. Root-private rollback references/compose: `/var/backups/aktau-manual-combined-20261117T182318Z`. Keep runtime env in place; no DB rollback.
 - Both candidate and previous API/Frontend images retained. Frontend now uses the same source SHA, Next16.4.5; previous Frontend `a04bee643470753fd0874bc1b53d740a4593e618` retained.
-- Signed Frontend cache flush completed204. Both containers healthy, zero restarts/OOM, connectors active, five-minute monitor PASS. Evidence: `docs/production/FRONTEND_VPS_DEPLOYMENT.md`.
+- The 2026-11-17 release recorded a signed Frontend cache flush (HTTP 204), healthy containers with zero restarts or OOM kills, active connectors, and a passing five-minute monitor. See the [release evidence summary](../docs/production/reports/FRONTEND_VPS_DOCS_INFRA_RECONCILIATION_REPORT.md#manual-release-evidence) and the separate [Frontend deployment runbook](../docs/production/FRONTEND_VPS_DEPLOYMENT.md).
 - This was an Owner-authorized manual SSH release; broker was not invoked. Historical failed broker journal and consumed approval were not changed. Future broker releases still follow `docs/production/AUTO_DEPLOY_SETUP.md`; do not reuse consumed approval.
 
 History: the first Go release was `e6ef854` (2026-10-08, Part15 report); the same-day
