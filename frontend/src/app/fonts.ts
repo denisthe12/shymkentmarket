@@ -1,14 +1,16 @@
 import { Golos_Text, Montserrat } from 'next/font/google'
 
-// next/font: шрифты раздаём сами, наборы символов из subsets — preload в <head>, у системного fallback
-// подогнаны метрики (без скачка вёрстки при подмене). Расширенные наборы нужны на каждой странице:
-// latin-ext — ₸ в ценах и ğ в «Adil Bağa», cyrillic-ext — казахские буквы. Без preload браузер находит их
-// только при раскладке текста, и первая отрисовка ждёт их отдельным кругом запросов
+// next/font: шрифты раздаём сами, у системного fallback подогнаны метрики (без скачка вёрстки при подмене).
+// В CSS попадают @font-face всех наборов символов (с unicode-range) — браузер сам качает те, что встретил
+// в тексте. subsets решает только, что уходит в <link rel="preload">. Preload — лишь кириллица: ею написан
+// заголовок страницы (LCP). Раньше preload было шесть файлов (~200 КБ): на мобильном 4G они шли с высоким
+// приоритетом раньше скриптов и тянули LCP на секунды. Латиница, ₸ (latin-ext) и казахские буквы
+// (cyrillic-ext) догружаются по факту, текст до этого рисуется fallback-шрифтом (display: swap)
 export const golos = Golos_Text({
-  subsets: ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext'],
+  subsets: ['cyrillic'],
   variable: '--font-golos',
   display: 'swap',
 })
 
-// Цены, логотип, крупные цифры
-export const montserrat = Montserrat({ subsets: ['latin', 'latin-ext'], variable: '--font-montserrat', display: 'swap' })
+// Заголовки, цены, логотип, крупные цифры
+export const montserrat = Montserrat({ subsets: ['cyrillic'], variable: '--font-montserrat', display: 'swap' })
