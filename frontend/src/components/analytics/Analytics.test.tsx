@@ -5,7 +5,7 @@ import { StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { navigation } from '../../test/navigation'
 import { nextScriptMock } from '../../test/next-script-mock'
-import { Analytics } from './Analytics'
+import { Analytics, ANALYTICS_IDLE_DELAY } from './Analytics'
 
 // Never load a third-party library or send a hit. Test only the command queues.
 const ga = () => (window.dataLayer ?? []).map(args => Array.from(args))
@@ -13,6 +13,8 @@ const ym = () => (window.ym?.a ?? []).map(args => Array.from(args))
 const views = () => ga().filter(args => args[0] === 'event')
 const hits = () => ym().filter(args => args[1] === 'hit')
 const loaders = () => vi.mocked(Script).mock.calls.map(call => call[0])
+// Loaders are deferred until the first interaction (or an idle timeout after load)
+const interact = () => act(() => { window.dispatchEvent(new Event('pointerdown')) })
 
 describe('analytics initial/SPA pageviews without network', () => {
   beforeEach(() => {
@@ -29,6 +31,7 @@ describe('analytics initial/SPA pageviews without network', () => {
     expect(vi.isMockFunction(Script)).toBe(true)
     expect(Script).toBe(nextScriptMock)
     render(<Analytics />)
+    interact()
     expect(nextScriptMock.mock.calls.map(([props]) => props.src)).toEqual([
       'https://www.googletagmanager.com/gtag/js?id=G-TEST123456',
       'https://mc.yandex.ru/metrika/tag.js',
@@ -37,6 +40,7 @@ describe('analytics initial/SPA pageviews without network', () => {
 
   it('queues one init and initial view per provider before loading, including StrictMode', () => {
     render(<StrictMode><Analytics /></StrictMode>)
+    interact()
     expect(views()).toHaveLength(1); expect(hits()).toHaveLength(1)
     expect(ga().filter(args => args[0] === 'config')).toHaveLength(1)
     expect(ga().find(args => args[0] === 'config')?.[2]).toMatchObject({ send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false })
@@ -67,13 +71,27 @@ describe('analytics initial/SPA pageviews without network', () => {
   ] as const) it(`independent validated provider activation ${gaCount}/${ymCount}`, () => {
     vi.stubEnv('NEXT_PUBLIC_GA_ID', gaId); vi.stubEnv('NEXT_PUBLIC_YANDEX_METRIKA_ID', ymId)
     render(<Analytics />)
+    interact()
     expect(views()).toHaveLength(gaCount); expect(hits()).toHaveLength(ymCount)
     expect(new Set(loaders().map(p => p.src)).size).toBe(gaCount + ymCount)
   })
   it('noncanonical origin never initializes or inserts scripts even with valid IDs', () => {
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://another.invalid')
     render(<Analytics />)
+    interact()
     expect(views()).toHaveLength(0); expect(hits()).toHaveLength(0); expect(loaders()).toHaveLength(0)
+  })
+  it('queues the first view at once but inserts loaders only on interaction or after the idle delay', () => {
+    vi.useFakeTimers()
+    try {
+      render(<Analytics />)
+      expect(views()).toHaveLength(1); expect(hits()).toHaveLength(1)
+      expect(loaders()).toHaveLength(0)
+      act(() => { vi.advanceTimersByTime(ANALYTICS_IDLE_DELAY - 1) })
+      expect(loaders()).toHaveLength(0)
+      act(() => { vi.advanceTimersByTime(1) })
+      expect(new Set(loaders().map(p => p.src)).size).toBe(2)
+    } finally { vi.useRealTimers() }
   })
   it('a blocked script leaves queues intact; a throwing provider cannot break navigation or the other tracker', () => {
     const fail = vi.fn(() => { throw Error('blocked') }); window.gtag = fail

@@ -61,9 +61,18 @@ async function intercept(page: Page, blocked = false) {
   return { collected, loads, csp, errors }
 }
 
+// Loaders wait for the first interaction (or an idle delay): poke the page until they are requested.
+async function wakeAnalytics(page: Page, loads: string[]) {
+  await expect.poll(async () => {
+    await page.evaluate(() => window.dispatchEvent(new Event('pointerdown')))
+    return loads.length
+  }).toBeGreaterThan(0)
+}
+
 test('real Next navigation: initial, RU/KK, Back/Forward, private query, loaders once', async ({ page }) => {
   const result = await intercept(page)
   await page.goto('https://aktau.market/ru/catalog?q=private#private')
+  await wakeAnalytics(page, result.loads)
   await expect.poll(() => result.collected.length).toBe(2)
   await page.locator('a[href="/ru/dashboard"]:visible').first().click()
   await expect.poll(() => result.collected.length).toBe(4)
@@ -99,6 +108,7 @@ test('pilot UI events, settled search and entry-only attribution without real hi
   const events = (name: string, provider = 'ga') => result.collected.filter(v => v.provider === provider &&
     (v.payload as unknown[])[provider === 'ga' ? 1 : 2] === name)
   await page.goto('https://aktau.market/ru/collections/milk?utm_source=telegram&utm_medium=social&utm_campaign=pilot&q=private')
+  await wakeAnalytics(page, result.loads)
   await expect.poll(() => events('category_view').length).toBe(1)
   await expect.poll(() => events('category_view', 'ym').length).toBe(1)
   expect(events('filter_apply')).toHaveLength(0)
