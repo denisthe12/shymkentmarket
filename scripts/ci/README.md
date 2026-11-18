@@ -1,6 +1,6 @@
 # Локальный запуск CI
 
-Работайте из корня тематического worktree в WSL. Нужны Node 24.10.0, pnpm 10.32.1 и версия Go из [go.mod](../../backend-go/go.mod). Скрипты устанавливают `GOTOOLCHAIN=local`. Для Go race checks нужен C-компилятор, для Ops — OpenSSL и Linux-инструменты из тестов. Pin pnpm проверьте даже для frontend, где отдельный lockfile.
+Работайте из корня тематического worktree на файловой системе Linux. Нужны Node 24.10.0, pnpm 10.32.1 и версия Go из [go.mod](../../backend-go/go.mod). Настройка pnpm без записи в каталог Node описана в [общем onboarding](../../docs/developer-onboarding.md#инструменты). Скрипты устанавливают `GOTOOLCHAIN=local`. Для Go race checks нужен C-компилятор, для Ops — OpenSSL и Linux-инструменты из тестов. Версию pnpm проверьте и в `frontend/`, у которого свой lockfile.
 
 ## Группы проверок
 

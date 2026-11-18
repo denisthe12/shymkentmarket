@@ -1,5 +1,7 @@
 # Aktau Market — frontend (Next.js)
 
+> **Aktau legacy/reference — NOT Shymkent operating instructions.** Ниже сохранены конфигурации и примеры Актау. Для локального запуска Shymkent Market на фикстурах используйте [общий onboarding](../docs/developer-onboarding.md#интерфейс-на-фикстурах).
+
 Единственный frontend проекта после Production Part 01. План — `../docs/context/08_NEXTJS_MIGRATION_PLAN.md` (COMPLETE).
 Все страницы перенесены, язык — в префиксе URL (`/ru`, `/kk`), данные приходят в HTML с сервера.
 

@@ -11,6 +11,9 @@
 | [СЗПТ](production/SZPT.md) | Правила и код API. Фактическая доступность зависит от будущего каталога Шымкента. |
 | [Локальный CI](../scripts/ci/README.md), [одноразовый staging](production/STAGING_PLAN.md), [правила PR и CI Gate](production/GITHUB_BRANCH_PROTECTION.md) | Проверки без production-доступа. |
 
+Начните с [единого onboarding](developer-onboarding.md). Jira-задачи Frontend,
+Backend 1 и Backend 2 ведутся в собственных ветках и PR по общим правилам.
+
 ## INHERITED_REFERENCE
 
 Пути, имена ресурсов, роли, URL, release SHA и команды в этих справках относятся к Актау. Не выполняйте их против инфраструктуры Актау и не переносите настройки в Шымкент. Примеры с loopback применимы только после подтверждения одноразовой цели.
