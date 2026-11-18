@@ -91,8 +91,10 @@ responsible developer. Continue independent work in the approved scope.
 2. Verify repository path/identity, branch, worktree and remote URLs; protect
    tracked, untracked and ignored local changes.
 3. Verify the approved baseline and applicable contracts and tests. Create or
-   reuse one topic branch and one permanent WSL linked worktree per task at
-   `/home/denis/tmp/<kebab-case-task>`. Inspect existing paths before creation.
+   reuse one topic branch and one permanent linked worktree per task under
+   `$HOME/tmp/<kebab-case-task>` or the developer's agreed workspace root.
+   Owner Codex sessions use `/home/denis/tmp/<kebab-case-task>`. Inspect existing
+   paths before creation.
 4. Make the smallest change in that worktree, add needed regression coverage and
    update living docs. Use the task branch and one Shymkent PR into `main`.
    Keep review fixes in the same worktree, branch and PR as new commits.
@@ -204,9 +206,10 @@ Read Aktau only through explicitly read-only fetch/inspection; preserve a
 pinned fetched SHA. Verify push destination separately from fetch URL.
 
 Use topic branches and PRs when a task authorizes them. Keep auto-merge and
-production deployment disabled. Merge or deploy only under separate explicit
-Owner authorization for that action. Never force push, rewrite published
-history or bypass review/CI.
+production deployment disabled. After independent `APPROVED` review and
+explicit Owner authorization, Codex may merge using GitHub after verifying
+exact-HEAD CI and all repository rules. Deployment requires separate Owner
+authorization. Never force push, rewrite published history or bypass review/CI.
 Avoid `git reset --hard`, destructive rebases and `git clean -fd[x]` unless
 specifically approved for bounded recovery. Inspect ignored/untracked work
 before branch switches and archive operations. Retain rollback evidence.
@@ -235,24 +238,27 @@ private logs, dumps, credentials, build output, browser traces and dependency
 directories. An ignore/denylist alone is insufficient.
 
 Place the clean archive `<kebab-case-task>-<HEAD12>.tar.gz` and its `.sha256`
-directly in `/home/denis/tmp`, outside the worktree. For review fixes, update the
-report in the same task and package the new exact HEAD under a new archive name.
+directly in the developer's agreed workspace root (typically `$HOME/tmp`), outside
+the worktree. Owner Codex sessions use `/home/denis/tmp`. For review fixes, update
+the report in the same task and package the new exact HEAD under a new archive name.
 
 ## Environment: Windows + WSL
 
-Windows checkout: `D:\Install\projects\ShymkentMarket`
+Owner checkout example on Windows: `D:\Install\projects\ShymkentMarket`
 
-WSL checkout: `/mnt/d/install/projects/ShymkentMarket`
+Owner checkout example in WSL: `/mnt/d/install/projects/ShymkentMarket`
 
-Run shell and tool commands **inside WSL**, using actual filesystem casing
-verified on the machine. If `/mnt/d` filesystem semantics affect tests,
+Developers use their own clone paths and home directory. On Windows, run shell
+and tool commands **inside WSL**, using actual filesystem casing verified on
+the machine. If a Windows-mounted drive affects tests,
 reproduce on a clean, byte-identical native-WSL copy/worktree without weakening
 assertions or relaxing production timeouts. Prefer configured pnpm; preserve
 lockfiles.
 
 ## RTK policy
 
-Use RTK for supported commands.
+Agents with RTK installed use it for supported commands. The developer commands
+in the onboarding guide work with standard Git, pnpm and Go.
 
 Examples:
 

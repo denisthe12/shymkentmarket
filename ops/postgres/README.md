@@ -1,5 +1,7 @@
 # Private application PostgreSQL backups — local foundation
 
+> **Aktau legacy/reference — NOT Shymkent operating instructions.** Роли и примеры операторских процедур ниже унаследованы от Актау. Для работы над Шымкентом не используйте эти инструкции с унаследованной БД, backups или credentials. Безопасные проверки описаны в [общем onboarding](../../docs/developer-onboarding.md#локальные-проверки).
+
 No scheduler, storage provider or production recovery is configured. Commands
 are operator-only, not API runtime tooling. Use the explicit current application
 database, **not** a separate empty backup database; do not fall back to runtime

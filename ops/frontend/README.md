@@ -1,5 +1,7 @@
 # Frontend cache flush
 
+> **Aktau legacy/reference — NOT Shymkent operating instructions.** Endpoint, ключи и команды ниже относятся к Актау. Для работы над Шымкентом используйте [общий onboarding](../../docs/developer-onboarding.md).
+
 The frontend server caches API responses for up to an hour
 (`next: { revalidate: 3600, tags: ['catalog-data'] }`, `frontend/src/api/httpAdapter.ts`).
 Ingest flushes that cache after every snapshot publication. An API release that changes

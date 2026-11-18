@@ -1,5 +1,7 @@
 # Cloudflare operator artifacts — Part14 Phase A / Part14B
 
+> **Aktau legacy/reference — NOT Shymkent operating instructions.** Топология, хосты и состояние выкладки ниже относятся к Актау. Для актуальных сведений о Шымкенте используйте [карту документации](../../docs/README.md).
+
 > Historical planning or activation record. For current production topology and operator instructions, see [Frontend VPS deployment](../../docs/production/FRONTEND_VPS_DEPLOYMENT.md).
 
 > **Status 2026-11-11:** this is the Part14/Part15 perimeter record. Tunnel and the Go API are live;
