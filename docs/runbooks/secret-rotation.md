@@ -1,5 +1,7 @@
 # Secret rotation
 
+> **INHERITED_REFERENCE — Aktau operations.** Credential identities and paths below belong to Aktau. Do not copy, provision or rotate them for Shymkent. Any Shymkent rotation requires separate authorization and verified Shymkent identities.
+
 ## General rules (local and VPS)
 
 Rotate one class at a time only with separate authorization. Never put values

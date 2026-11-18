@@ -1,5 +1,7 @@
 # Voice session dependency unavailable
 
+> **INHERITED_REFERENCE — Aktau operations.** The VPS and provider guidance below is an Aktau reference. Use local fixtures for Shymkent tests. See [Shymkent local diagnostics](README.md).
+
 ## General rules (local and VPS)
 
 Symptoms: session get/set/delete failures and controlled Voice503. Catalog GET

@@ -1,5 +1,7 @@
 # Go API auto-deploy — SOURCE CANDIDATE, disabled by default
 
+> **INHERITED_REFERENCE — Aktau release design.** The repository guard still restricts release jobs to Aktau. Do not use these instructions to dispatch jobs, provision secrets or change environments, SSH or infrastructure for Shymkent. See [Shymkent staging boundaries](STAGING_PLAN.md).
+
 > **Status 2026-11-11:** the broker is installed on the VPS
 > (`/usr/local/lib/adilbaga-deploy/auto_broker.py`, SHA-256 `7b8f5320…`, PR #104,
 > CAS upgrade from `2dd252ee…` on 2026-11-08). Repository variable

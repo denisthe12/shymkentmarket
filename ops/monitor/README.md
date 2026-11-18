@@ -1,5 +1,7 @@
 # Go operator monitor — ACTIVE on the production VPS (Telegram delivery)
 
+> **INHERITED_REFERENCE — Aktau monitor.** The active service, Telegram chat, hosts and paths below are Aktau references. Do not use them for Shymkent. Any monitoring activation requires separately approved Shymkent resources. See the [documentation index](../../docs/README.md).
+
 **Status.** The monitor has been running on the production VPS since 2026-10-20:
 `aktau-go-monitor.timer` fires every 5 minutes, delivery is Telegram, state is in
 `/var/lib/aktau-monitor/state`, release source in

@@ -1,5 +1,7 @@
 # Production Go API operations
 
+> **INHERITED_REFERENCE — Aktau operations.** The environments, paths, image revisions and rollback procedure below belong to Aktau. Do not use these commands, targets or credentials for Shymkent. Shymkent release remains disabled and needs separate Owner approval. See the [Shymkent documentation index](../docs/README.md).
+
 Cloudflare edge → host cloudflared → loopback Docker publication → Go API.
 Supabase remains the database; only restricted `aktau_api_runtime` is admitted.
 Existing real Upstash and Gemini configuration stays outside Git. No migration,

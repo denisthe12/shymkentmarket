@@ -1,5 +1,7 @@
 # Part13 local performance rehearsal
 
+> **INHERITED_REFERENCE — Aktau Part 13 rehearsal.** This procedure relies on a prior Aktau backup and fixture provenance. Do not source its configuration or copy its backups for Shymkent. Use the [local CI guide](../ci/README.md) for ordinary Shymkent verification.
+
 This is API protocol load against owned disposable resources, **not production/VPS
 capacity evidence**. Requires accepted Part12 SHA with real GitHub CI Gate PASS,
 Docker, local Go/Node/GnuPG/PostgreSQL17 clients and official `grafana/k6:2.3.0`.
