@@ -29,6 +29,7 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
   };
   let apiContainer;
   let network;
+  let image;
   try {
     start(goAPI, [], root, { APP_ENV: 'test', PORT: '18080',
       DATABASE_URL: url('part04_fixture', 'aktau_api_runtime'), CORS_ALLOWED_ORIGINS: 'http://localhost:3100,http://127.0.0.1:3100',
@@ -74,8 +75,9 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
     }));
     prepareBrowser();
     console.log(run('Next HTTP E2E against Go', 'pnpm', ['test:e2e'], { cwd: join(root, 'frontend'), env: { ...env, ...httpEnv, E2E_API: 'http' } }));
-    const image = 'adilbaga-part12-api:review';
-    docker('Docker image build', ['build', '-t', image, join(root, 'backend-go')]);
+    const imageTag = `${name}-api:review`;
+    docker('Docker image build', ['build', '-t', imageTag, join(root, 'backend-go')]);
+    image = imageTag;
     network = `${name}-network`; docker('owned Docker network', ['network', 'create', network]);
     docker('connect owned PG', ['network', 'connect', network, name]);
     apiContainer = `${name}-api`;
@@ -108,5 +110,6 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
       docker('disconnect PG', ['network', 'disconnect', network, name]);
       docker('network cleanup', ['network', 'rm', network]);
     }
+    if (image) docker('owned image tag cleanup', ['image', 'rm', image]);
   }
 });
