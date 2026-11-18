@@ -54,3 +54,12 @@ one normal status smoke and verify that the checkout result is available while
 the Git children run as the expected service identity. Preserve human access and
 sync state. If the replacement cannot be verified, stop and reconcile. Keep the
 vulnerable backup out of the normal invocation path.
+
+## Independent review follow-up
+
+The regression test used 0.5 s for interpreter startup in every subcase. A
+temporary test copy with a 0.75 s startup delay reproduced two failures: stdout
+overflow and nonzero exit both reported timeout. The test now allows 5 s for
+those two subcases and retains 0.5 s for the hang subcase. The same delayed
+probe passes. All subcases still assert the child has terminated. The production
+helper, privilege boundary, timeout and stdout limit are unchanged in this follow-up.

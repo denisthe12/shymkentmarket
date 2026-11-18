@@ -351,9 +351,13 @@ class CheckoutTests(unittest.TestCase):
 
     def test_output_and_time_limits_and_nonzero_exit(self):
         real_popen = subprocess.Popen
-        for code, reason in [('print("a" * 8192)', 'output exceeded limit'),
-                             ('import time; time.sleep(30)', 'timed out'),
-                             ('import sys; sys.exit(9)', 'Git failed')]:
+        # Only the hang case needs a short deadline. Allow interpreter startup
+        # time for cases that must reach their output or exit behavior.
+        for code, reason, timeout in [
+            ('print("a" * 8192)', 'output exceeded limit', 5),
+            ('import time; time.sleep(30)', 'timed out', 0.5),
+            ('import sys; sys.exit(9)', 'Git failed', 5),
+        ]:
             with self.subTest(reason=reason):
                 children = []
                 def producer(_argv, **kw):
@@ -361,7 +365,7 @@ class CheckoutTests(unittest.TestCase):
                                        **{k: v for k, v in kw.items() if k not in ('user', 'group', 'extra_groups')})
                     children.append(child)
                     return child
-                with patch.object(s, 'GIT_STDOUT_LIMIT', 64), patch.object(s, 'GIT_TIMEOUT', 0.5), \
+                with patch.object(s, 'GIT_STDOUT_LIMIT', 64), patch.object(s, 'GIT_TIMEOUT', timeout), \
                         patch.object(s.subprocess, 'Popen', side_effect=producer):
                     with self.assertRaisesRegex(s.CheckoutUnavailable, reason):
                         s.checkout_git(('status',), 999, 987)
