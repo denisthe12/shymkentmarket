@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { stubMapTiles } from './map-tiles'
 
 // Оболочка сайта: на телефоне разделы — в таб-баре внизу, на desktop — в шапке
 test('mobile: tab bar navigates between sections and the search tab focuses the field', async ({ page, isMobile }) => {
@@ -38,6 +39,7 @@ test('desktop: no tab bar, sections in the header, grey page under white header'
 
 test('no horizontal scroll on narrow phones', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'узкие экраны')
+  await stubMapTiles(page)
   for (const width of [320, 360, 390]) {
     await page.setViewportSize({ width, height: 800 })
     for (const path of ['/ru/catalog', '/ru/collections/milk', '/ru/dashboard']) {

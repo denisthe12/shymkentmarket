@@ -3,6 +3,7 @@ import type { CategoryDto, DashboardDto, FilterSchemaDto, ProductCardDto } from 
 import { formatPrice } from '../src/lib/format'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { stubMapTiles } from './map-tiles'
 
 // No fixture IDs/counts/prices: all expectations come from the real read-only API.
 const API = `${process.env.NEXT_PUBLIC_API_BASE_URL!.replace(/\/+$/, '')}/api`
@@ -151,6 +152,7 @@ test('real product, SSR metadata and JSON-LD match API in both languages', async
 
 test('dashboard summary, spreads, baskets and map use real API', async ({ page, request }) => {
   const errors = collectErrors(page)
+  await stubMapTiles(page)
   const dashboard = await api<DashboardDto>(request, '/dashboard')
   expect((await page.goto('/ru/dashboard'))?.status()).toBe(200)
   await expect(page.getByTestId('summary-card')).toHaveCount(4)
