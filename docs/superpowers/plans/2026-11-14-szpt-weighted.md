@@ -1,6 +1,7 @@
 # СЗПТ, фаза 2: весовые товары и 15 новых групп — план реализации
 
 > Historical design or rollout plan. For current deployment and rollback, see the [Frontend VPS runbook](../../production/FRONTEND_VPS_DEPLOYMENT.md).
+> Use the [current SQL operator launcher](../../../ops/postgres/README.md#sql-operator-commands) for the SZPT check. The historical command below exposed the connection URL in process arguments.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

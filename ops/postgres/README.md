@@ -175,3 +175,28 @@ and restricted local Go smoke. Use unchanged
 source/target comparison for the same recovery point. No matching source proof
 means `RESTORE_VERIFIED_SOURCE_PARITY_PENDING`, never full parity. Clean only
 owned local plaintext/disposable resources; never prune older backups.
+
+## SQL operator commands
+
+From the repository root with Node 24 and PostgreSQL client tools, disable shell
+tracing and privately export the appropriate connection from a protected operator
+env file. For import, backfill, or migration checks use the existing authorized
+owner/migration credential as `DATABASE_URL`:
+
+```bash
+node ops/postgres/psql-run.mjs import-price-history < history.csv
+node ops/postgres/psql-run.mjs backfill-product-identities
+node ops/postgres/psql-run.mjs offer-price-basis-check
+```
+
+These are separate operations. Follow the existing sync and migration windows.
+For the read-only SZPT release check export the existing API login connection
+as `API_DATABASE_URL` and run `node ops/postgres/psql-run.mjs szpt-explain`.
+The launcher never falls back from the reader variable to the owner variable.
+
+The launcher accepts one operation name. It places decoded libpq fields in the
+child environment, strips inherited PG overrides, and accepts only sslmode,
+sslrootcert, channel_binding and connect_timeout URL options. Standard output
+preserves SQL results. Driver stderr is replaced by a nonsecret category and
+psql exit codes are preserved. Root and the same OS user may still inspect
+process environments. Keep operator credentials private.

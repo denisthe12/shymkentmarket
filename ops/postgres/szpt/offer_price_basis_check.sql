@@ -1,6 +1,6 @@
 -- Read-only check for the offer_price_basis migration (SCRUM-25 SZPT weighted goods).
 -- Run BEFORE and AFTER the migration (never during the 01:00 / 13:00 UTC sync):
---   psql -X -v ON_ERROR_STOP=1 -f ops/postgres/szpt/offer_price_basis_check.sql "$DATABASE_URL"
+--   node ops/postgres/psql-run.mjs offer-price-basis-check
 -- One file, two parts:
 --   PRE  works at any time; uses the inline weighted rule.
 --        The rule (weighted CASE, defined ONCE in the :basis_cte variable below) must equal the CASE in
