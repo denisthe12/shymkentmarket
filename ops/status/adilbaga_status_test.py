@@ -1,7 +1,15 @@
 import io
 import json
+import os
+from pathlib import Path
+import pwd
+import subprocess
+import sys
+import tempfile
 import unittest
+from types import SimpleNamespace
 from contextlib import redirect_stdout
+from unittest.mock import patch
 
 import adilbaga_status as s
 
@@ -47,6 +55,7 @@ class FakeHost:
         self.service_result = 'success'
         self.cloudflared = 'active'
         self.git_dirty = ''
+        self.checkout_error = None
         self.root = True
         self.reboot = False
         self.commands = []
@@ -73,15 +82,18 @@ class FakeHost:
                        '{"outcome":"OK","reason":"probe_complete","queued":0}\n'
                        'aktau-go-monitor.service: Deactivated successfully.\n'
                        'Finished aktau-go-monitor.service - Aktau Market private one-shot Go API monitor.\n')
-        if cmd[0] == 'git' and 'rev-parse' in cmd:
-            return 0, 'ae69e01\n'
-        if cmd[0] == 'git' and 'status' in cmd:
-            return 0, self.git_dirty
+        if cmd[0] in ('git', s.GIT_BIN):
+            raise AssertionError('Git reached the privileged runner')
         if cmd[0] == s.GO_BIN:
             return 0, 'go version go1.27.4 linux/amd64\n'
         if cmd[0] == 'df':
             return 0, self.df
         return 127, ''
+
+    def checkout(self):
+        if self.checkout_error:
+            raise s.CheckoutUnavailable(self.checkout_error)
+        return 'ae69e01', len(self.git_dirty.splitlines())
 
     def read(self, path):
         if path not in self.files:
@@ -256,8 +268,145 @@ class StatusTests(unittest.TestCase):
         flat = ' '.join(' '.join(c) for c in h.commands)
         self.assertNotRegex(flat, r'api\.env|aktau-sync\.env|telegram\.env|docker (run|exec|rm|compose)|systemctl (start|stop|restart)')
 
+    def test_checkout_failure_preserves_other_sections_and_has_no_root_fallback(self):
+        h = FakeHost()
+        h.checkout_error = 'could not start Git as aktau-sync'
+        code, out = report(h)
+        self.assertEqual(code, 1)
+        self.assertIn('! sync checkout /opt/aktau-sync: could not start Git as aktau-sync', out)
+        self.assertNotIn('checkout=', out)
+        self.assertIn('== Monitor', out)
+        self.assertIn('== Host', out)
+        self.assertIn('go=go1.27.4', out)
+        self.assertTrue(out.rstrip().endswith('RESULT=WARN n=1'))
+        self.assertFalse(any(c[0] in ('git', s.GIT_BIN) for c in h.commands))
+
     def test_usage(self):
         self.assertEqual(s.main(['--run'], FakeHost()), 2)
+
+
+class CheckoutTests(unittest.TestCase):
+    account = SimpleNamespace(pw_name='aktau-sync', pw_uid=999, pw_gid=987)
+
+    def test_both_commands_use_fixed_argv_and_sanitized_child(self):
+        real_popen = subprocess.Popen
+        # A harmless pipe producer tests the real bounded reader under ordinary CI,
+        # while the spy observes the arguments before privileged process creation.
+        def producer(_argv, **kw):
+            code = 'print("ae69e01")' if 'rev-parse' in _argv else 'print(" M file")'
+            return real_popen([sys.executable, '-I', '-B', '-c', code],
+                              **{k: v for k, v in kw.items() if k not in ('user', 'group', 'extra_groups')})
+
+        with patch.object(s.pwd, 'getpwnam', return_value=self.account), \
+                patch.object(s.os, 'geteuid', return_value=0), \
+                patch.dict(os.environ, {'HOME': '/root', 'GIT_CONFIG_COUNT': '1',
+                                        'GIT_DIR': '/untrusted', 'SECRET_FIXTURE': 'ignored'}), \
+                patch.object(s.Host, 'run', side_effect=AssertionError('privileged path')), \
+                patch.object(s.subprocess, 'Popen', side_effect=producer) as popen:
+            self.assertEqual(s.Host().checkout(), ('ae69e01', 1))
+        prefix = [s.GIT_BIN, '--no-optional-locks', '-c', 'core.fsmonitor=false',
+                  '-c', 'core.hooksPath=/dev/null', '-C', s.SYNC_CHECKOUT]
+        for call, suffix in zip(popen.call_args_list, [
+            ['rev-parse', '--short', 'HEAD'],
+            ['status', '--porcelain', '--untracked-files=no'],
+        ], strict=True):
+            self.assertEqual(call.args, (prefix + suffix,))
+            self.assertEqual(call.kwargs['user'], 999)
+            self.assertEqual(call.kwargs['group'], 987)
+            self.assertEqual(call.kwargs['extra_groups'], ())
+            self.assertEqual(call.kwargs['cwd'], '/')
+            self.assertFalse(call.kwargs['shell'])
+            self.assertTrue(call.kwargs['close_fds'])
+            self.assertEqual(call.kwargs['stdin'], subprocess.DEVNULL)
+            self.assertEqual(call.kwargs['env'], {
+                'PATH': '/usr/bin:/bin', 'HOME': '/nonexistent', 'XDG_CONFIG_HOME': '/nonexistent',
+                'GIT_CONFIG_NOSYSTEM': '1', 'LC_ALL': 'C', 'TZ': 'UTC',
+            })
+
+    def test_missing_or_unsafe_account_and_nonroot_never_launch(self):
+        with patch.object(s.subprocess, 'Popen') as popen:
+            for uid, gid in [(0, 987), (999, 0), (-1, 987), (999, -1)]:
+                account = SimpleNamespace(pw_name=s.SYNC_USER, pw_uid=uid, pw_gid=gid)
+                with patch.object(s.pwd, 'getpwnam', return_value=account):
+                    with self.assertRaisesRegex(s.CheckoutUnavailable, 'unsafe'):
+                        s.Host().checkout()
+            with patch.object(s.pwd, 'getpwnam', side_effect=KeyError):
+                with self.assertRaisesRegex(s.CheckoutUnavailable, 'unavailable'):
+                    s.Host().checkout()
+            with patch.object(s.pwd, 'getpwnam', return_value=self.account), \
+                    patch.object(s.os, 'geteuid', return_value=999):
+                with self.assertRaisesRegex(s.CheckoutUnavailable, 'launcher unavailable'):
+                    s.Host().checkout()
+            popen.assert_not_called()
+
+    def test_launch_failure_never_retries(self):
+        for exc in (PermissionError, FileNotFoundError, subprocess.SubprocessError):
+            with self.subTest(error=exc.__name__), \
+                    patch.object(s.pwd, 'getpwnam', return_value=self.account), \
+                    patch.object(s.os, 'geteuid', return_value=0), \
+                    patch.object(s.subprocess, 'Popen', side_effect=exc) as popen:
+                with self.assertRaisesRegex(s.CheckoutUnavailable, 'could not start'):
+                    s.Host().checkout()
+                popen.assert_called_once()
+
+    def test_output_and_time_limits_and_nonzero_exit(self):
+        real_popen = subprocess.Popen
+        # Only the hang case needs a short deadline. Allow interpreter startup
+        # time for cases that must reach their output or exit behavior.
+        for code, reason, timeout in [
+            ('print("a" * 8192)', 'output exceeded limit', 5),
+            ('import time; time.sleep(30)', 'timed out', 0.5),
+            ('import sys; sys.exit(9)', 'Git failed', 5),
+        ]:
+            with self.subTest(reason=reason):
+                children = []
+                def producer(_argv, **kw):
+                    child = real_popen([sys.executable, '-I', '-B', '-c', code],
+                                       **{k: v for k, v in kw.items() if k not in ('user', 'group', 'extra_groups')})
+                    children.append(child)
+                    return child
+                with patch.object(s, 'GIT_STDOUT_LIMIT', 64), patch.object(s, 'GIT_TIMEOUT', timeout), \
+                        patch.object(s.subprocess, 'Popen', side_effect=producer):
+                    with self.assertRaisesRegex(s.CheckoutUnavailable, reason):
+                        s.checkout_git(('status',), 999, 987)
+                self.assertIsNotNone(children[0].poll())
+
+    @unittest.skipUnless(os.environ.get('ADILBAGA_DISPOSABLE_ROOT_FIXTURE') == '1' and os.geteuid() == 0,
+                         'real UID/GID requires explicit disposable root fixture')
+    def test_real_linux_child_identity_and_checkout(self):
+        nobody = pwd.getpwnam('nobody')
+        account = SimpleNamespace(pw_name=s.SYNC_USER, pw_uid=nobody.pw_uid, pw_gid=nobody.pw_gid)
+        ids = dict(user=account.pw_uid, group=account.pw_gid, extra_groups=())
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            root.chmod(0o755)
+            repo = root / 'checkout'
+            repo.mkdir()
+            os.chown(repo, account.pw_uid, account.pw_gid)
+            probe = root / 'identity-probe'
+            probe.write_text('#!/usr/bin/python3 -I\nimport json,os\n'
+                             'print(json.dumps([os.getuid(),os.geteuid(),os.getgid(),os.getegid(),os.getgroups(),os.getenv("ROOT_FIXTURE")]))\n')
+            probe.chmod(0o755)
+            with patch.object(s, 'GIT_BIN', str(probe)), patch.dict(os.environ, {'ROOT_FIXTURE': 'ignored'}):
+                actual = json.loads(s.checkout_git(('rev-parse', '--short', 'HEAD'), account.pw_uid, account.pw_gid))
+            self.assertEqual(actual, [account.pw_uid]*2 + [account.pw_gid]*2 + [[], None])
+            def git(*args):
+                subprocess.run([s.GIT_BIN, '-C', str(repo), *args], check=True,
+                               env={'PATH': '/usr/bin:/bin', 'HOME': '/nonexistent'},
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **ids)
+            git('init')
+            tracked = repo / 'file'
+            tracked.write_text('initial')
+            git('add', 'file')
+            git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture')
+            tracked.write_text('changed')
+            index = repo / '.git/index'
+            before = index.read_bytes(), index.stat().st_mtime_ns
+            with patch.object(s, 'SYNC_CHECKOUT', str(repo)), patch.object(s.pwd, 'getpwnam', return_value=account):
+                head, count = s.Host().checkout()
+            self.assertRegex(head, r'^[0-9a-f]+$')
+            self.assertEqual(count, 1)
+            self.assertEqual((index.read_bytes(), index.stat().st_mtime_ns), before)
 
 
 if __name__ == '__main__':
