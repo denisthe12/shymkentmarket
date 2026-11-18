@@ -1,5 +1,7 @@
 # Aktau Market API v1 — frozen reference contract
 
+> **INHERITED_REFERENCE — frozen v1.** The wire shape is retained in Shymkent. The brand, production origin and rollout statements below describe Aktau. Use the [local contract checks](../../contracts/README.md) from a Shymkent worktree.
+
 Source of truth: [contracts/openapi.yaml](../../contracts/openapi.yaml).
 Version: **1.0.0**, OpenAPI **3.1.0**. Production Part 02. Implemented by the Go API
 in production; the original NestJS reference is removed and replaced by recorded

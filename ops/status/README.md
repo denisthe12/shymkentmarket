@@ -1,5 +1,7 @@
 # VPS status in one command
 
+> **INHERITED_REFERENCE — Aktau status helper.** The helper addresses Aktau service names, files and paths. Do not install or run it against inherited resources for Shymkent. For local tests, see [Shymkent CI](../../scripts/ci/README.md).
+
 `adilbaga_status.py` prints the state of the production VPS on one screen, so a check
 is one paste instead of a dozen commands. It is read-only: it starts, stops and writes
 nothing, and it never reads secret files (`api.env`, `aktau-sync.env`, `telegram.env`).

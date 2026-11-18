@@ -27,12 +27,14 @@ review cycle, consult `01_SHYMKENT_MARKET_PROJECT_CONTEXT.md` and
 `02_SHYMKENT_MARKET_AI_WORKFLOW.md` when supplied in the task workspace.
 Within the repository, consult:
 
-- `README.md`, `docs/README.md` — project overview and living/historical docs.
+- `README.md`, `docs/README.md`, `docs/developer-onboarding.md` — project
+  overview, documentation status, and local setup.
 - `contracts/openapi.yaml`, `docs/production/API_V1_CONTRACT.md` — API v1 contract.
 - `backend-go/README.md` — Go API conventions and tests.
-- `frontend/README.md`, `frontend/AGENTS.md` — Next.js conventions.
-- `deploy/README.md`, `docs/production/FRONTEND_VPS_DEPLOYMENT.md` — reference release procedures.
-- `ops/sync/README.md`, `docs/data/SYNC_RUNBOOK.md` — ingestion and publication.
+- `frontend/AGENTS.md` — Next.js conventions. The inherited `frontend/README.md`
+  is a reference. Follow the Shymkent onboarding guide for local setup.
+- `deploy/README.md`, `docs/production/FRONTEND_VPS_DEPLOYMENT.md` — Aktau release references.
+- `ops/sync/README.md`, `docs/data/SYNC_RUNBOOK.md` — inherited ingestion references for Backend 2.
 - `.github/workflows/`, `scripts/ci/README.md` — actual workflow entry points and CI.
 
 Roadmaps, old phase plans, historical status reports and Aktau runbooks are not
@@ -57,6 +59,17 @@ docs/          living guides, historical plans, and review reports
 Keep API, frontend and data publication lifecycles separate. Do not create a
 second frontend or a competing migration history.
 
+## Team boundaries
+
+- Backend 1 / Owner owns the Go API, integration and repository-wide coordination.
+- Backend 2 owns PostgreSQL, schema and migrations, source approval, adapters,
+  store data, matching, ingestion and the publication pipeline.
+- Frontend owns UI, branding, articles and blog, SEO, sitemap, robots and city metadata.
+
+Before editing another team's code, configuration or working instructions,
+give the Owner the paths, reason and impact so they can approve scope with the
+responsible developer. Continue independent work in the approved scope.
+
 ## Shymkent-specific boundaries
 
 - Shymkent gets **its own** PostgreSQL data, retail locations, source approvals,
@@ -77,8 +90,12 @@ second frontend or a competing migration history.
 1. Read the full task and approvals; inspect all applicable agent instructions.
 2. Verify repository path/identity, branch, worktree and remote URLs; protect
    tracked, untracked and ignored local changes.
-3. Compare the actual baseline, contracts and tests before editing.
-4. Make the smallest change; add regression coverage and update living docs.
+3. Verify the approved baseline and applicable contracts and tests. Create or
+   reuse one topic branch and one permanent WSL linked worktree per task at
+   `/home/denis/tmp/<kebab-case-task>`. Inspect existing paths before creation.
+4. Make the smallest change in that worktree, add needed regression coverage and
+   update living docs. Use the task branch and one Shymkent PR into `main`.
+   Keep review fixes in the same worktree, branch and PR as new commits.
 5. Run targeted tests, then relevant CI-equivalent checks. Report exact
    commands and `PASS`, `FAIL`, `SKIP`, `NOT_RUN` separately.
 6. Prepare the approved report, exact-HEAD evidence and clean review archive.
@@ -186,8 +203,10 @@ claim manual Voice/Siri, DB, staging or production checks that did not run.
 Read Aktau only through explicitly read-only fetch/inspection; preserve a
 pinned fetched SHA. Verify push destination separately from fetch URL.
 
-Use topic branches and PRs when a task authorizes them. Never implicitly
-merge, deploy, force push, rewrite published history or bypass review/CI.
+Use topic branches and PRs when a task authorizes them. Keep auto-merge and
+production deployment disabled. Merge or deploy only under separate explicit
+Owner authorization for that action. Never force push, rewrite published
+history or bypass review/CI.
 Avoid `git reset --hard`, destructive rebases and `git clean -fd[x]` unless
 specifically approved for bounded recovery. Inspect ignored/untracked work
 before branch switches and archive operations. Retain rollback evidence.
@@ -204,8 +223,9 @@ escalate privileges to bypass filesystem checks.
 ## Reports and clean archives
 
 Document actual baseline/HEAD SHAs, changed files, decisions, checks, failures,
-retests, risks, relevant PR/CI URLs and the stage's stop condition. Use a
-per-task report path; do not hardcode stage or release status in this file.
+retests, risks and the stage's stop condition in a per-task report under
+`docs/production/reports/`. Record mutable PR URLs, final HEAD and hosted job
+conclusions in separate evidence so the tracked report can be committed before CI.
 
 Build archives from a positive allowlist of changed Git-tracked paths at the
 reviewed HEAD, plus explicitly reviewed external evidence. Include a manifest
@@ -213,6 +233,10 @@ with sizes, modes and SHA256, a deletion list, and archive SHA256. Verify
 extracted bytes and safe relative paths. Exclude secrets, `.git`, `.env`,
 private logs, dumps, credentials, build output, browser traces and dependency
 directories. An ignore/denylist alone is insufficient.
+
+Place the clean archive `<kebab-case-task>-<HEAD12>.tar.gz` and its `.sha256`
+directly in `/home/denis/tmp`, outside the worktree. For review fixes, update the
+report in the same task and package the new exact HEAD under a new archive name.
 
 ## Environment: Windows + WSL
 

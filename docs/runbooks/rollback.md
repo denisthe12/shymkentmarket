@@ -1,5 +1,7 @@
 # Recovery / rollback boundaries
 
+> **INHERITED_REFERENCE — Aktau operations.** The VPS steps, release and migration examples below belong to Aktau. Do not execute them for Shymkent. See [Shymkent staging and release boundaries](../production/STAGING_PLAN.md).
+
 ## General rules (local and VPS)
 
 Identify which class failed before changing state:

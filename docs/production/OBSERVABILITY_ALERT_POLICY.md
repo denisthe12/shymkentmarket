@@ -1,5 +1,7 @@
 # Observability alert policy — local foundation
 
+> **INHERITED_REFERENCE — Aktau alert policy and operating record.** Alert delivery and service state below describe Aktau. Shymkent has no approved production monitoring targets, delivery credentials or timers. Use the [Shymkent documentation index](../README.md) for current status.
+
 No monitoring provider/exporter or public /metrics is activated. **Alert delivery
 is configured: Telegram** (direct Bot API sendMessage, no webhook/server). The
 private operator monitor has been **active on the production VPS since

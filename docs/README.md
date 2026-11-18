@@ -1,51 +1,40 @@
-# Карта документации
+# Документация Shymkent Market
 
-Документы делятся на две группы.
+Текущий проект — `denisthe12/shymkentmarket`. Публичный API реализован на Go, веб-интерфейс — Next.js App Router (RU/KK). Опубликованные данные сервис читает из PostgreSQL. Production API, сайт, домены, БД и провайдеры Шымкента имеют статус **NOT_CONFIGURED**. Каталог магазинов, адреса, цены, источники, публикация и её расписание имеют статус **PLANNED**. CI проверяет код на локальных или одноразовых сервисах.
 
-- **Живые.** По ним работают, они должны совпадать с production. Нашли расхождение —
-  исправьте документ в том же PR, что и изменение.
-- **Исторические.** Фиксируют момент времени: план, отчёт, передачу работы. Их не
-  переписывают задним числом; в шапке такого файла стоит пометка «Исторический документ».
+## ACTIVE_SHYMKENT
 
-Состояние production на 2026-11-18: Go API на VPS за Cloudflare Tunnel, фронтенд на
-VPS Docker через отдельный Cloudflare Tunnel ([runbook](production/FRONTEND_VPS_DEPLOYMENT.md)), БД Supabase, sync цен по таймерам на VPS, монитор API и ежедневный отчёт в Telegram,
-раздел СЗПТ (30 групп, обновление от 2026-11-16).
-NestJS удалён из репозитория (PR #106/#107); C2 удалён (PR #93).
-
-## Живые документы
-
-| Тема | Где |
+| Документ | Для чего |
 | --- | --- |
-| Обзор проекта, локальный запуск | [README.md](../README.md) |
-| Активный релиз API, откат | [deploy/README.md](../deploy/README.md) — единственное место, где записан SHA |
-| Брокер деплоя и одобрение релиза | [production/AUTO_DEPLOY_SETUP.md](production/AUTO_DEPLOY_SETUP.md) |
-| Runbooks: API, БД, Redis, sync, откат, секреты | [runbooks/](runbooks/) |
-| Go API: сборка, тесты, конфигурация | [backend-go/README.md](../backend-go/README.md) |
-| Контракт API v1 | [production/API_V1_CONTRACT.md](production/API_V1_CONTRACT.md), [contracts/README.md](../contracts/README.md) |
-| Sync цен на VPS: таймеры, коды выхода, обновление кода | [ops/sync/README.md](../ops/sync/README.md), [data/SYNC_RUNBOOK.md](data/SYNC_RUNBOOK.md) |
-| Монитор API и ежедневный отчёт | [ops/monitor/README.md](../ops/monitor/README.md), [production/OBSERVABILITY_ALERT_POLICY.md](production/OBSERVABILITY_ALERT_POLICY.md) |
-| Бэкапы и восстановление БД, роли | [ops/postgres/README.md](../ops/postgres/README.md) |
-| Ревалидация и сброс кэша фронтенда | [production/FRONTEND_REVALIDATION.md](production/FRONTEND_REVALIDATION.md), [ops/frontend/README.md](../ops/frontend/README.md) |
-| Раздел СЗПТ: группы, весовые товары, как менять | [production/SZPT.md](production/SZPT.md) |
-| Источники магазинов | [data/ANVAR_SOURCE.md](data/ANVAR_SOURCE.md), [data/FIXPRICE_SOURCE.md](data/FIXPRICE_SOURCE.md) |
-| CI, защита веток, staging | [production/GITHUB_BRANCH_PROTECTION.md](production/GITHUB_BRANCH_PROTECTION.md), [production/STAGING_PLAN.md](production/STAGING_PLAN.md) |
-| Рабочий журнал фронтенда | [context/06_FRONTEND_WORKLOG.md](context/06_FRONTEND_WORKLOG.md) |
+| [README](../README.md), [onboarding WSL](developer-onboarding.md), [AGENTS](../AGENTS.md) | Обзор, локальный запуск, работа по веткам и review. |
+| [Go API](../backend-go/README.md), [контрактные тесты](../contracts/README.md), [OpenAPI v1](../contracts/openapi.yaml) | Архитектура и сохранённый wire-контракт. Название и origin в OpenAPI унаследованы. |
+| [СЗПТ](production/SZPT.md) | Правила и код API. Фактическая доступность зависит от будущего каталога Шымкента. |
+| [Локальный CI](../scripts/ci/README.md), [одноразовый staging](production/STAGING_PLAN.md), [правила PR и CI Gate](production/GITHUB_BRANCH_PROTECTION.md) | Проверки без production-доступа. |
 
-Записи Part14 о периметре ([NETWORK_PERIMETER](production/NETWORK_PERIMETER.md),
-[CLOUDFLARE_ACTIVATION_CHECKLIST](production/CLOUDFLARE_ACTIVATION_CHECKLIST.md),
-[ops/cloudflare](../ops/cloudflare/README.md)) описывают устройство периметра и остаются в силе,
-но их статусные строки («Go API: NOT DEPLOYED») закреплены проверкой
-`scripts/network/verify-part14.mjs` и относятся к Part14. Текущее состояние — `deploy/README.md`.
+## INHERITED_REFERENCE
 
-## Исторические документы
+Пути, имена ресурсов, роли, URL, release SHA и команды в этих справках относятся к Актау. Не выполняйте их против инфраструктуры Актау и не переносите настройки в Шымкент. Примеры с loopback применимы только после подтверждения одноразовой цели.
 
-| Где | Что |
+| Область | Справка |
 | --- | --- |
-| `production/reports/` | Отчёты Part 01–17 и релизов, доказательства выкаток |
-| `superpowers/plans/`, `superpowers/specs/`, `superpowers/reports/` | Спецификации, планы и отчёты задач |
-| `00_TECHNICAL_SPEC.md`, `01_RISKS_AND_DECISIONS.md` | ТЗ и решения MVP (NestJS-версия) |
-| `05_BACKEND_2_IMPLEMENTATION_PLAN.md`, `BACKEND_2_AGENT_AUDIT_INSTRUCTION.md`, `backend-2/`, `backend-1/reports/`, `integration/` | Работа команд над MVP (сентябрь 2026) |
-| `PRODUCTION_ROADMAP_AKTAU_MARKET.md` | Дорожная карта выхода в production (октябрь 2026) |
-| `context/` (кроме рабочего журнала) | Распределение задач и переписка Frontend ↔ Backend |
-| `data/SCRUM-7_*`, `data/DEMO_BASKET_PLAN.md`, остальные отчёты в `data/` | Задачи и расследования по данным |
-| `production/POSTGRES_LAYER.md`, `production/PART_17_FRONTEND_HANDOFF.md`, `production/PERFORMANCE_BASELINE.md` | Part 04, Part 17 и замеры Part 13 |
+| API v1 | [Описание эталонного контракта](production/API_V1_CONTRACT.md). Исторический origin не используется для тестов Шымкента. |
+| Релиз API и брокер | [Deploy](../deploy/README.md), [auto-deploy](production/AUTO_DEPLOY_SETUP.md). Workflow сохраняет недоступность release jobs для Шымкента. |
+| Диагностика и эксплуатация | [Runbooks](runbooks/), [status helper](../ops/status/README.md), [монитор](../ops/monitor/README.md), [alert policy](production/OBSERVABILITY_ALERT_POLICY.md), [performance rehearsal](../scripts/perf/README.md). |
+| PostgreSQL и pipeline | [Backup и restore](../ops/postgres/README.md), [sync](../ops/sync/README.md), [sync runbook](data/SYNC_RUNBOOK.md), [Анвар](data/ANVAR_SOURCE.md), [Fix Price](data/FIXPRICE_SOURCE.md). Материалы для Backend 2, запуск источников не утверждён. |
+| Frontend | [Унаследованный README](../frontend/README.md), [VPS](production/FRONTEND_VPS_DEPLOYMENT.md), [cache invalidation](production/FRONTEND_REVALIDATION.md), [служебный helper](../ops/frontend/README.md). Для локального запуска в Шымкенте используйте onboarding. |
+
+## HISTORICAL_AKTAU
+
+- [Отчёты и доказательства выкаток](production/reports/) сохраняют исходную историю. Отдельные отчёты Shymkent идентифицируются по задаче и названию.
+- [Планы и спецификации](superpowers/), [рабочий журнал Frontend](context/06_FRONTEND_WORKLOG.md), [приёмка Frontend Part 17](production/PART_17_FRONTEND_HANDOFF.md) описывают прежние этапы.
+- [Периметр Part 14](production/NETWORK_PERIMETER.md), [Cloudflare checklist](production/CLOUDFLARE_ACTIVATION_CHECKLIST.md), [артефакты Cloudflare](../ops/cloudflare/README.md), [PostgreSQL Part 04](production/POSTGRES_LAYER.md) и [измерения Part 13](production/PERFORMANCE_BASELINE.md) служат историческими источниками.
+
+## FUTURE_TASK
+
+| Ответственный | Решение или работа |
+| --- | --- |
+| Backend 1 / Owner | Отдельно утвердить Shymkent release и принадлежащие ему сервисы. Go API и интеграция в текущей зоне Backend 1. |
+| Backend 2 | Утвердить собственные PostgreSQL, источники и структуру каталога, mapping, цены, публикацию и расписание. |
+| Frontend | Городской интерфейс, брендинг, публикации, карта, SEO, sitemap, robots и canonical. |
+
+Работу в чужой зоне согласуйте с Owner и ответственным коллегой по [правилам репозитория](../AGENTS.md).

@@ -1,5 +1,7 @@
 # API unavailable
 
+> **INHERITED_REFERENCE — Aktau operations.** Apply diagnostics only to your confirmed local fixture. The VPS commands and targets below belong to Aktau and must not be used for Shymkent. See [Shymkent local diagnostics](README.md).
+
 ## General rules (local and VPS)
 
 Symptoms: connection failure, unhealthy container, repeated 5xx. Probe the
