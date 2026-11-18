@@ -46,16 +46,15 @@ func Router(c config.Config, logger *slog.Logger, d Dependencies) http.Handler {
 	r.NotFound(func(w http.ResponseWriter, _ *http.Request) { middleware.WriteError(w, 404) })
 	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) { middleware.WriteError(w, 405) })
 	r.Get("/health/live", func(w http.ResponseWriter, _ *http.Request) { health(w, 200, "ok") })
+	var readiness readinessGate
 	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		ctx, cancel := context.WithTimeout(r.Context(), ReadinessTimeout)
-		defer cancel()
-		if err := d.DB.Ping(ctx); err != nil {
+		ready, err := readiness.check(r.Context(), d.DB)
+		if err != nil {
 			// Driver errors can contain DSNs, SQL or hostnames. Never log the error.
-			if ctx.Err() != nil {
-				err = ctx.Err()
-			}
 			logger.WarnContext(r.Context(), "readiness_failed", "error_class", readinessErrorClass(err), "duration_ms", time.Since(start).Milliseconds())
+		}
+		if !ready {
 			health(w, 503, "not_ready")
 			return
 		}

@@ -5,7 +5,7 @@
 -- The CSV must have a header row with exactly these columns:
 --   month,storeId,canonicalProductId,sourceProductId,rawName,price,oldPrice,reviewStatus,capturedAt,snapshotId,createdAt
 -- psql \copy does not expand variables, so the CSV comes on stdin (pstdin, because -f makes STDIN the script itself):
---   psql -X -v ON_ERROR_STOP=1 -f ops/postgres/import-price-history.sql "$DATABASE_URL" < history.csv
+--   node ops/postgres/psql-run.mjs import-price-history < history.csv
 BEGIN;
 SET LOCAL lock_timeout='5s';
 CREATE TEMP TABLE price_history_import (LIKE public.price_history INCLUDING DEFAULTS) ON COMMIT DROP;
