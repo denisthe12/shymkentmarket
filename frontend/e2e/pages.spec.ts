@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { stubMapTiles } from './map-tiles'
 
 const MILK_ID = 'p0a1f000-0000-4000-8000-000000000001'
 
@@ -115,8 +116,10 @@ test('search from the header and sort keep the query', async ({ page, isMobile }
 
 test('dashboard draws the store map in the browser', async ({ page }) => {
   const errors = collectErrors(page)
+  await stubMapTiles(page)
   await page.goto('/ru/dashboard')
   await expect(page.getByTestId('store-map')).toBeVisible()
+  await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible()
   await expect(page.locator('path.store-marker')).toHaveCount(8)
   await expect(page.getByTestId('store-group')).toHaveCount(3)
   expect(errors).toEqual([])

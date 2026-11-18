@@ -30,8 +30,8 @@ func szptExplainScript() (string, error) {
 -- Release gate for SZPT weighted goods (plan Task 10): EXPLAIN (ANALYZE, BUFFERS) of the SZPT products query
 -- exactly as the API sends it (szptMembersSQL + page + default ORDER BY, LIMIT 24 OFFSET 0, all group rules
 -- as $1, latest published snapshot as $2) for one live and one weighted group.
--- Run as the API login role (DATABASE_URL of the API), never during the 01:00 / 13:00 UTC sync:
---   psql -X -v ON_ERROR_STOP=1 -f szpt_members_explain.sql "$DATABASE_URL"
+-- Run as the API login role (export its connection as API_DATABASE_URL), never during the 01:00 / 13:00 UTC sync:
+--   node ops/postgres/psql-run.mjs szpt-explain
 -- Read-only: one REPEATABLE READ READ ONLY transaction, statement_timeout 60 s, ROLLBACK at the end.
 -- Each query runs twice; judge by the "Execution Time" of the second (warm) run.
 

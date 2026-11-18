@@ -29,6 +29,7 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
   };
   let apiContainer;
   let network;
+  let image;
   try {
     start(goAPI, [], root, { APP_ENV: 'test', PORT: '18080',
       DATABASE_URL: url('part04_fixture', 'aktau_api_runtime'), CORS_ALLOWED_ORIGINS: 'http://localhost:3100,http://127.0.0.1:3100',
@@ -37,6 +38,22 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
     await wait('Go live', () => available('http://127.0.0.1:18080', '/health/live', 200));
     for (const path of ['/health/ready', '/api/categories', '/api/products', '/api/dashboard']) await wait(`Go ${path}`, () => available('http://127.0.0.1:18080', path, 200));
     if (!await available('http://127.0.0.1:18080', '/metrics', 404)) throw new Error('metrics must not be public');
+    const origin = 'http://127.0.0.1:18080';
+    // Expire the startup success so this burst exercises cold admission.
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    const underReadinessTraffic = await Promise.all([
+      ...Array.from({ length: 32 }, async () => {
+        const response = await fetch(origin + '/health/ready', { signal: AbortSignal.timeout(8000) });
+        const expected = response.status === 200 ? 'ready' : 'not_ready';
+        return [200, 503].includes(response.status) &&
+          response.headers.get('cache-control') === 'no-store' &&
+          (await response.json()).status === expected;
+      }),
+      available(origin, '/api/products', 200),
+      available(origin, '/api/dashboard', 200),
+    ]);
+    if (!underReadinessTraffic.every(Boolean)) throw new Error('readiness traffic disturbed catalog or dashboard');
+    console.log('Concurrent readiness and catalog/dashboard on disposable PG17: PASS');
     // Small fixture GET/security parity against the recorded frozen v1 reference
     // (backend-go/tests/integration/testdata/reference).
     const parity = (label, extra) => {
@@ -58,8 +75,9 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
     }));
     prepareBrowser();
     console.log(run('Next HTTP E2E against Go', 'pnpm', ['test:e2e'], { cwd: join(root, 'frontend'), env: { ...env, ...httpEnv, E2E_API: 'http' } }));
-    const image = 'adilbaga-part12-api:review';
-    docker('Docker image build', ['build', '-t', image, join(root, 'backend-go')]);
+    const imageTag = `${name}-api:review`;
+    docker('Docker image build', ['build', '-t', imageTag, join(root, 'backend-go')]);
+    image = imageTag;
     network = `${name}-network`; docker('owned Docker network', ['network', 'create', network]);
     docker('connect owned PG', ['network', 'connect', network, name]);
     apiContainer = `${name}-api`;
@@ -76,7 +94,8 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
     if (docker('readonly rootfs', ['inspect', '--format', '{{.HostConfig.ReadonlyRootfs}}', apiContainer]) !== 'true') throw new Error('Docker rootfs writable');
     for (const path of ['/health/live', '/api/categories', '/api/products', '/api/dashboard']) if (!await available('http://127.0.0.1:18081', path, 200)) throw new Error('Docker GET smoke failed');
     docker('DB outage', ['stop', '--time', '10', name]);
-    if (!await available('http://127.0.0.1:18081', '/health/live', 200) || !await available('http://127.0.0.1:18081', '/health/ready', 503)) throw new Error('Docker outage behavior failed');
+    if (!await available('http://127.0.0.1:18081', '/health/live', 200)) throw new Error('Docker outage affected liveness');
+    await wait('Docker detects outage after readiness cache expires', () => available('http://127.0.0.1:18081', '/health/ready', 503));
     docker('DB recovery', ['start', name]);
     await wait('Docker recovered without API restart', () => available('http://127.0.0.1:18081', '/health/ready', 200));
   } finally {
@@ -91,5 +110,6 @@ await postgres(async ({ name, url, sql, login, load, docker }) => {
       docker('disconnect PG', ['network', 'disconnect', network, name]);
       docker('network cleanup', ['network', 'rm', network]);
     }
+    if (image) docker('owned image tag cleanup', ['image', 'rm', image]);
   }
 });
