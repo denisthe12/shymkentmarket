@@ -14,7 +14,10 @@ Exit 0 on OK, 1 on WARN, 2 on usage. Python stdlib only.
 import datetime as dt
 import json
 import os
+import pwd
 import re
+import selectors
+import signal
 import socket
 import subprocess
 import sys
@@ -27,6 +30,10 @@ RUNS_DIR = '/var/lib/aktau-sync/runs'
 MONITOR_STATE = '/var/lib/aktau-monitor/state/state.json'
 SYNC_CHECKOUT = '/opt/aktau-sync'
 GO_BIN = '/usr/local/go/bin/go'
+GIT_BIN = '/usr/bin/git'
+SYNC_USER = 'aktau-sync'
+GIT_TIMEOUT = 15
+GIT_STDOUT_LIMIT = 256 << 10
 REBOOT_FLAG = '/var/run/reboot-required'
 API = 'http://127.0.0.1:8080'
 CONTAINER = 'adilbaga-api'
@@ -48,6 +55,56 @@ SYNC_EXIT = {1: 'not published', 3: 'published, some stores from the previous fi
              4: 'published, snapshot retention failed'}
 
 
+class CheckoutUnavailable(Exception):
+    """Bounded diagnostic for checkout inspection, without Git output."""
+
+
+def checkout_git(args, uid, gid):
+    deadline = time.monotonic() + GIT_TIMEOUT
+    try:
+        child = subprocess.Popen(
+            [GIT_BIN, '--no-optional-locks', '-c', 'core.fsmonitor=false',
+             '-c', 'core.hooksPath=/dev/null', '-C', SYNC_CHECKOUT, *args],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            cwd='/', user=uid, group=gid, extra_groups=(), start_new_session=True,
+            close_fds=True, shell=False,
+            env={'PATH': '/usr/bin:/bin', 'HOME': '/nonexistent', 'XDG_CONFIG_HOME': '/nonexistent',
+                 'GIT_CONFIG_NOSYSTEM': '1', 'LC_ALL': 'C', 'TZ': 'UTC'},
+        )
+    except (OSError, ValueError, subprocess.SubprocessError):
+        raise CheckoutUnavailable('could not start Git as aktau-sync') from None
+    with child:
+        complete = False
+        try:
+            data = bytearray()
+            with selectors.DefaultSelector() as selector:
+                selector.register(child.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not selector.select(remaining):
+                        raise CheckoutUnavailable('Git timed out')
+                    chunk = os.read(child.stdout.fileno(), min(8192, GIT_STDOUT_LIMIT + 1 - len(data)))
+                    if not chunk:
+                        break
+                    data.extend(chunk)
+                    if len(data) > GIT_STDOUT_LIMIT:
+                        raise CheckoutUnavailable('Git output exceeded limit')
+            if child.wait(timeout=max(0, deadline - time.monotonic())) != 0:
+                raise CheckoutUnavailable('Git failed as aktau-sync')
+            complete = True
+            return data.decode('utf-8', errors='replace')
+        except subprocess.TimeoutExpired:
+            raise CheckoutUnavailable('Git timed out') from None
+        except OSError:
+            raise CheckoutUnavailable('could not read Git result') from None
+        finally:
+            if not complete:
+                try:
+                    os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+
+
 class Host:
     """All I/O in one place, so tests can replace it."""
 
@@ -62,6 +119,22 @@ class Host:
             return 127, ''
         except subprocess.TimeoutExpired:
             return 124, ''
+
+    def checkout(self):
+        try:
+            account = pwd.getpwnam(SYNC_USER)
+        except (KeyError, OSError):
+            raise CheckoutUnavailable('aktau-sync account unavailable') from None
+        if account.pw_name != SYNC_USER or account.pw_uid <= 0 or account.pw_gid <= 0:
+            raise CheckoutUnavailable('unsafe aktau-sync identity')
+        if self.euid() != 0:
+            raise CheckoutUnavailable('privileged launcher unavailable')
+        head = checkout_git(('rev-parse', '--short', 'HEAD'), account.pw_uid, account.pw_gid).strip()
+        if not re.fullmatch(r'[0-9a-f]{4,64}', head):
+            raise CheckoutUnavailable('unexpected Git revision')
+        dirty = checkout_git(('status', '--porcelain', '--untracked-files=no'),
+                             account.pw_uid, account.pw_gid)
+        return head, sum(bool(line.strip()) for line in dirty.splitlines())
 
     def read(self, path):
         with open(path, encoding='utf-8') as f:
@@ -302,15 +375,13 @@ def section_sync(h, r):
         r.warn('last snapshot retention failed (see journalctl -u aktau-sync)')
     else:
         r.line('snapshots kept=%s deleted_last=%s' % (kept, deleted))
-    git = ['git', '-c', 'safe.directory=' + SYNC_CHECKOUT, '-C', SYNC_CHECKOUT]
-    rc, head = h.run(git + ['rev-parse', '--short', 'HEAD'])
-    rc2, dirty = h.run(git + ['status', '--porcelain', '--untracked-files=no'])
-    if rc != 0:
-        r.warn('sync checkout %s: git failed' % SYNC_CHECKOUT)
+    try:
+        head, changed = h.checkout()
+    except CheckoutUnavailable as e:
+        r.warn('sync checkout %s: %s' % (SYNC_CHECKOUT, e))
     else:
-        changed = len([l for l in dirty.splitlines() if l.strip()]) if rc2 == 0 else '?'
-        r.line('checkout=%s changed_files=%s' % (head.strip(), changed))
-        if changed not in (0, '?'):
+        r.line('checkout=%s changed_files=%s' % (head, changed))
+        if changed:
             r.warn('sync checkout has %s changed tracked files' % changed)
     rc, out = h.run([GO_BIN, 'version'])
     r.line('go=%s' % (out.split()[2] if rc == 0 and len(out.split()) > 2 else 'unavailable'))

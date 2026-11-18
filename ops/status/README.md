@@ -40,7 +40,20 @@ sudo python3 -I -B /usr/local/sbin/adilbaga-status
 ```
 
 Use it before and after a release, after an incident alert, and for routine checks.
-It needs root: `release.env`, the monitor state and system journals are root-only.
+The report still uses root for Docker and root-only release, monitor and journal
+metadata. Checkout inspection runs separately: before either Git process starts,
+the launcher selects the `aktau-sync` UID and primary GID and clears supplementary
+groups. It uses a fixed checkout and Git executable, a small environment, no shell,
+and no optional index locks. Each Git command has a 15 s deadline and a 256 KiB
+stdout limit.
+
+If the service identity is unavailable or unsafe, or Git cannot be launched or
+complete within the bounds, the report warns that checkout inspection failed.
+It keeps the other sections and never falls back to root Git.
+
+The operator command and the team's SSH/sudo rights are unchanged. Updating the
+installed VPS helper requires a separate approved deployment after code review.
+Until then the existing installed binary is outside this source change.
 
 Tests: `python3 -B -m unittest discover -s ops/status -p '*_test.py'`
 (part of `run-checks.mjs security`).
