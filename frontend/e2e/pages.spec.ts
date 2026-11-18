@@ -15,7 +15,7 @@ test.describe('server HTML', () => {
     const response = await request.get(`/ru/products/${MILK_ID}`)
     expect(response.status()).toBe(200)
     const html = await response.text()
-    expect(html).toContain('<title>Молоко FoodMaster 3,2% 1 л — Aktau Market</title>')
+    expect(html).toContain('<title>Молоко FoodMaster 3,2% 1 л — Shymkent Market</title>')
     expect(html).toMatch(/<h1[^>]*>Молоко FoodMaster 3,2% 1 л<\/h1>/)
     expect(html).toMatch(/data-testid="min-price"[^>]*>570\s₸/)
     expect(html).toContain('data-testid="offer-list"')
@@ -29,7 +29,7 @@ test.describe('server HTML', () => {
     const html = await (await request.get('/kk/collections/milk?volumeMl=500&sort=price_desc')).text()
     expect(html).toContain('<html lang="kk"')
     // Название категории на /kk — из kk-словаря по слагу (бэк отдаёт только русское)
-    expect(html).toContain('<title>Сүт — Aktau Market</title>')
+    expect(html).toContain('<title>Сүт — Shymkent Market</title>')
     expect(html.match(/data-testid="product-card"/g)).toHaveLength(2)
     expect(html.indexOf('Молоко Emil 3,2% 500 мл')).toBeLessThan(html.indexOf('Молоко Emil 1% 500 мл'))
     expect(html).toMatch(/value="price_desc" selected/)
@@ -37,7 +37,7 @@ test.describe('server HTML', () => {
 
   test('dashboard contains the summary, baskets and price spreads', async ({ request }) => {
     const html = await (await request.get('/ru/dashboard')).text()
-    expect(html).toContain('<title>Аналитика цен — Aktau Market</title>')
+    expect(html).toContain('<title>Аналитика цен — Shymkent Market</title>')
     expect(html.match(/data-testid="summary-card"/g)).toHaveLength(4)
     expect(html.match(/data-testid="basket"/g)).toHaveLength(3)
     expect(html).toContain('href="/ru/products/')
@@ -96,7 +96,7 @@ test('search from the header and sort keep the query', async ({ page, isMobile }
   await expect(page).toHaveURL(/\/kk\/search\?q=/)
   await expect(page.getByTestId('product-card')).toHaveCount(4)
   // Запрос известен серверу — он во вкладке
-  await expect(page).toHaveTitle('Іздеу: «сахар» — Aktau Market')
+  await expect(page).toHaveTitle('Іздеу: «сахар» — Shymkent Market')
 
   // На мобильном сортировка — чип и шторка с вариантами
   if (isMobile) {

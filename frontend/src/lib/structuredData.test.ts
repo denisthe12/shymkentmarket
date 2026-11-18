@@ -19,14 +19,14 @@ const product: ProductCardDto = {
 }
 
 describe('blog structured data', () => {
-  const post = getPost('ru', 'gde-deshevle-produkty-aktau')!
+  const post = getPost('ru', 'gde-deshevle-produkty-shymkent')!
   const person = AUTHORS.find((a) => a.kind === 'person' && a.placeholder)!
 
   it('describes a post as BlogPosting with dates, publisher and the editorial team as author', () => {
     const data = blogPostingJsonLd(post, getAuthor('editorial'), '/blog/og/ru/x.png')
     expect(data).toMatchObject({
       '@type': 'BlogPosting',
-      url: 'http://localhost:3000/ru/blog/gde-deshevle-produkty-aktau',
+      url: 'http://localhost:3000/ru/blog/gde-deshevle-produkty-shymkent',
       headline: post.title,
       inLanguage: 'ru',
       datePublished: post.published,
@@ -92,14 +92,14 @@ describe('structuredData', () => {
       {
         '@type': 'Organization',
         '@id': 'http://localhost:3000/#organization',
-        name: 'Aktau Market',
+        name: 'Shymkent Market',
         url: 'http://localhost:3000/',
         logo: 'http://localhost:3000/icon.svg',
       },
       {
         '@type': 'WebSite',
         '@id': 'http://localhost:3000/kk#website',
-        name: 'Aktau Market',
+        name: 'Shymkent Market',
         description: 'Бағаларды салыстыру',
         url: 'http://localhost:3000/kk/catalog',
         inLanguage: 'kk',

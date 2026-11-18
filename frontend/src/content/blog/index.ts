@@ -5,6 +5,7 @@ import type { Author, Post } from './types'
 
 export type { Author, Block, ChartSpec, Post, PostCategory, RichText } from './types'
 export { AUTHORS } from './authors'
+export { isIndexable, PRICES_ARE_PLACEHOLDER } from './data'
 
 /** Стабильный псевдослучайный ключ из slug: порядок «вперемешку», но одинаковый между сборками */
 function shuffleKey(slug: string): number {

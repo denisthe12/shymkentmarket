@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { JsonLd } from '../../../../../components/seo/JsonLd'
-import { getAuthor, getPost, getPosts } from '../../../../../content/blog'
+import { getAuthor, getPost, getPosts, isIndexable } from '../../../../../content/blog'
 // getPosts() — все статьи; страницы строим только для статей этого языка
 import { getI18n, isLanguage } from '../../../../../i18n'
 import { pageMetadata } from '../../../../../lib/seo'
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/blog/[slug
   if (!post) return {}
   const { t } = getI18n(lang)
   const author = getAuthor(post.authorId)
-  return pageMetadata({
+  const metadata = pageMetadata({
     lang,
     path: `/blog/${slug}`,
     title: post.title,
@@ -39,6 +39,8 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/blog/[slug
       section: t(`blog.categories.${post.category}`),
     },
   })
+  // Цены сетей в статье пока предварительные — не индексируем, но ссылки из неё учитываются
+  return isIndexable(post) ? metadata : { ...metadata, robots: { index: false, follow: true } }
 }
 
 export default async function Page({ params }: PageProps<'/[lang]/blog/[slug]'>) {

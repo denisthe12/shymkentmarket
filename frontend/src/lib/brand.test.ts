@@ -8,7 +8,7 @@ import { siteJsonLd } from './structuredData'
 
 describe('public brand', () => {
   it('is a public constant with matching RU/KK dictionaries', () => {
-    expect(SITE_NAME).toBe('Aktau Market')
+    expect(SITE_NAME).toBe('Shymkent Market')
     expect(ru.brand.name).toBe(SITE_NAME)
     expect(kk.brand.name).toBe(SITE_NAME)
   })

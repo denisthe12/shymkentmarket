@@ -1,131 +1,132 @@
 import type { Post } from '../types'
-import { post as kk_akciyalarMenZhenildikter } from './kk/akciyalar-men-zhenildikter'
-import { post as kk_aktauMarketNuskaulyq } from './kk/aktau-market-nuskaulyq'
-import { post as kk_aleumettikManyzyBarAzyqTulik } from './kk/aleumettik-manyzy-bar-azyq-tulik'
-import { post as kk_aptalyqMaziz10000 } from './kk/aptalyq-maziz-10000'
-import { post as kk_arzanZharmalar } from './kk/arzan-zharmalar'
-import { post as kk_ayranQatyqQymyzBagasy } from './kk/ayran-qatyq-qymyz-bagasy'
-import { post as kk_azyqTulikQaidanKeledi } from './kk/azyq-tulik-qaidan-keledi'
-import { post as kk_azyqTuliktiSaqtau } from './kk/azyq-tulikti-saqtau'
-import { post as kk_baqshaOnimderi } from './kk/baqsha-onimderi'
-import { post as kk_bauyrsaqQuny } from './kk/bauyrsaq-quny'
-import { post as kk_bazalyqMolsherleme } from './kk/bazalyq-molsherleme'
-import { post as kk_besbarmaqQuny } from './kk/besbarmaq-quny'
-import { post as kk_enTomengiZhalaqyZhaneKunkoris } from './kk/en-tomengi-zhalaqy-zhane-kunkoris'
-import { post as kk_etPenQusEtiBagalary } from './kk/et-pen-qus-eti-bagalary'
-import { post as kk_kokonisPenZhemisMausymdyqBagalar } from './kk/kokonis-pen-zhemis-mausymdyq-bagalar'
-import { post as kk_makaronQalayTandau } from './kk/makaron-qalay-tandau'
-import { post as kk_okushynynTangyAsy } from './kk/okushynyn-tangy-asy'
-import { post as kk_otbasyAzyqTulikByudzheti } from './kk/otbasy-azyq-tulik-byudzheti'
-import { post as kk_palauQuny } from './kk/palau-quny'
-import { post as kk_qantZharmaMakaronBagalary } from './kk/qant-zharma-makaron-bagalary'
-import { post as kk_qaymaqPenSuzbe } from './kk/qaymaq-pen-suzbe'
-import { post as kk_qysqyZhemister } from './kk/qysqy-zhemister'
-import { post as kk_sutBagasyQalayTandau } from './kk/sut-bagasy-qalay-tandau'
-import { post as kk_tutynuBagalarynynIndeksi } from './kk/tutynu-bagalarynyn-indeksi'
-import { post as kk_unBagasyZhaneUyNany } from './kk/un-bagasy-zhane-uy-nany'
-import { post as kk_zeinetkerdinAzyqTulikByudzheti } from './kk/zeinetkerdin-azyq-tulik-byudzheti'
-import { post as kk_zhanaZhylDastarhanyByudzheti } from './kk/zhana-zhyl-dastarhany-byudzheti'
-import { post as kk_zhelilerdinAiyrmashylygy } from './kk/zhelilerdin-aiyrmashylygy'
-import { post as kk_zhelilerdinZhekeMarkalary } from './kk/zhelilerdin-zheke-markalary'
-import { post as kk_zhumyrtqaBagasy } from './kk/zhumyrtqa-bagasy'
-import { post as ru_byudzhetStudentaNaProdukty } from './ru/byudzhet-studenta-na-produkty'
-import { post as ru_cenaZaKilogrammILitr } from './ru/cena-za-kilogramm-i-litr'
-import { post as ru_cenyNaHlebIMukuAktau } from './ru/ceny-na-hleb-i-muku-aktau'
-import { post as ru_farshGotovyyIliDomashniy } from './ru/farsh-gotovyy-ili-domashniy'
-import { post as ru_gdeDeshevleProduktyAktau } from './ru/gde-deshevle-produkty-aktau'
-import { post as ru_grechkaCenyAktau } from './ru/grechka-ceny-aktau'
-import { post as ru_inflyaciyaKazahstan2026 } from './ru/inflyaciya-kazahstan-2026'
-import { post as ru_kakChitatCennik } from './ru/kak-chitat-cennik'
-import { post as ru_kakMySobiraemCeny } from './ru/kak-my-sobiraem-ceny'
-import { post as ru_kakPolzovatsyaAktauMarket } from './ru/kak-polzovatsya-aktau-market'
-import { post as ru_kakSekonomitNaProduktah } from './ru/kak-sekonomit-na-produktah'
-import { post as ru_kakieProduktyChashcheSoSkidkoy } from './ru/kakie-produkty-chashche-so-skidkoy'
-import { post as ru_kuricaCelayaIliChastyami } from './ru/kurica-celaya-ili-chastyami'
-import { post as ru_kursTengeICenyNaImportnyeProdukty } from './ru/kurs-tenge-i-ceny-na-importnye-produkty'
-import { post as ru_magazinyAktauNaKarte } from './ru/magaziny-aktau-na-karte'
-import { post as ru_molochnyeProduktyCeny } from './ru/molochnye-produkty-ceny'
-import { post as ru_molokoIliMolokosoderzhashchiyProdukt } from './ru/moloko-ili-molokosoderzhashchiy-produkt'
-import { post as ru_mzpIProduktovayaKorzina } from './ru/mzp-i-produktovaya-korzina'
-import { post as ru_ovoshchiDlyaBorshchaCeny } from './ru/ovoshchi-dlya-borshcha-ceny'
-import { post as ru_ovsyankaIliKashaBystrogoPrigotovleniya } from './ru/ovsyanka-ili-kasha-bystrogo-prigotovleniya'
-import { post as ru_pochemuCenyVAktauDrugie } from './ru/pochemu-ceny-v-aktau-drugie'
-import { post as ru_pochemuOdinTovarStoitPoRaznomu } from './ru/pochemu-odin-tovar-stoit-po-raznomu'
-import { post as ru_produktovayaKorzinaAktau } from './ru/produktovaya-korzina-aktau'
-import { post as ru_rastitelnoeMasloCeny } from './ru/rastitelnoe-maslo-ceny'
-import { post as ru_risKakoyVybrat } from './ru/ris-kakoy-vybrat'
-import { post as ru_samyyDeshevyyBelok } from './ru/samyy-deshevyy-belok'
-import { post as ru_skolkoStoitZavtrakObedUzhin } from './ru/skolko-stoit-zavtrak-obed-uzhin'
-import { post as ru_slivochnoeMasloIliSpred } from './ru/slivochnoe-maslo-ili-spred'
-import { post as ru_syrVAktauCeny } from './ru/syr-v-aktau-ceny'
-import { post as ru_yogurtyTvorogSmetanaBolshayaUpakovka } from './ru/yogurty-tvorog-smetana-bolshaya-upakovka'
+import { post as kk_akciyalarQalayZhumysIsteidi } from './kk/akciyalar-qalay-zhumys-isteidi'
+import { post as kk_auyzasharByudzheti } from './kk/auyzashar-byudzheti'
+import { post as kk_baganyQalayOquKerek } from './kk/bagany-qalay-oqu-kerek'
+import { post as kk_balalarTagamy } from './kk/balalar-tagamy'
+import { post as kk_bazalyqMolsherlemeBagalar } from './kk/bazalyq-molsherleme-bagalar'
+import { post as kk_enTomengiZhalaqyAzyqSebeti } from './kk/en-tomengi-zhalaqy-azyq-sebeti'
+import { post as kk_kokonisBazaryMenZheliler } from './kk/kokonis-bazary-men-zheliler'
+import { post as kk_kopbalalyOtbasyByudzheti } from './kk/kopbalaly-otbasy-byudzheti'
+import { post as kk_kurishTandau } from './kk/kurish-tandau'
+import { post as kk_kuzgiDayyndyq } from './kk/kuzgi-dayyndyq'
+import { post as kk_metroKotermeSatypAlu } from './kk/metro-koterme-satyp-alu'
+import { post as kk_nauryzKozheQuny } from './kk/nauryz-kozhe-quny'
+import { post as kk_onlainZhetkizuTiimdiMe } from './kk/onlain-zhetkizu-tiimdi-me'
+import { post as kk_osimdikZhaneSaryMai } from './kk/osimdik-zhane-sary-mai'
+import { post as kk_ozbekstannanKeletinOnimder } from './kk/ozbekstannan-keletin-onimder'
+import { post as kk_qauynQarbyzMausymy } from './kk/qauyn-qarbyz-mausymy'
+import { post as kk_qoyEtiQalayTandau } from './kk/qoy-eti-qalay-tandau'
+import { post as kk_qurbanAitEtBagasy } from './kk/qurban-ait-et-bagasy'
+import { post as kk_qurtPenIrimshik } from './kk/qurt-pen-irimshik'
+import { post as kk_shaiTandau } from './kk/shai-tandau'
+import { post as kk_shymkentMarketNuskaulyq } from './kk/shymkent-market-nuskaulyq'
+import { post as kk_shymkentteAzyqTulikQaidaArzan } from './kk/shymkentte-azyq-tulik-qaida-arzan'
+import { post as kk_shymkenttegiInflyaciya2026 } from './kk/shymkenttegi-inflyaciya-2026'
+import { post as kk_studenttinAptalyqByudzheti } from './kk/studenttin-aptalyq-byudzheti'
+import { post as kk_sutOnimderinTandau } from './kk/sut-onimderin-tandau'
+import { post as kk_tandyrNanMenBauyrsaq } from './kk/tandyr-nan-men-bauyrsaq'
+import { post as kk_toiDastarhanyByudzheti } from './kk/toi-dastarhany-byudzheti'
+import { post as kk_zeinetkerdinAzyqByudzheti } from './kk/zeinetkerdin-azyq-byudzheti'
+import { post as kk_zhazgyAuyzSu } from './kk/zhazgy-auyz-su'
+import { post as kk_zhumyrtqaDukendeMenBazarda } from './kk/zhumyrtqa-dukende-men-bazarda'
+import { post as ru_akciiVOnlaynMagazinah } from './ru/akcii-v-onlayn-magazinah'
+import { post as ru_arbuzIliMagnumGo } from './ru/arbuz-ili-magnum-go'
+import { post as ru_baraninaIliGovyadina } from './ru/baranina-ili-govyadina'
+import { post as ru_bazarIliSupermarketShymkent } from './ru/bazar-ili-supermarket-shymkent'
+import { post as ru_byudzhetIftaraRamadan } from './ru/byudzhet-iftara-ramadan'
+import { post as ru_cenaZaKgDostavkaIZal } from './ru/cena-za-kg-dostavka-i-zal'
+import { post as ru_chayKakVybrat } from './ru/chay-kak-vybrat'
+import { post as ru_detskoePitanieKakEkonomit } from './ru/detskoe-pitanie-kak-ekonomit'
+import { post as ru_gdeDeshevleProduktyShymkent } from './ru/gde-deshevle-produkty-shymkent'
+import { post as ru_gramadSupermarketShymkent } from './ru/gramad-supermarket-shymkent'
+import { post as ru_inflyaciyaVShymkente2026 } from './ru/inflyaciya-v-shymkente-2026'
+import { post as ru_kakEkonomitNaDostavkeProduktov } from './ru/kak-ekonomit-na-dostavke-produktov'
+import { post as ru_kakMySobiraemCenyShymkent } from './ru/kak-my-sobiraem-ceny-shymkent'
+import { post as ru_kakPolzovatsyaShymkentMarket } from './ru/kak-polzovatsya-shymkent-market'
+import { post as ru_kalendarSezonnyhFruktovYuga } from './ru/kalendar-sezonnyh-fruktov-yuga'
+import { post as ru_korzinaNaNedelyuSemyaShymkent } from './ru/korzina-na-nedelyu-semya-shymkent'
+import { post as ru_kursTengeISum } from './ru/kurs-tenge-i-sum'
+import { post as ru_lepeshkaIHlebShymkent } from './ru/lepeshka-i-hleb-shymkent'
+import { post as ru_letnieNapitkiIMorozhenoe } from './ru/letnie-napitki-i-morozhenoe'
+import { post as ru_magazinyShymkentaNaKarte } from './ru/magaziny-shymkenta-na-karte'
+import { post as ru_metroOptomDlyaSemi } from './ru/metro-optom-dlya-semi'
+import { post as ru_mzp2026IProdukty } from './ru/mzp-2026-i-produkty'
+import { post as ru_pitevayaVodaVZharu } from './ru/pitevaya-voda-v-zharu'
+import { post as ru_pomidoryIOgurcySezonnost } from './ru/pomidory-i-ogurcy-sezonnost'
+import { post as ru_produktyIzUzbekistana } from './ru/produkty-iz-uzbekistana'
+import { post as ru_risDlyaPlova } from './ru/ris-dlya-plova'
+import { post as ru_saharIMukaMeshkami } from './ru/sahar-i-muka-meshkami'
+import { post as ru_samsaDomaIliKupit } from './ru/samsa-doma-ili-kupit'
+import { post as ru_skolkoStoitLagmanDoma } from './ru/skolko-stoit-lagman-doma'
+import { post as ru_zagotovkiNaZimu } from './ru/zagotovki-na-zimu'
 
 /**
- * Дата публикации. Цифры во всех статьях сверены со снимком 06.11.2026 — это их дата обновления
- * (post.updated), поэтому у статей с более ранней публикацией на странице видно «обновлено»
+ * Дата публикации. Цифры во всех статьях сверены 18.11.2026 (data.ts → PUBLISHED) — это их дата обновления
+ * (post.updated), поэтому у статей с более ранней публикацией на странице видно «обновлено».
+ * Даты подобраны по сезону темы; статьи с данными за октябрь 2026 — не раньше их выхода в начале ноября
  */
 const publishedOn = (post: Post, date: string): Post => ({ ...post, published: date })
 
-/** Все статьи блога. Новая статья: файл в ru/ или kk/ и строка здесь */
+/** Все статьи блога, новые сверху. Новая статья: файл в ru/ или kk/ и строка здесь */
 export const POSTS: Post[] = [
-  ru_produktovayaKorzinaAktau,
-  ru_gdeDeshevleProduktyAktau,
-  kk_etPenQusEtiBagalary,
-  publishedOn(ru_inflyaciyaKazahstan2026, '2026-11-03'),
-  publishedOn(kk_zhanaZhylDastarhanyByudzheti, '2026-10-30'),
-  publishedOn(ru_kakPolzovatsyaAktauMarket, '2026-10-27'),
-  publishedOn(ru_kursTengeICenyNaImportnyeProdukty, '2026-10-23'),
-  publishedOn(kk_qantZharmaMakaronBagalary, '2026-10-20'),
-  publishedOn(ru_molochnyeProduktyCeny, '2026-10-16'),
-  publishedOn(kk_akciyalarMenZhenildikter, '2026-10-13'),
-  publishedOn(ru_cenaZaKilogrammILitr, '2026-10-09'),
-  publishedOn(kk_zhumyrtqaBagasy, '2026-10-06'),
-  publishedOn(ru_kakSekonomitNaProduktah, '2026-10-02'),
-  publishedOn(kk_tutynuBagalarynynIndeksi, '2026-09-29'),
-  publishedOn(ru_cenyNaHlebIMukuAktau, '2026-09-25'),
-  publishedOn(kk_kokonisPenZhemisMausymdyqBagalar, '2026-09-22'),
-  publishedOn(kk_aleumettikManyzyBarAzyqTulik, '2026-09-18'),
-  publishedOn(ru_pochemuCenyVAktauDrugie, '2026-09-15'),
-  publishedOn(kk_otbasyAzyqTulikByudzheti, '2026-09-11'),
-  publishedOn(kk_zhelilerdinZhekeMarkalary, '2026-09-08'),
-  publishedOn(kk_bazalyqMolsherleme, '2026-10-24'),
-  publishedOn(ru_rastitelnoeMasloCeny, '2026-09-04'),
-  publishedOn(kk_qysqyZhemister, '2026-09-01'),
-  publishedOn(ru_syrVAktauCeny, '2026-08-29'),
-  publishedOn(kk_baqshaOnimderi, '2026-08-26'),
-  publishedOn(ru_kakieProduktyChashcheSoSkidkoy, '2026-08-23'),
-  publishedOn(kk_ayranQatyqQymyzBagasy, '2026-08-20'),
-  publishedOn(ru_grechkaCenyAktau, '2026-08-17'),
-  publishedOn(kk_palauQuny, '2026-08-14'),
-  publishedOn(ru_risKakoyVybrat, '2026-08-11'),
-  publishedOn(kk_sutBagasyQalayTandau, '2026-08-08'),
-  publishedOn(ru_ovoshchiDlyaBorshchaCeny, '2026-08-05'),
-  publishedOn(kk_besbarmaqQuny, '2026-08-02'),
-  publishedOn(ru_kuricaCelayaIliChastyami, '2026-07-30'),
-  publishedOn(kk_unBagasyZhaneUyNany, '2026-07-27'),
-  publishedOn(ru_mzpIProduktovayaKorzina, '2026-07-24'),
-  publishedOn(kk_bauyrsaqQuny, '2026-07-21'),
-  publishedOn(ru_farshGotovyyIliDomashniy, '2026-07-18'),
-  publishedOn(kk_arzanZharmalar, '2026-07-15'),
-  publishedOn(ru_slivochnoeMasloIliSpred, '2026-07-12'),
-  publishedOn(kk_zhelilerdinAiyrmashylygy, '2026-07-09'),
-  publishedOn(ru_molokoIliMolokosoderzhashchiyProdukt, '2026-07-06'),
-  publishedOn(kk_makaronQalayTandau, '2026-07-03'),
-  publishedOn(ru_magazinyAktauNaKarte, '2026-06-30'),
-  publishedOn(kk_okushynynTangyAsy, '2026-06-27'),
-  publishedOn(ru_yogurtyTvorogSmetanaBolshayaUpakovka, '2026-06-24'),
-  publishedOn(kk_zeinetkerdinAzyqTulikByudzheti, '2026-06-21'),
-  publishedOn(ru_skolkoStoitZavtrakObedUzhin, '2026-06-18'),
-  publishedOn(kk_aptalyqMaziz10000, '2026-06-15'),
-  publishedOn(ru_byudzhetStudentaNaProdukty, '2026-06-12'),
-  publishedOn(kk_azyqTulikQaidanKeledi, '2026-06-09'),
-  publishedOn(ru_pochemuOdinTovarStoitPoRaznomu, '2026-06-06'),
-  publishedOn(kk_qaymaqPenSuzbe, '2026-06-03'),
-  publishedOn(ru_kakChitatCennik, '2026-05-31'),
-  publishedOn(kk_azyqTuliktiSaqtau, '2026-05-28'),
-  publishedOn(ru_samyyDeshevyyBelok, '2026-05-25'),
-  publishedOn(kk_enTomengiZhalaqyZhaneKunkoris, '2026-05-22'),
-  publishedOn(ru_kakMySobiraemCeny, '2026-05-19'),
-  publishedOn(kk_aktauMarketNuskaulyq, '2026-05-16'),
-  publishedOn(ru_ovsyankaIliKashaBystrogoPrigotovleniya, '2026-05-13'),
+  ru_gdeDeshevleProduktyShymkent,
+  publishedOn(ru_mzp2026IProdukty, '2026-11-12'),
+  publishedOn(kk_bazalyqMolsherlemeBagalar, '2026-11-07'),
+  publishedOn(ru_kursTengeISum, '2026-11-06'),
+  publishedOn(kk_shymkenttegiInflyaciya2026, '2026-11-05'),
+  publishedOn(ru_inflyaciyaVShymkente2026, '2026-11-04'),
+  publishedOn(kk_shymkentteAzyqTulikQaidaArzan, '2026-10-27'),
+  publishedOn(ru_korzinaNaNedelyuSemyaShymkent, '2026-10-20'),
+  publishedOn(kk_ozbekstannanKeletinOnimder, '2026-10-10'),
+  publishedOn(ru_produktyIzUzbekistana, '2026-10-08'),
+  publishedOn(ru_arbuzIliMagnumGo, '2026-09-28'),
+  publishedOn(kk_metroKotermeSatypAlu, '2026-09-21'),
+  publishedOn(ru_metroOptomDlyaSemi, '2026-09-14'),
+  publishedOn(kk_kuzgiDayyndyq, '2026-09-07'),
+  publishedOn(ru_samsaDomaIliKupit, '2026-08-31'),
+  publishedOn(kk_studenttinAptalyqByudzheti, '2026-08-24'),
+  publishedOn(ru_skolkoStoitLagmanDoma, '2026-08-17'),
+  publishedOn(kk_enTomengiZhalaqyAzyqSebeti, '2026-08-10'),
+  publishedOn(kk_zeinetkerdinAzyqByudzheti, '2026-08-03'),
+  publishedOn(kk_toiDastarhanyByudzheti, '2026-07-27'),
+  publishedOn(ru_zagotovkiNaZimu, '2026-07-21'),
+  publishedOn(kk_qauynQarbyzMausymy, '2026-07-15'),
+  publishedOn(kk_kopbalalyOtbasyByudzheti, '2026-07-09'),
+  publishedOn(ru_pomidoryIOgurcySezonnost, '2026-07-04'),
+  publishedOn(kk_qurtPenIrimshik, '2026-06-29'),
+  publishedOn(ru_magazinyShymkentaNaKarte, '2026-06-24'),
+  publishedOn(kk_zhumyrtqaDukendeMenBazarda, '2026-06-19'),
+  publishedOn(ru_letnieNapitkiIMorozhenoe, '2026-06-15'),
+  publishedOn(kk_zhazgyAuyzSu, '2026-06-10'),
+  publishedOn(ru_pitevayaVodaVZharu, '2026-06-06'),
+  publishedOn(kk_onlainZhetkizuTiimdiMe, '2026-06-02'),
+  publishedOn(ru_kakEkonomitNaDostavkeProduktov, '2026-05-28'),
+  publishedOn(kk_kokonisBazaryMenZheliler, '2026-05-23'),
+  publishedOn(ru_bazarIliSupermarketShymkent, '2026-05-19'),
+  publishedOn(kk_qurbanAitEtBagasy, '2026-05-15'),
+  publishedOn(ru_baraninaIliGovyadina, '2026-05-11'),
+  publishedOn(kk_qoyEtiQalayTandau, '2026-05-07'),
+  publishedOn(ru_kalendarSezonnyhFruktovYuga, '2026-05-03'),
+  publishedOn(kk_osimdikZhaneSaryMai, '2026-04-29'),
+  publishedOn(ru_gramadSupermarketShymkent, '2026-04-25'),
+  publishedOn(kk_sutOnimderinTandau, '2026-04-21'),
+  publishedOn(ru_saharIMukaMeshkami, '2026-04-17'),
+  publishedOn(kk_balalarTagamy, '2026-04-13'),
+  publishedOn(ru_detskoePitanieKakEkonomit, '2026-04-09'),
+  publishedOn(kk_akciyalarQalayZhumysIsteidi, '2026-04-05'),
+  publishedOn(ru_akciiVOnlaynMagazinah, '2026-04-01'),
+  publishedOn(kk_tandyrNanMenBauyrsaq, '2026-03-27'),
+  publishedOn(ru_lepeshkaIHlebShymkent, '2026-03-23'),
+  publishedOn(kk_kurishTandau, '2026-03-18'),
+  publishedOn(ru_risDlyaPlova, '2026-03-14'),
+  publishedOn(kk_nauryzKozheQuny, '2026-03-10'),
+  publishedOn(ru_chayKakVybrat, '2026-03-05'),
+  publishedOn(kk_shaiTandau, '2026-03-01'),
+  publishedOn(ru_cenaZaKgDostavkaIZal, '2026-02-25'),
+  publishedOn(kk_baganyQalayOquKerek, '2026-02-21'),
+  publishedOn(ru_byudzhetIftaraRamadan, '2026-02-17'),
+  publishedOn(kk_auyzasharByudzheti, '2026-02-16'),
+  publishedOn(ru_kakMySobiraemCenyShymkent, '2026-02-14'),
+  publishedOn(kk_shymkentMarketNuskaulyq, '2026-02-12'),
+  publishedOn(ru_kakPolzovatsyaShymkentMarket, '2026-02-10'),
 ]

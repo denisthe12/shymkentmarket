@@ -13,7 +13,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "mocks": "node scripts/generate-mocks.mjs",
     "og": "node scripts/generate-og.mjs",
-    "blog:photos": "node scripts/fetch-blog-photos.mjs",
+    "blog:photos": "node --env-file-if-exists=.env.local scripts/fetch-blog-photos.mjs",
     "og:blog": "node scripts/generate-blog-og.mjs"
   },
   "dependencies": {

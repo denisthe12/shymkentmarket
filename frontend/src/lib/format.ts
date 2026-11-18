@@ -1,4 +1,5 @@
-// Снимок цен сделан в Актау, поэтому дату показываем в местном часовом поясе
+// Снимок цен — по времени Шымкента (UTC+5). Asia/Aqtau — тоже UTC+5 и не зависит от свежести tzdata
+// у посетителя (Asia/Almaty перешла на UTC+5 только в 2024), поэтому зону не меняем
 const TIME_ZONE = 'Asia/Aqtau'
 
 const priceFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })

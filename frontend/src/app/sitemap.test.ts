@@ -4,7 +4,7 @@ import { catalogApi } from '../api/catalogApi'
 import mockCategories from '../mocks/categories.json'
 import mockProducts from '../mocks/products.json'
 import mockSzpt from '../mocks/szpt.json'
-import { AUTHORS, totalPages } from '../content/blog'
+import { AUTHORS, isIndexable, PRICES_ARE_PLACEHOLDER, totalPages } from '../content/blog'
 import { POSTS } from '../content/blog/posts'
 import robots from './robots'
 import sitemap from './sitemap'
@@ -74,8 +74,8 @@ describe('sitemap', () => {
 
   it('lists static pages, every category and every product in both languages', async () => {
     const entries = await sitemap()
-    // Блог: страницы ленты на 2 языках + каждая статья на своём языке + авторы на 2 языках
-    const blog = 2 * totalPages() + POSTS.length + 2 * AUTHORS.length
+    // Блог: страницы ленты на 2 языках + каждая индексируемая статья на своём языке + авторы на 2 языках
+    const blog = 2 * totalPages() + POSTS.filter(isIndexable).length + 2 * AUTHORS.length
     expect(entries).toHaveLength(2 * (2 + mockCategories.length + mockSzpt.groups.length + mockProducts.length) + blog)
 
     const urls = entries.map((entry) => entry.url)
@@ -97,10 +97,19 @@ describe('sitemap', () => {
 
   it('lists each blog post only at the address of its own language, without hreflang', async () => {
     const entries = await sitemap()
-    const post = entries.find((e) => e.url === 'http://localhost:3000/kk/blog/zhumyrtqa-bagasy')
+    const post = entries.find((e) => e.url === 'http://localhost:3000/kk/blog/qauyn-qarbyz-mausymy')
     expect(post).toBeDefined()
     expect(post?.alternates).toBeUndefined()
-    expect(entries.some((e) => e.url === 'http://localhost:3000/ru/blog/zhumyrtqa-bagasy')).toBe(false)
+    expect(entries.some((e) => e.url === 'http://localhost:3000/ru/blog/qauyn-qarbyz-mausymy')).toBe(false)
+  })
+
+  it('leaves out posts with placeholder prices until the price snapshot is real', async () => {
+    const urls = (await sitemap()).map((e) => e.url)
+    const hidden = POSTS.filter((post) => !isIndexable(post))
+    // Пока цены — заглушки, такие статьи есть; со снимком скрытых не остаётся
+    expect(hidden.length > 0).toBe(PRICES_ARE_PLACEHOLDER)
+    for (const post of hidden) expect(urls).not.toContain(`http://localhost:3000/${post.lang}/blog/${post.slug}`)
+    for (const post of POSTS.filter(isIndexable)) expect(urls).toContain(`http://localhost:3000/${post.lang}/blog/${post.slug}`)
   })
 
   it('links each language version to the others with hreflang', async () => {

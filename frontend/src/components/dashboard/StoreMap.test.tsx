@@ -31,7 +31,7 @@ describe('StoreMap tile privacy and unchanged map contract', () => {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     })
     expect(vi.mocked(MapContainer).mock.calls[0][0]).toMatchObject({
-      center: [43.665, 51.17], zoom: 12, scrollWheelZoom: false, attributionControl: false,
+      center: [42.3417, 69.5901], zoom: 12, scrollWheelZoom: false, attributionControl: false,
     })
   })
 

@@ -18,10 +18,10 @@ test.describe('blog', () => {
 
   test('lists posts of both languages and opens a Kazakh post from the Russian blog', async ({ page }) => {
     await page.goto('/ru/blog')
-    await page.locator('main article').getByRole('link', { name: /ет пен құс етінің бағасы/ }).click()
-    await expect(page).toHaveURL(/\/kk\/blog\/et-pen-qus-eti-bagalary$/)
+    await page.locator('main article').getByRole('link', { name: /Шымкенттегі инфляция 2026/ }).click()
+    await expect(page).toHaveURL(/\/kk\/blog\/shymkenttegi-inflyaciya-2026$/)
     await expect(page.locator('html')).toHaveAttribute('lang', 'kk')
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('ет пен құс етінің бағасы')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Шымкенттегі инфляция 2026')
   })
 
   test('paginates the feed: 10 posts per page, page 1 has its own URL', async ({ page, request }) => {
@@ -37,30 +37,39 @@ test.describe('blog', () => {
   })
 
   test('post page: table of contents anchors, chart with data table, author', async ({ page, isMobile }) => {
-    await page.goto('/ru/blog/inflyaciya-kazahstan-2026')
+    await page.goto('/ru/blog/inflyaciya-v-shymkente-2026')
     if (isMobile) await page.getByText('Содержание').first().click()
     const toc = page.getByRole('navigation', { name: 'Содержание' }).filter({ visible: true })
     await toc.getByRole('link', { name: 'Что дальше' }).click()
     await expect(page.getByRole('heading', { level: 2, name: 'Что дальше' })).toBeInViewport()
-    await expect(page.getByRole('group', { name: 'Годовая инфляция в 2026 году, %' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Айгерим Сейткали' }).first()).toHaveAttribute('href', '/ru/blog/authors/aigerim-seitkali')
+    await expect(page.getByRole('group', { name: 'Годовая инфляция: Шымкент и Казахстан, %' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Жанар Абдикаримова' }).first()).toHaveAttribute('href', '/ru/blog/authors/zhanar-abdikarimova')
   })
 
   test('post SEO: canonical without hreflang, article Open Graph, BlogPosting', async ({ request }) => {
-    const html = await (await request.get('/kk/blog/zhumyrtqa-bagasy')).text()
-    expect(html).toMatch(link('canonical', '/kk/blog/zhumyrtqa-bagasy'))
+    const html = await (await request.get('/kk/blog/qauyn-qarbyz-mausymy')).text()
+    expect(html).toMatch(link('canonical', '/kk/blog/qauyn-qarbyz-mausymy'))
     expect(html).not.toMatch(/<link rel="alternate"[^>]*hrefLang/)
     expect(html).toContain('<meta property="og:type" content="article"/>')
-    expect(html).toMatch(/<meta property="og:image" content="[^"]+\/blog\/og\/kk\/zhumyrtqa-bagasy\.png"\/>/)
+    expect(html).toMatch(/<meta property="og:image" content="[^"]+\/blog\/og\/kk\/qauyn-qarbyz-mausymy\.png"\/>/)
     const [posting, breadcrumbs] = jsonLd(html)
     expect(posting).toMatchObject({ '@type': 'BlogPosting', inLanguage: 'kk', author: { '@type': 'Person' } })
     expect(posting.author).not.toHaveProperty('sameAs')
     expect(breadcrumbs).toMatchObject({ '@type': 'BreadcrumbList' })
   })
 
+  test('post with placeholder prices: noindex, follow and a visible notice', async ({ page, request }) => {
+    const html = await (await request.get('/ru/blog/gde-deshevle-produkty-shymkent')).text()
+    expect(html).toContain('<meta name="robots" content="noindex, follow"/>')
+    const indexable = await (await request.get('/ru/blog/inflyaciya-v-shymkente-2026')).text()
+    expect(indexable).not.toContain('noindex')
+    await page.goto('/ru/blog/gde-deshevle-produkty-shymkent')
+    await expect(page.getByRole('note')).toContainText('предварительные')
+  })
+
   test('a post does not exist in the other language, and the language switch leads to that blog', async ({ page, request }) => {
-    expect((await request.get('/ru/blog/zhumyrtqa-bagasy')).status()).toBe(404)
-    await page.goto('/kk/blog/zhumyrtqa-bagasy')
+    expect((await request.get('/ru/blog/qauyn-qarbyz-mausymy')).status()).toBe(404)
+    await page.goto('/kk/blog/qauyn-qarbyz-mausymy')
     await expect(page.getByRole('link', { name: 'Рус', exact: true })).toHaveAttribute('href', '/ru/blog')
   })
 })

@@ -14,14 +14,14 @@ const languages = ['ru', 'kk']
 
 // Заголовок и пример (одна позиция, самая низкая цена выделена) — тексты бывшего лендинга, в словарях их больше нет
 const texts = {
-  ru: { title: 'Где продукты в Актау выгоднее', exampleProduct: 'Молоко 3,2%, 1 л', exampleCheapest: 'Выгоднее всего', illustrative: 'Иллюстрация · цены условные' },
-  kk: { title: 'Ақтауда азық-түлік қай жерде тиімді', exampleProduct: 'Сүт 3,2%, 1 л', exampleCheapest: 'Ең тиімді', illustrative: 'Көрнекі мысал · бағалар шартты' },
+  ru: { title: 'Где продукты в Шымкенте выгоднее', exampleProduct: 'Молоко 3,2%, 1 л', exampleCheapest: 'Выгоднее всего', illustrative: 'Иллюстрация · цены условные' },
+  kk: { title: 'Шымкентте азық-түлік қай жерде тиімді', exampleProduct: 'Сүт 3,2%, 1 л', exampleCheapest: 'Ең тиімді', illustrative: 'Көрнекі мысал · бағалар шартты' },
 }
 
 const offers = [
-  { store: 'Dina', color: '#2a78d6', price: '570 ₸', best: true },
-  { store: 'Dana', color: '#eb6834', price: '610 ₸' },
-  { store: 'Fix Price', color: '#4a3aa7', price: '650 ₸' },
+  { store: 'METRO', color: '#2a78d6', price: '570 ₸', best: true },
+  { store: 'GraMad', color: '#eb6834', price: '610 ₸' },
+  { store: 'Magnum Go', color: '#4a3aa7', price: '650 ₸' },
 ]
 
 const logo = `<svg viewBox="0 0 32 32" width="64" height="64"><path d="M11.2 6H26a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H11.2a2 2 0 0 1-1.5-.7l-6-8a2 2 0 0 1 0-2.6l6-8a2 2 0 0 1 1.5-.7Z" fill="#17744a"/><circle cx="10.6" cy="16" r="1.9" fill="#fff"/><path d="M16 13.2h8M16 18.8h8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`

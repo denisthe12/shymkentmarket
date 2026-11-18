@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import { connection } from 'next/server'
 import { catalogApi } from '../api/catalogApi'
 import type { ProductCardDto } from '../api/types'
-import { AUTHORS, blogPagePath, postPath, totalPages } from '../content/blog'
+import { AUTHORS, blogPagePath, isIndexable, postPath, totalPages } from '../content/blog'
 import { POSTS } from '../content/blog/posts'
 import { LANGUAGES } from '../i18n/languages'
 import { localePath } from '../lib/paths'
@@ -40,10 +40,14 @@ function localized(path: string, extra: Omit<MetadataRoute.Sitemap[number], 'url
   return LANGUAGES.map((lang) => ({ url: absoluteUrl(localePath(lang, path)), alternates: { languages }, ...extra }))
 }
 
-/** Блог: список и авторы — на всех языках; статья — только по адресу своего языка, без hreflang */
+/**
+ * Блог: список и авторы — на всех языках; статья — только по адресу своего языка, без hreflang.
+ * Статьи с ценами-заглушками (noindex) в sitemap не попадают
+ */
 function blogEntries(): MetadataRoute.Sitemap {
-  const lastPost = POSTS.map((post) => post.updated).sort().at(-1)
-  const posts = POSTS.map((post) => ({
+  const indexable = POSTS.filter(isIndexable)
+  const lastPost = indexable.map((post) => post.updated).sort().at(-1)
+  const posts = indexable.map((post) => ({
     url: absoluteUrl(localePath(post.lang, postPath(post))),
     lastModified: post.updated,
     changeFrequency: 'monthly' as const,

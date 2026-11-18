@@ -36,7 +36,7 @@ test('catalog → SZPT tile → group → pack size → unit-price sort', async 
 test('SZPT group HTML comes from the server and the index redirects', async ({ request }) => {
   const html = await (await request.get('/kk/szpt/milk?sort=unit_price_asc')).text()
   expect(html).toContain('<html lang="kk"')
-  expect(html).toContain('Сүт — Әлеуметтік маңызы бар азық-түлік — Aktau Market')
+  expect(html).toContain('Сүт — Әлеуметтік маңызы бар азық-түлік — Shymkent Market')
   expect(html.match(/data-testid="unit-price"/g)).toHaveLength(2)
   expect(html).not.toContain('data-testid="loading-state"')
   const index = await request.get('/ru/szpt', { maxRedirects: 0 })

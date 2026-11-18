@@ -15,7 +15,7 @@ describe('paths', () => {
   })
 
   it('leads from a blog post to the blog of the other language: posts exist in one language only', () => {
-    expect(switchLanguagePath('/ru/blog/gde-deshevle-produkty-aktau', 'kk')).toBe('/kk/blog')
+    expect(switchLanguagePath('/ru/blog/gde-deshevle-produkty-shymkent', 'kk')).toBe('/kk/blog')
     expect(switchLanguagePath('/ru/blog', 'kk')).toBe('/kk/blog')
     expect(switchLanguagePath('/kk/blog/authors/editorial', 'ru')).toBe('/ru/blog/authors/editorial')
   })

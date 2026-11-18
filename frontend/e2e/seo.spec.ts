@@ -47,17 +47,17 @@ test.describe('SEO', () => {
 
   test('catalog is the home page: brand title, site name markup, large image previews', async ({ request }) => {
     const html = await (await request.get('/ru/catalog')).text()
-    expect(html).toContain('<title>Aktau Market — сравнение цен в Актау</title>')
+    expect(html).toContain('<title>Shymkent Market — сравнение цен в Шымкенте</title>')
     expect(html).toContain('<meta name="googlebot" content="max-video-preview:-1, max-image-preview:large, max-snippet:-1"/>')
     const graph = jsonLd(html)[0]['@graph'] as Array<Record<string, unknown>>
     expect(graph.map((node) => node['@type'])).toEqual(['Organization', 'WebSite'])
-    expect(graph[1]).toMatchObject({ name: 'Aktau Market', inLanguage: 'ru' })
+    expect(graph[1]).toMatchObject({ name: 'Shymkent Market', inLanguage: 'ru' })
   })
 
   test('search is noindex and shows the query in the tab title', async ({ request }) => {
     const html = await (await request.get('/ru/search?q=молоко')).text()
     expect(html).toContain('<meta name="robots" content="noindex, follow"/>')
-    expect(html).toContain('<title>Поиск: «молоко» — Aktau Market</title>')
+    expect(html).toContain('<title>Поиск: «молоко» — Shymkent Market</title>')
   })
 
   test('sitemap lists pages in both languages, robots points to it', async ({ request }) => {
@@ -81,13 +81,13 @@ test.describe('SEO', () => {
     test(`public brand is consistent in ${lang} HTML and metadata`, async ({ request, page }, testInfo) => {
       const html = await (await request.get(`/${lang}/catalog`)).text()
       expect(html).not.toMatch(/Adil Bağa|Әділ баға/)
-      expect(html).toContain('property="og:site_name" content="Aktau Market"')
+      expect(html).toContain('property="og:site_name" content="Shymkent Market"')
       const graph = jsonLd(html)[0]['@graph'] as Array<Record<string, unknown>>
-      expect(graph.map(node => node.name)).toEqual(['Aktau Market', 'Aktau Market'])
+      expect(graph.map(node => node.name)).toEqual(['Shymkent Market', 'Shymkent Market'])
       expect(graph[0]).not.toHaveProperty('legalName')
       expect(graph[0]).not.toHaveProperty('contactPoint')
       await page.goto(`/${lang}/catalog`)
-      await expect(page.getByRole('link', { name: 'Aktau Market', exact: true })).toHaveAttribute('href', `/${lang}/catalog`)
+      await expect(page.getByRole('link', { name: 'Shymkent Market', exact: true })).toHaveAttribute('href', `/${lang}/catalog`)
       await page.screenshot({ path: testInfo.outputPath(`brand-${lang}.png`) })
     })
   }

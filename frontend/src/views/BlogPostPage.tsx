@@ -5,7 +5,7 @@ import { BlogSidebar } from '../components/blog/BlogSidebar'
 import { PostByline, PostMeta } from '../components/blog/PostCard'
 import { TocPanel } from '../components/blog/TableOfContents'
 import { Button } from '../components/ui/Button'
-import { getAuthor, getRelatedPosts, getToc, navTitle, postPath, type Post } from '../content/blog'
+import { getAuthor, getRelatedPosts, getToc, isIndexable, navTitle, postPath, type Post } from '../content/blog'
 import { getI18n } from '../i18n'
 import { localePath } from '../lib/paths'
 
@@ -39,6 +39,12 @@ export function BlogPostPage({ post }: { post: Post }) {
           </div>
           <p className="text-[17px] leading-6.5 text-muted">{post.description}</p>
         </header>
+
+        {!isIndexable(post) && (
+          <p role="note" className="mt-6 rounded-card border border-line bg-surface p-4 text-sm text-muted">
+            {t('blog.placeholderNotice')}
+          </p>
+        )}
 
         <div className="mt-6 lg:hidden">
           <TocPanel items={toc} label={t('blog.toc')} />

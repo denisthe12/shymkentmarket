@@ -1,4 +1,7 @@
-# Aktau Market — frontend (Next.js)
+# Shymkent Market — frontend (Next.js)
+
+> Клон Aktau Market для Шымкента. Бренд, SEO-тексты, карта и блог переведены на Шымкент;
+> домены деплоя (`aktau.market`, `api.aktau.market`) пока прежние — см. «SEO» ниже.
 
 Единственный frontend проекта после Production Part 01. План — `../docs/context/08_NEXTJS_MIGRATION_PLAN.md` (COMPLETE).
 Все страницы перенесены, язык — в префиксе URL (`/ru`, `/kk`), данные приходят в HTML с сервера.
@@ -41,7 +44,7 @@ pnpm dev --port 3100         # Backend отдельно на :3000
 Один ручной pageview на initial load и смену RU/KK pathname; query/hash не
 создают просмотров. Не передаются search text, query/hash, внешний referrer,
 динамический document.title, session payloads или custom events. Title фиксирован
-как Aktau Market. Метрика: defer, без Webvisor/clickmap/trackLinks/ecommerce.
+как Shymkent Market. Метрика: defer, без Webvisor/clickmap/trackLinks/ecommerce.
 
 Owner: в GA4 Web stream → Enhanced Measurement отключить history-based page
 changes (иначе дублируются ручные pageviews), а также остальные автоматические
@@ -57,7 +60,7 @@ enhanced events/form interactions для режима «только базов�
 
 | Что | Где |
 |---|---|
-| Адрес сайта для абсолютных URL | `NEXT_PUBLIC_SITE_URL` обязателен для production build/start; существующий production domain `https://aktau.market` → `src/lib/site.ts` |
+| Адрес сайта для абсолютных URL | `NEXT_PUBLIC_SITE_URL` обязателен для production build/start; → `src/lib/site.ts`. **Перед запуском Shymkent Market задать домен Шымкента**: от него строятся canonical, sitemap и JSON-LD — со старым `https://aktau.market` страницы Шымкента не попадут в индекс |
 | title, description, canonical, hreflang (ru/kk/x-default), Open Graph | `pageMetadata` в `src/lib/seo.ts`, вызывается из `generateMetadata` страниц; тексты — `meta.*` в словарях |
 | JSON-LD: `Product` + `AggregateOffer`, `BreadcrumbList` | `src/lib/structuredData.ts`, компонент `src/components/seo/JsonLd.tsx` |
 | `/sitemap.xml`, `/robots.txt` | `src/app/sitemap.ts` (страницы, категории, товары из API на обоих языках), `src/app/robots.ts` |
@@ -71,11 +74,11 @@ enhanced events/form interactions для режима «только базов�
 |---|---|
 | Статьи | `src/content/blog/posts/{ru,kk}/<slug>.ts`, реестр и даты публикации — `posts/index.ts`. Каждая статья на одном языке, по адресу `/{lang}/blog/<slug>`; на другом языке — 404, переключатель языка ведёт в блог |
 | Блоки статьи | `types.ts`: `h2`, `h3`, `p`, `ul/ol`, `table`, `chart` (SVG-график), `image` (фото), `callout`, `sources`. В тексте — `**жирный**` и `[ссылка](/ru/catalog)` |
-| Цифры | `src/content/blog/data.ts` — снимок API от 06.11.2026 и инфляция БНС с источниками. Новых цифр без источника не добавлять |
+| Цифры | `src/content/blog/data.ts` — официальная статистика (БНС, Нацбанк, МЗП/МРП) с источниками. **Цены сетей пока заглушки** (`TODO(snapshot)`): заменить на снимок API Shymkent Market и поставить `PRICES_ARE_PLACEHOLDER = false`. Новых цифр без источника не добавлять |
 | Авторы | `authors.ts`. **TODO: вымышленные авторы (`placeholder: true`) — временные, заменить на настоящих до продвижения блога.** Их LinkedIn/GitHub ведут на example.com, в JSON-LD у них нет `sameAs` |
 | Страницы | `/blog` и `/blog/page/<n>` (лента обоих языков, по 10 статей — `POSTS_PER_PAGE`; `/blog/page/1` → 308 на `/blog`), `/blog/<slug>` (слева список статей, справа оглавление), `/blog/authors/<id>`. Ссылка «Блог» — только в футере |
-| SEO | статья: canonical без hreflang, Open Graph `article`, JSON-LD `BlogPosting` + `BreadcrumbList`; автор — `ProfilePage`. Всё в sitemap |
-| Фото | `pnpm blog:photos` — Openverse (CC0/CC BY, ключ не нужен; Pexels приостановил выдачу ключей) → `public/blog/photos`, автор и лицензия — `photo-credits.json`. Запросы и alt — `photo-queries.ts`. Автоподбор часто ошибается: каждое скачанное фото нужно посмотреть глазами, неподходящее — удалить из `photo-credits.json` и подобрать заново; alt описывает то, что на фото |
+| SEO | статья: canonical без hreflang, Open Graph `article`, JSON-LD `BlogPosting` + `BreadcrumbList`; автор — `ProfilePage`. Статьи с `needsSnapshot` закрыты `noindex, follow`, не попадают в sitemap и показывают пометку о предварительных ценах, пока `PRICES_ARE_PLACEHOLDER = true` |
+| Фото | Часть — `pnpm blog:photos` из Openverse (CC0/CC BY, ключ не нужен; Pexels с `PEXELS_API_KEY` в `.env.local`, но Pexels приостановил выдачу ключей). Остальные подобраны вручную на Unsplash (Unsplash License, без Unsplash+), горизонтальный кадр 1280×853. Скрипт берёт фото, только если все слова запроса есть в его описании; отклонённые фото — в `reject` у запроса, чтобы не вернулись → `public/blog/photos`, автор и лицензия — `photo-credits.json`. Запросы и alt — `photo-queries.ts`. Автоподбор часто ошибается: каждое скачанное фото нужно посмотреть глазами, неподходящее — удалить из `photo-credits.json` и подобрать заново; alt описывает то, что на фото |
 | Картинки для соцсетей | `pnpm og:blog` → `public/blog/og/<lang>/<slug>.png` — перезапустить после новой статьи или правки заголовка |
 
 ### СЗПТ

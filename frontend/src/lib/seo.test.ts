@@ -40,7 +40,7 @@ describe('seo', () => {
 
   it('uses the brand title on pages without their own and the product photo when there is one', () => {
     expect(pageMetadata({ lang: 'ru', path: '/', description: '' }).title).toEqual({
-      absolute: 'Aktau Market — сравнение цен в Актау',
+      absolute: 'Shymkent Market — сравнение цен в Шымкенте',
     })
     const metadata = pageMetadata({ lang: 'ru', path: '/products/p1', title: 'Молоко', description: '', image: 'https://cdn/1.jpg' })
     expect(metadata.openGraph?.images).toEqual([{ url: 'https://cdn/1.jpg', alt: 'Молоко' }])
@@ -63,10 +63,10 @@ describe('seo', () => {
 
   it('describes a product by its lowest price, store and snapshot date', () => {
     expect(productDescription('ru', product)).toBe(
-      'Молоко 3,2% 1 л — от 570 ₸ в DINA. Сравнение цен в магазинах Актау на 24.09.2026.',
+      'Молоко 3,2% 1 л — от 570 ₸ в DINA. Сравнение цен в магазинах Шымкента на 24.09.2026.',
     )
     expect(productDescription('ru', { ...product, offers: product.offers.slice(0, 1) })).toBe(
-      'Молоко 3,2% 1 л — 570 ₸ в DINA. Цена в магазинах Актау на 24.09.2026.',
+      'Молоко 3,2% 1 л — 570 ₸ в DINA. Цена в магазинах Шымкента на 24.09.2026.',
     )
   })
 })

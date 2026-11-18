@@ -14,7 +14,7 @@ import { CatalogPage } from '../../../../views/CatalogPage'
 export async function generateMetadata({ params }: PageProps<'/[lang]/catalog'>): Promise<Metadata> {
   const { lang } = await params
   if (!isLanguage(lang)) return {}
-  // Каталог — главная сайта: в title бренд и «сравнение цен в Актау», а не просто «Каталог»
+  // Каталог — главная сайта: в title бренд и «сравнение цен в Шымкенте», а не просто «Каталог»
   return pageMetadata({ lang, path: '/catalog', description: getI18n(lang).t('meta.catalog') })
 }
 

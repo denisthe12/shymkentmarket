@@ -17,13 +17,13 @@ describe('Header', () => {
     expect(screen.getByTestId('nav-catalog')).toHaveAttribute('aria-current', 'page')
     expect(screen.getByTestId('nav-dashboard')).toHaveAttribute('href', '/kk/dashboard')
     expect(screen.getByTestId('nav-dashboard')).toHaveTextContent('Талдау')
-    expect(screen.getByRole('link', { name: 'Aktau Market' })).toHaveAttribute('href', '/kk/catalog')
+    expect(screen.getByRole('link', { name: 'Shymkent Market' })).toHaveAttribute('href', '/kk/catalog')
   })
 
   it('logo on the catalog scrolls back to the top instead of a no-op navigation', async () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     renderPage(<Header />, '/ru/catalog')
-    const logo = screen.getByRole('link', { name: 'Aktau Market' })
+    const logo = screen.getByRole('link', { name: 'Shymkent Market' })
     const click = new MouseEvent('click', { bubbles: true, cancelable: true })
     act(() => void logo.dispatchEvent(click))
     expect(click.defaultPrevented).toBe(true)
@@ -34,7 +34,7 @@ describe('Header', () => {
   it('logo on other pages is a plain link to the catalog', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     renderPage(<Header />, '/ru/collections/dairy')
-    const logo = screen.getByRole('link', { name: 'Aktau Market' })
+    const logo = screen.getByRole('link', { name: 'Shymkent Market' })
     const click = new MouseEvent('click', { bubbles: true, cancelable: true })
     act(() => void logo.dispatchEvent(click))
     expect(scrollTo).not.toHaveBeenCalled()

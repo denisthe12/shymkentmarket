@@ -16,8 +16,8 @@ function basketLabelClass(basket: BasketSummary) {
   return basket.missing > 0 ? 'basket-label basket-label--partial' : 'basket-label'
 }
 
-/** Центр Актау — если точек нет */
-const AKTAU: LatLngTuple = [43.665, 51.17]
+/** Центр Шымкента — если точек нет */
+const SHYMKENT: LatLngTuple = [42.3417, 69.5901]
 
 type Props = {
   locations: StoreLocationDto[]
@@ -31,7 +31,7 @@ export default function StoreMap({ locations, baskets = [], label }: Props) {
   const { t } = useTranslation()
   const bounds: LatLngBoundsExpression | undefined =
     locations.length > 1 ? locations.map((l) => [l.latitude, l.longitude] as LatLngTuple) : undefined
-  const center: LatLngTuple = locations.length === 1 ? [locations[0].latitude, locations[0].longitude] : AKTAU
+  const center: LatLngTuple = locations.length === 1 ? [locations[0].latitude, locations[0].longitude] : SHYMKENT
 
   return (
     // isolate: z-index панелей Leaflet (до 1000) не должен перекрывать sticky-шапку

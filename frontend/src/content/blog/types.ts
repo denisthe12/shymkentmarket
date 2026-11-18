@@ -63,6 +63,11 @@ export type Post = PostContent & {
   updated: string
   authorId: string
   category: PostCategory
+  /**
+   * Статья опирается на цены сетей из снимка (data.ts). Пока PRICES_ARE_PLACEHOLDER, такая статья
+   * закрыта от индексации (noindex, follow), не попадает в sitemap и показывает пометку о предварительных ценах
+   */
+  needsSnapshot?: true
 }
 
 export type Author = {
