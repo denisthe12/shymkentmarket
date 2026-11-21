@@ -173,7 +173,7 @@ func (f *fixtures) ListProducts(_ context.Context, q catalog.ProductQuery) ([]ca
 	}
 	out := []catalog.Product{}
 	for i := 0; i < q.Limit; i++ {
-		out = append(out, catalog.Product{Name: "Product", ImageURL: nil, Offers: []catalog.Offer{{StoreCode: catalog.DINA, StoreName: "Dina", Price: 570 + i}}})
+		out = append(out, catalog.Product{Name: "Product", ImageURL: nil, Offers: []catalog.Offer{{StoreCode: "STORE_A", StoreName: "Store A", Price: 570 + i}}})
 	}
 	return out, nil
 }
@@ -182,7 +182,7 @@ func (f *fixtures) GetProductByID(context.Context, string) (catalog.Product, err
 }
 func (f *fixtures) ListLocations(context.Context) ([]location.Location, error) {
 	f.locationCalls++
-	return []location.Location{{StoreCode: catalog.DANA, Address: "wrong chain"}, {StoreCode: catalog.DINA, Address: "nearest", Latitude: 1, Longitude: 2}}, nil
+	return []location.Location{{StoreCode: "STORE_B", Address: "wrong chain"}, {StoreCode: "STORE_A", Address: "nearest", Latitude: 1, Longitude: 2}}, nil
 }
 
 type memory struct {
@@ -266,7 +266,7 @@ func TestServiceFlow(t *testing.T) {
 	if err != nil || result.Mode != "single" || len(result.Items) != 1 || result.Items[0].Address == nil || *result.Items[0].Address != "nearest" || *result.Items[0].DistanceMeters != 0 || m.deletes != 1 {
 		t.Fatal("completion failed")
 	}
-	if result.Speech != "Самое выгодное предложение: Product за 570 тенге в Dina. Ближайшая точка — nearest, примерно 0 метров." {
+	if result.Speech != "Самое выгодное предложение: Product за 570 тенге в Store A. Ближайшая точка — nearest, примерно 0 метров." {
 		t.Fatal("speech mismatch")
 	}
 	if _, err := s.Continue(ctx, ContinueRequest{start.SessionID, "ещё"}); !errors.Is(err, ErrNotFound) {
@@ -276,7 +276,7 @@ func TestServiceFlow(t *testing.T) {
 	if err != nil || list.Mode != "list" || len(list.Items) != 3 || f.query.Limit != 3 || f.query.Sort != catalog.PriceAsc || f.locationCalls != 2 {
 		t.Fatal("bounded result mismatch")
 	}
-	if list.Speech != "Нашёл 3 варианта. Первый — Product за 570 тенге в Dina. Второй — Product за 571 тенге в Dina. Третий — Product за 572 тенге в Dina." {
+	if list.Speech != "Нашёл 3 варианта. Первый — Product за 570 тенге в Store A. Второй — Product за 571 тенге в Store A. Третий — Product за 572 тенге в Store A." {
 		t.Fatal("list speech mismatch")
 	}
 	f.empty = true

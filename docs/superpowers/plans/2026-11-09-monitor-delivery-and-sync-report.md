@@ -15,7 +15,7 @@
 - Node 24 only, no new npm dependencies; scripts stay ESM `.mjs` in `scripts/ops/`.
 - Tests make no real network calls and never use real Telegram credentials (synthetic token `'123456789:' + 'S'.repeat(35)`, admin `'123456789'`).
 - Never log or persist token, chat ID, request path or response bodies; outputs are fixed enums/counts only.
-- `scripts/ops/*` tests are Linux-only (they reject root and Windows). Run them with the local CI tool, never on the Windows host: `node C:/Development/AdilBaga-local-ci/run-local.mjs ops` (Git Bash, from the repo root; exit 0 = pass, log in `C:/Development/AdilBaga-local-ci/logs/ops.log`).
+- `scripts/ops/*` tests are Linux-only (they reject root and Windows). Run them with the local CI tool, never on the Windows host: `локальный CI-раннер вне репозитория ops` (Git Bash, from the repo root; exit 0 = pass, log in `журнал локального CI-раннера`).
 - CI: no new jobs or job names; new test files are only appended to the `ops` list in `scripts/ci/run-checks.mjs`.
 - Telegram copy is fixed exactly as in the spec (ALERT/RECOVERED lines, `· событие #xxxx`, ` (повтор, попытка N)`, report lines).
 - Numbers from the spec: queue ≤ 10, ≤ 2 sends per monitor run, send timeout 10 000 ms, `TimeoutStartSec=90s` (monitor), Node flag `--network-family-autoselection-attempt-timeout=2000`, report at `13:30:00 UTC`, 3 report attempts 30 000 ms apart, `TimeoutStartSec=150s` (report), running run stale after 25 min, monitor stale after 15 min, keep 60 run files, Aktau = UTC+5.
@@ -65,7 +65,7 @@ test('openState reads a v1 file and saves canonical v2', t => { /* tmp dir 0700,
   open → value.version===2; save(value); close; file === JSON.stringify(value)+'\n' and contains "queue" not "pending" */ });
 ```
 
-- [ ] **Step 2: Run** `node C:/Development/AdilBaga-local-ci/run-local.mjs ops` — Expected: FAIL (`upgradeState` not exported), plus existing failures are acceptable only in this new file.
+- [ ] **Step 2: Run** `локальный CI-раннер вне репозитория ops` — Expected: FAIL (`upgradeState` not exported), plus existing failures are acceptable only in this new file.
 
 - [ ] **Step 3: Implement** in `monitor-state.mjs`: keep the current v1 validator as private `validateV1`; add `validateState` (v2 rules from the spec, «Состояние v2»), `upgradeState`, `parseStateText`; switch `openState` to them. Item `attempts` upper bound 1 000 000.
 
@@ -273,7 +273,7 @@ Header `Отчёт Aktau Market · <D> <month genitive>` (Aktau date of `now`), 
 - Modify: `docs/production/OBSERVABILITY_ALERT_POLICY.md` — delivery is configured (Telegram), retry policy, daily report as the detection path for a silent monitor.
 
 - [ ] **Step 1: Edit the three documents** (Russian, matching each file's current language; no SHA of the active API release copied into them).
-- [ ] **Step 2: Run** `node C:/Development/AdilBaga-local-ci/run-local.mjs ops,pipeline,security` — Expected: exit 0.
+- [ ] **Step 2: Run** `локальный CI-раннер вне репозитория ops,pipeline,security` — Expected: exit 0.
 - [ ] **Step 3: Commit** `docs(ops): monitor queue policy, daily report and sync run files`
 
 VPS rollout is not part of this plan's execution: after merge, follow the spec's «Выкатка на VPS»; commands are prepared for the user then.

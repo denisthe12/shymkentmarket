@@ -24,7 +24,7 @@
 - `backend/prisma` используется: `scripts/ci/postgres.mjs` (migrate deploy в 7 БД, точная цепочка миграций), `scripts/ci/check-source.mjs` (неизменяемость миграций), `scripts/deploy/auto-transport.mjs` (protected path и хэши), `pipeline/` тесты, `backend-go/scripts/local-ingest-db.sh`, perf-скрипты, `ops/` документация.
 - Nest-приложение используется только: джобой `Nest Reference` (`run-checks.mjs nest`) и Ephemeral Staging (сборка, запуск на `:13000`, `REFERENCE_API_BASE_URL` для пяти parity-тестов, `contracts test:live` по обоим origin).
 - Пять CI parity-тестов (`TestHTTPParity`, `TestLocalSecurityQueryParity`, `TestLocalContentTypeParity`, `TestLocalCategoryVisibilityParity`, `TestLocalVoiceParity`) шлют одинаковые запросы в Go и в эталон и сравнивают ответы; без эталона делают `t.Skip`. Данные детерминированы: `backend-go/tests/fixtures/catalog.sql` + `scripts/ci/fixtures/voice-parity-overlay.sql`, Gemini выключен (`voice.Fallback`).
-- `scripts/deploy/auto-gate.mjs`: `verifyCI` требует ровно 9 джоб и каждое имя из `mandatory`, где есть `Nest Reference`. Локальный CI (`C:\Development\AdilBaga-local-ci\run-local.mjs`) знает группу `nest`.
+- `scripts/deploy/auto-gate.mjs`: `verifyCI` требует ровно 9 джоб и каждое имя из `mandatory`, где есть `Nest Reference`. Локальный CI (`локальный CI-раннер вне репозитория`) знает группу `nest`.
 - Старые скраперы `backend/src/modules/import` заменены `pipeline/`; ссылок из `pipeline/scripts` на `backend/` нет.
 
 ## 3. Записанный эталон (reference cassette)
@@ -110,14 +110,14 @@ func referenceBase(t *testing.T) string
 2. `scripts/ci/run-checks.mjs`: группа `nest` → `schema`.
 3. `scripts/deploy/auto-gate.mjs`: в `mandatory` `Nest Reference` → `DB Schema`; `auto-gate.test.mjs` обновить. `jobs.length === 9` не меняется.
 4. `docs/production/GITHUB_BRANCH_PROTECTION.md`: список джоб.
-5. Локальный CI вне репозитория (`C:\Development\AdilBaga-local-ci\run-local.mjs`): `known` и `expected` — `nest` → `schema`.
+5. Локальный CI вне репозитория (`локальный CI-раннер вне репозитория`): `known` и `expected` — `nest` → `schema`.
 6. Удалить `backend/prisma/seed.ts` и добавить в `approvedExceptions` (`auto-transport.mjs`) запись для **активного на момент шага 2 релиза** (SHA берётся из `/etc/adilbaga/release.env` на VPS, вывод присылает пользователь): единственный путь `backend/prisma/seed.ts`, blob активного дерева → `null` в кандидате. Тест в `auto-gate.test.mjs` по образцу `searchBlobs` (PR #105): полный набор проходит; без пути, с чужим blob, с лишним `contracts/openapi.yaml`, с mode `120000` и при ошибке git — `throws`. Если к моменту шага 2 между активным релизом и `main` появятся другие защищённые отличия, исключение их не покрывает и они оформляются своим PR.
 
 Последствие: `verifyCI` для CI-прогонов SHA до шага 2 перестаёт проходить (в них джоба называется `Nest Reference`), значит режим `build` в `deploy-production.yml` для таких SHA не работает. Откат продакшена делается переключением на уже имеющийся на VPS образ (откат 1cbd535 → e50de25 и более старые образы лежат там же), пересборка старых SHA не нужна. Брокер (`auto_broker.py`, 7b8f5320 на VPS) имена CI-джоб не проверяет.
 
 ## 6. Проверка
 
-- Перед каждым push — локальный CI (`node C:/Development/AdilBaga-local-ci/run-local.mjs`), все группы.
+- Перед каждым push — локальный CI (`локальный CI-раннер вне репозитория`), все группы.
 - Шаг 1, push 1: hosted CI 9/9, в Ephemeral Staging оба прогона parity (живой Nest и replay) PASS.
 - Шаг 1, push 2: hosted CI 9/9; в логе Staging нет запуска Nest; parity-тесты не `SKIP`, а `PASS` (проверка по `-v` выводу); `git grep -n -i nestjs -- ':!docs' ':!contracts'` пуст (в том числе README, комментарии и имена тестов во фронтенде).
 - Негативная проверка replay (локально, не в CI): ручная правка одного ответа в записи даёт падение соответствующего parity-теста; удалённый обмен даёт «missing», лишний — «stale».

@@ -20,9 +20,9 @@ production credentials.
 
 ## VPS — scheduled sync
 
-Ingestion runs on the VPS as systemd timers (`ops/sync/README.md`):
-`aktau-sync.timer` 01:00/13:00 UTC (scrape four stores → sync → ingest → publish →
-retention), `aktau-sync-full.timer` Sunday 22:00 UTC (full scrape, no publish).
+Ingestion runs on the VPS as a systemd timer (`ops/sync/README.md`):
+`aktau-sync.timer` 01:00/13:00 UTC (scrape Magnum → sync → ingest → publish →
+retention). There is no weekly full-scrape timer.
 A failed run shows up three ways: the unit is `failed`, the daily Telegram report
 at 13:30 UTC flags the run (`ops/monitor/README.md`), and the journal has
 `[sync] <store> exit=<code>`.
@@ -33,7 +33,7 @@ sudo journalctl -u aktau-sync.service --since "-1 day" --no-pager -o short-iso |
 sudo ls -lt /var/lib/aktau-sync/runs | head
 ```
 
-Exit codes (full table: `docs/data/SYNC_RUNBOOK.md` §4):
+Exit codes (full table: `docs/data/SYNC_RUNBOOK.md` §2):
 
 - `0` — published, all stores fresh.
 - `1` — sync/ingest failed or all scrapers failed: **nothing published**, the site

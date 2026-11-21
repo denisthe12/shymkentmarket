@@ -7,20 +7,20 @@ import { OverridesSchema, applyOverrides, markSplitsApplied, readOverrides, writ
 
 const card = (name: string, category: string, review: 'approved' | 'pending' = 'approved') =>
   ({ name, brand: 'B', category, attributes: { weightGrams: 1000 }, method: 'ai', confidence: 0.9, review })
-const multi = canonicalKey(['DANA:1', 'DINA:1', 'FIX_PRICE:1'])
+const multi = canonicalKey(['STORE_A:1', 'STORE_B:1', 'STORE_C:1'])
 const dict = (): Dictionary => DictionarySchema.parse({
   version: 1, generatedAt: '2026-10-06T00:00:00.000Z',
   canonicals: { [multi]: card('Соль 1 кг', 'sugar', 'pending'), c_other: card('Сахар 1 кг', 'sugar') },
-  products: { 'DANA:1': multi, 'DINA:1': multi, 'FIX_PRICE:1': multi, 'DINA:9': 'c_other' }, storeCategories: {},
+  products: { 'STORE_A:1': multi, 'STORE_B:1': multi, 'STORE_C:1': multi, 'STORE_B:9': 'c_other' }, storeCategories: {},
 })
 const ov = (o: object) => OverridesSchema.parse({ version: 1, ...o })
-const joined = canonicalKey(['DINA:5'])
+const joined = canonicalKey(['STORE_B:5'])
 const withJoiner = (): Dictionary => DictionarySchema.parse({
   version: 1, generatedAt: '2026-10-06T00:00:00.000Z',
   canonicals: { c_orig: card('Сыр', 'dairy'), [joined]: card('Сыр', 'dairy') },
-  products: { 'DANA:5': 'c_orig', 'DINA:5': joined, 'ANVAR:7': joined }, storeCategories: {},
+  products: { 'STORE_A:5': 'c_orig', 'STORE_B:5': joined, 'MAGNUM:7': joined }, storeCategories: {},
 })
-const rule = { key: 'c_orig', ids: ['DINA:5'], reason: 'weight-vs-piece' }
+const rule = { key: 'c_orig', ids: ['STORE_B:5'], reason: 'weight-vs-piece' }
 
 describe('applyOverrides', () => {
   it('moves category and approves', () => {
@@ -29,7 +29,7 @@ describe('applyOverrides', () => {
   })
   it('split without ids isolates every member, each id points to an existing card', () => {
     const d = applyOverrides(dict(), ov({ split: [{ key: multi, reason: 'false group' }] }))
-    for (const id of ['DANA:1', 'DINA:1', 'FIX_PRICE:1']) {
+    for (const id of ['STORE_A:1', 'STORE_B:1', 'STORE_C:1']) {
       const key = d.products[id]!
       expect(key).toBe(canonicalKey([id]))
       expect(d.canonicals[key]).toMatchObject({ name: 'Соль 1 кг', brand: 'B', category: 'sugar', method: 'deterministic', confidence: 1, review: 'approved', attributes: { weightGrams: 1000 } })
@@ -37,14 +37,14 @@ describe('applyOverrides', () => {
     expect(Object.keys(d.canonicals)).toHaveLength(4)
   })
   it('split with ids keeps the remainder together (rekeyed on collision)', () => {
-    const d = applyOverrides(dict(), ov({ split: [{ key: multi, ids: ['DANA:1'], reason: 'weight-vs-piece' }] }))
-    expect(d.products['DANA:1']).toBe(canonicalKey(['DANA:1']))
-    expect(d.products['DINA:1']).toBe(d.products['FIX_PRICE:1'])
-    expect(d.products['DINA:1']).not.toBe(d.products['DANA:1'])
+    const d = applyOverrides(dict(), ov({ split: [{ key: multi, ids: ['STORE_A:1'], reason: 'weight-vs-piece' }] }))
+    expect(d.products['STORE_A:1']).toBe(canonicalKey(['STORE_A:1']))
+    expect(d.products['STORE_B:1']).toBe(d.products['STORE_C:1'])
+    expect(d.products['STORE_B:1']).not.toBe(d.products['STORE_A:1'])
     for (const k of Object.values(d.products)) expect(d.canonicals[k]).toBeDefined()
   })
   it('is idempotent', () => {
-    const o = ov({ moveCategory: [{ key: 'c_other', to: 'salt', reason: 'salt' }], split: [{ key: multi, ids: ['DANA:1'], reason: 'weight' }], approve: [{ key: 'c_other', reason: 'okay' }] })
+    const o = ov({ moveCategory: [{ key: 'c_other', to: 'salt', reason: 'salt' }], split: [{ key: multi, ids: ['STORE_A:1'], reason: 'weight' }], approve: [{ key: 'c_other', reason: 'okay' }] })
     const once = applyOverrides(dict(), o)
     expect(applyOverrides(once, o)).toEqual(once)
     const dir = mkdtempSync(join(tmpdir(), 'ov-'))
@@ -57,7 +57,7 @@ describe('applyOverrides', () => {
     expect(() => applyOverrides(dict(), ov({ approve: [{ key: 'c_nope', reason: 'x1x' }] }))).toThrow(/unknown canonical/)
   })
   it('rejects ids that are not members', () => {
-    expect(() => applyOverrides(dict(), ov({ split: [{ key: multi, ids: ['DINA:9'], reason: 'oops' }] }))).toThrow(/not a member/)
+    expect(() => applyOverrides(dict(), ov({ split: [{ key: multi, ids: ['STORE_B:9'], reason: 'oops' }] }))).toThrow(/not a member/)
   })
   it('skips an applied split after a later store joined the isolated card', () => {
     const d = withJoiner()
@@ -67,15 +67,15 @@ describe('applyOverrides', () => {
     expect(() => applyOverrides(withJoiner(), ov({ split: [rule] }))).toThrow(/not a member/)
   })
   it('applied split does not evict a store that joined the key holder', () => {
-    const o = ov({ split: [{ key: joined, ids: ['DINA:5'], reason: 'false-group', appliedAt: '2026-10-06' }] })
-    expect(applyOverrides(withJoiner(), o).products['ANVAR:7']).toBe(joined)
+    const o = ov({ split: [{ key: joined, ids: ['STORE_B:5'], reason: 'false-group', appliedAt: '2026-10-06' }] })
+    expect(applyOverrides(withJoiner(), o).products['MAGNUM:7']).toBe(joined)
   })
   it('applied split with a missing card is skipped', () => {
-    const o = ov({ split: [{ key: 'c_nope', ids: ['DINA:5'], reason: 'gone', appliedAt: '2026-10-06' }] })
+    const o = ov({ split: [{ key: 'c_nope', ids: ['STORE_B:5'], reason: 'gone', appliedAt: '2026-10-06' }] })
     expect(applyOverrides(withJoiner(), o)).toEqual(withJoiner())
   })
   it('re-applying an unmarked simple split changes nothing', () => {
-    const o = ov({ split: [{ key: multi, ids: ['DANA:1'], reason: 'weight' }] })
+    const o = ov({ split: [{ key: multi, ids: ['STORE_A:1'], reason: 'weight' }] })
     const once = applyOverrides(dict(), o)
     expect(applyOverrides(once, o)).toEqual(once)
   })

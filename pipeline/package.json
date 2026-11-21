@@ -5,21 +5,23 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "scrape:dina": "tsx src/cli/scrape.ts DINA",
-    "scrape:dana": "tsx src/cli/scrape.ts DANA",
-    "scrape:fixprice": "tsx src/cli/scrape.ts FIX_PRICE",
-    "scrape:anvar": "tsx src/cli/scrape.ts ANVAR",
     "scrape:magnum": "tsx src/cli/scrape.ts MAGNUM",
     "sync": "tsx src/cli/sync.ts",
-    "agent:classify": "tsx src/cli/classify.ts",
-    "agent:match": "tsx src/cli/match.ts",
     "dict:apply": "tsx src/cli/dict-apply.ts",
+    "dict:seed-categories": "tsx src/cli/dict-seed-categories.ts",
     "taxonomy:sql": "tsx src/cli/taxonomy-sql.ts",
-    "scope:dina": "tsx src/cli/dina-scope.ts",
-    "scope:dana": "tsx src/cli/dana-scope.ts",
     "sync:compare": "tsx src/cli/compare.ts"
   },
-  "dependencies": { "cheerio": "^1.0.0", "dotenv": "^16.4.7", "zod": "^4.6.6" },
-  "devDependencies": { "@types/node": "^22.10.7", "tsx": "^4.19.2", "typescript": "^5.8.0", "vite": "^7.3.7", "vitest": "^4.1.12" },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.0",
+    "vite": "^7.3.7",
+    "vitest": "^4.1.12"
+  },
   "packageManager": "pnpm@10.32.1"
 }

@@ -1,8 +1,8 @@
 -- Operator-only emergency rollback; NOT a Prisma migration or runtime action.
 -- Separately approved execution only. Remove the known runtime LOGIN first.
 -- Removes every reader object the migrations create: SELECT policy and grant on the 5 Part04 runtime
--- tables and on snapshots (20261005000000_snapshot_history), the offer_price_basis view grant
--- (20261114000000_offer_price_basis), schema USAGE, then the role. Other roles' policies and grants
+-- tables and on snapshots (20261122000000_shymkent_baseline), the offer_price_basis view grant
+-- (20261122000000_shymkent_baseline), schema USAGE, then the role. Other roles' policies and grants
 -- (aktau_ingest_writer, retention) are not touched and not counted. Data untouched.
 -- Every check and destructive step is atomic; unexpected drift aborts everything.
 BEGIN;
@@ -25,7 +25,7 @@ DECLARE
     reader pg_catalog.pg_roles%ROWTYPE;
     runtime_tables text[] := ARRAY['stores','store_locations','categories','canonical_products','offers'];
     app_tables text[] := runtime_tables || ARRAY['raw_products','product_mappings'];
-    -- Part04 runtime tables plus snapshots (20261005000000_snapshot_history).
+    -- Part04 runtime tables plus snapshots (20261122000000_shymkent_baseline).
     reader_tables text[] := runtime_tables || ARRAY['snapshots'];
 BEGIN
     SELECT * INTO reader FROM pg_catalog.pg_roles WHERE rolname = 'aktau_api_reader';

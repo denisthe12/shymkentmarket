@@ -48,10 +48,10 @@ for (const [name, change, reason, outcome] of [
   const h = harness(change); const result = await h.verify(); assert.equal(result.outcome, outcome); assert.equal(result.reason, reason); assert.equal(h.calls.length, 1);
   assert.ok(!JSON.stringify(result).includes('secret'));
 });
-test('dashboard accepts the ANVAR store code and rejects an unknown one', async () => {
+test('dashboard accepts a registered store code and rejects a malformed one', async () => {
   const withCode = code => (r, i) => { if (i === 4) { const d = JSON.parse(r.text); d.baskets[0].storeCode = code; r.text = JSON.stringify(d); } };
-  assert.equal((await harness(withCode('ANVAR')).verify()).outcome, 'PASS');
-  assert.equal((await harness(withCode('SMALL')).verify()).outcome, 'FAIL');
+  assert.equal((await harness(withCode('MAGNUM')).verify()).outcome, 'PASS');
+  assert.equal((await harness(withCode('not a store code')).verify()).outcome, 'FAIL');
 });
 for (const i of [1, 2, 3, 4]) test('wrong DTO at target ' + i, async () => {
   const h = harness((r, n) => { if (i === n) r.text = JSON.stringify({ unexpected: 'private' }); });

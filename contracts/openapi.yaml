@@ -356,7 +356,7 @@ components:
   schemas:
     StoreCode:
       type: string
-      enum: [DINA, DANA, FIX_PRICE, ANVAR]
+      pattern: '^[A-Z][A-Z0-9_]{1,31}$'
     Category:
       type: object
       required: [id, slug, name]

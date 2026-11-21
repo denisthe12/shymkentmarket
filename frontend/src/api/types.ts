@@ -1,6 +1,7 @@
 // Frozen wire contract: contracts/openapi.yaml (Production Part 02).
 
-export type StoreCode = 'DINA' | 'DANA' | 'FIX_PRICE' | 'ANVAR'
+/** Код сети: заглавная латиница, цифры и _, 2–32 символа (^[A-Z][A-Z0-9_]{1,31}$). Набор открытый. */
+export type StoreCode = string
 
 export type CategoryDto = {
   id: string

@@ -15,7 +15,7 @@ const finite = v => typeof v === 'number' && Number.isFinite(v);
 const stamp = v => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(v) && Number.isFinite(Date.parse(v));
 const category = v => strings(v, ['slug', 'name']);
 const nullable = v => v === null || typeof v === 'string';
-const store = v => strings(v, ['storeCode', 'storeName']) && ['DINA', 'DANA', 'FIX_PRICE', 'ANVAR'].includes(v.storeCode);
+const store = v => strings(v, ['storeCode', 'storeName']) && /^[A-Z][A-Z0-9_]{1,31}$/.test(v.storeCode);
 function product(v) {
   return strings(v, ['id', 'name']) && nullable(v.brand) && nullable(v.imageUrl) && category(v.category)
     && object(v.attributes) && Object.values(v.attributes).every(x => x === null || ['string', 'boolean'].includes(typeof x) || finite(x))

@@ -11,7 +11,7 @@ Sections:
 | Section | What it shows | Warns when |
 | --- | --- | --- |
 | API | `release.env` tag vs running container, health, restarts, kept images, `/health/live`, `/health/ready`, published `snapshotAt` from `/api/dashboard` | image differs from `release.env`, not running/healthy, restarts > 0, health not 200, snapshot older than 13 h |
-| Services and timers | `docker`, `cloudflared`; timers `aktau-sync`, `aktau-sync-full`, `aktau-go-monitor`, `aktau-sync-report` with last/next run and last service result | service not active, timer not active, service result not `success` |
+| Services and timers | `docker`, `cloudflared`; timers `aktau-sync`, `aktau-go-monitor`, `aktau-sync-report` with last/next run and last service result | service not active, timer not active, service result not `success` |
 | Sync | last 4 run files from `/var/lib/aktau-sync/runs`, snapshot count from the last `retention_complete` journal line, `/opt/aktau-sync` checkout, VPS Go version | last daily exit ≠ 0, stuck > 25 min, no daily for 13 h, retention failed or missing, checkout has changed files |
 | Monitor | `state.json`: phase, failures, last run, queue; last journal line | phase ≠ OK, undelivered alerts, no run for 15 min |
 | Host | uptime, load, available memory, disk `/` and `/var/lib/docker`, reboot flag | disk ≥ 85 %, reboot required |

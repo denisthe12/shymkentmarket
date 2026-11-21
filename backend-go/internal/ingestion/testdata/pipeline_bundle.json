@@ -3,7 +3,7 @@
   "generatedAt": "2026-10-05T12:00:00.000Z",
   "rawProducts": [
     {
-      "storeCode": "DINA",
+      "storeCode": "STORE_B",
       "sourceProductId": "1",
       "sourceUrl": null,
       "name": "Молоко FoodMaster 3.2% 1 л",
@@ -11,14 +11,14 @@
       "category": null,
       "price": 500,
       "oldPrice": null,
-      "imageUrl": "https://cdn.dina/1.jpg",
+      "imageUrl": "https://cdn.example/1.jpg",
       "rawPayload": {
         "agentFlags": ""
       }
     },
     {
-      "storeCode": "DANA",
-      "sourceProductId": "dana_2",
+      "storeCode": "STORE_A",
+      "sourceProductId": "a_2",
       "sourceUrl": null,
       "name": "Молоко Фудмастер 3,2% 1л",
       "brand": "FoodMaster",
@@ -31,8 +31,8 @@
       }
     },
     {
-      "storeCode": "FIX_PRICE",
-      "sourceProductId": "fp_3",
+      "storeCode": "STORE_C",
+      "sourceProductId": "c_3",
       "sourceUrl": null,
       "name": "Сахар 1 кг",
       "brand": null,
@@ -45,8 +45,8 @@
       }
     },
     {
-      "storeCode": "ANVAR",
-      "sourceProductId": "anvar_1",
+      "storeCode": "MAGNUM",
+      "sourceProductId": "m_1",
       "sourceUrl": null,
       "name": "Сахар 1 кг",
       "brand": null,
@@ -64,7 +64,7 @@
       "canonicalName": "Молоко FoodMaster 3.2% 1 л",
       "brand": "FoodMaster",
       "category": "milk",
-      "imageUrl": "https://cdn.dina/1.jpg",
+      "imageUrl": "https://cdn.example/1.jpg",
       "attributes": {
         "volumeMl": 1000,
         "fatPercent": 3.2
@@ -72,7 +72,7 @@
       "members": [
         {
           "rawProduct": {
-            "storeCode": "DINA",
+            "storeCode": "STORE_B",
             "sourceProductId": "1",
             "sourceUrl": null,
             "name": "Молоко FoodMaster 3.2% 1 л",
@@ -80,7 +80,7 @@
             "category": null,
             "price": 500,
             "oldPrice": null,
-            "imageUrl": "https://cdn.dina/1.jpg",
+            "imageUrl": "https://cdn.example/1.jpg",
             "rawPayload": {
               "agentFlags": ""
             }
@@ -91,8 +91,8 @@
         },
         {
           "rawProduct": {
-            "storeCode": "DANA",
-            "sourceProductId": "dana_2",
+            "storeCode": "STORE_A",
+            "sourceProductId": "a_2",
             "sourceUrl": null,
             "name": "Молоко Фудмастер 3,2% 1л",
             "brand": "FoodMaster",
@@ -121,8 +121,8 @@
       "members": [
         {
           "rawProduct": {
-            "storeCode": "FIX_PRICE",
-            "sourceProductId": "fp_3",
+            "storeCode": "STORE_C",
+            "sourceProductId": "c_3",
             "sourceUrl": null,
             "name": "Сахар 1 кг",
             "brand": null,
@@ -151,8 +151,8 @@
       "members": [
         {
           "rawProduct": {
-            "storeCode": "ANVAR",
-            "sourceProductId": "anvar_1",
+            "storeCode": "MAGNUM",
+            "sourceProductId": "m_1",
             "sourceUrl": null,
             "name": "Сахар 1 кг",
             "brand": null,
@@ -173,25 +173,25 @@
   ],
   "sourceRuns": [
     {
-      "storeCode": "DINA",
+      "storeCode": "STORE_B",
       "capturedAt": "2026-10-05T10:00:00.000Z",
       "productCount": 1,
       "errorCount": 0
     },
     {
-      "storeCode": "DANA",
+      "storeCode": "STORE_A",
       "capturedAt": "2026-10-05T10:00:00.000Z",
       "productCount": 1,
       "errorCount": 0
     },
     {
-      "storeCode": "FIX_PRICE",
+      "storeCode": "STORE_C",
       "capturedAt": "2026-10-05T10:00:00.000Z",
       "productCount": 1,
       "errorCount": 0
     },
     {
-      "storeCode": "ANVAR",
+      "storeCode": "MAGNUM",
       "capturedAt": "2026-10-05T10:00:00.000Z",
       "productCount": 1,
       "errorCount": 0

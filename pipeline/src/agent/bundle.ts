@@ -9,7 +9,9 @@ export type Bundle = { version: '1.0'; generatedAt: string; rawProducts: BundleR
     attributes: Record<string, number | string | boolean>; members: { rawProduct: BundleRaw; matchMethod: string; matchConfidence: number; reviewStatus: string }[] }[]
   sourceRuns: { storeCode: StoreCode; capturedAt: string; productCount: number; errorCount: number }[] }
 
-const IMAGE_ORDER: StoreCode[] = ['DINA', 'DANA', 'ANVAR', 'FIX_PRICE']
+const IMAGE_ORDER: StoreCode[] = ['MAGNUM']
+// Сеть вне IMAGE_ORDER идёт после всех известных (indexOf = -1 поставил бы её первой)
+const imageRank = (s: StoreCode) => { const i = IMAGE_ORDER.indexOf(s); return i === -1 ? IMAGE_ORDER.length : i }
 
 // Картинка уже лежит в imageUrl; массивы изображений раздувают bundle (каждый raw входит в него дважды) выше лимита Go (64 МиБ)
 const BULKY_PAYLOAD_KEYS = ['images', 'resources', 'preview']
@@ -34,7 +36,7 @@ export function buildBundle(clusters: Cluster[], sources: Omit<SourceFile, 'prod
   for (const cl of clusters) {
     const pairs = cl.members.map((m) => ({ m, raw: toRaw(m) }))
     rawProducts.push(...pairs.map((p) => p.raw))
-    const withImage = [...pairs].sort((x, y) => IMAGE_ORDER.indexOf(x.m.storeCode) - IMAGE_ORDER.indexOf(y.m.storeCode))
+    const withImage = [...pairs].sort((x, y) => imageRank(x.m.storeCode) - imageRank(y.m.storeCode))
       .find((p) => p.raw.imageUrl?.startsWith('https://'))
     const lead = withImage?.m ?? cl.members[0]!
     const attributes: Record<string, number> = {}

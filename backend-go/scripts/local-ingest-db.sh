@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Тестовая БД для SCRUM-7: postgres:17 на loopback, схема и роли как в production.
+# Локальная тестовая БД для ingest: postgres:17 на loopback, схема и роли как в базовой миграции.
 # psql/pg_dump берутся из контейнера, на хосте они не нужны.
 #
 # Дамп каталога prod (делает человек с owner-доступом, файл НЕ коммитится, PII в этих таблицах нет):
@@ -27,21 +27,11 @@ sleep 2
 # Файл подаётся через stdin, чтобы не зависеть от путей Windows внутри контейнера
 run() { docker exec -i "$NAME" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f - < "$1" >/dev/null; }
 
-run $M/20260923000000_init/migration.sql
-run $SEC/aktau_api_reader_role.sql        # группа читателя нужна ДО rls-миграции (README, Part 04)
-run $M/20261004000000_rls_runtime_access/migration.sql
-run $M/20261005000000_snapshot_history/migration.sql
-run $SEC/aktau_ingest_writer_role.sql     # после snapshot_history, до LOGIN
+run $SEC/aktau_api_reader_role.sql        # группа читателя нужна ДО базовой миграции (её RLS-часть)
+run $M/20261122000000_shymkent_baseline/migration.sql
+run $SEC/aktau_ingest_writer_role.sql     # после базовой миграции, до LOGIN
 if [ "${SKIP_DUMP:-0}" != "1" ]; then run "$DUMP"; fi
-run $M/20261006000000_catalog_taxonomy/migration.sql
-run $M/20261021000000_scrum19_milk_taxonomy/migration.sql
-run $M/20261102000000_store_anvar_enum/migration.sql
-run $M/20261102000100_store_anvar_rows/migration.sql
-run $M/20261102000200_anvar_taxonomy/migration.sql
-run $M/20261107000000_price_history/migration.sql
-run $M/20261107000100_product_identities/migration.sql
-run $M/20261114000000_offer_price_basis/migration.sql
-run $M/20261116000000_szpt_phase3_taxonomy/migration.sql
+for taxonomy in $M/*_shymkent_taxonomy/migration.sql; do run "$taxonomy"; done
 run ops/postgres/security/aktau_ingest_product_identities_access.sql
 docker exec "$NAME" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q \
   -c "CREATE ROLE ingest_local LOGIN PASSWORD '$PW'"   -c "GRANT aktau_ingest_writer TO ingest_local WITH INHERIT TRUE, SET FALSE" >/dev/null  # cmd/ingest отвергает логин с правом SET ROLE

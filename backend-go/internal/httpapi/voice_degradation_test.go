@@ -24,7 +24,7 @@ func (r *degradationRepository) ListProducts(_ context.Context, q catalog.Produc
 	r.query = q
 	products := []catalog.Product{}
 	for i := 0; i < q.Limit; i++ {
-		products = append(products, catalog.Product{ID: strconv.Itoa(i), Name: "Test milk", Offers: []catalog.Offer{{StoreCode: catalog.DINA, StoreName: "Dina", Price: 570 + i}}, MinPrice: 570 + i})
+		products = append(products, catalog.Product{ID: strconv.Itoa(i), Name: "Test milk", Offers: []catalog.Offer{{StoreCode: "STORE_A", StoreName: "Store A", Price: 570 + i}}, MinPrice: 570 + i})
 	}
 	return products, nil
 }
@@ -134,7 +134,7 @@ func TestVoiceGracefulDegradation(t *testing.T) {
 				}
 			}
 			complete := post("/api/voice/start", "самое дешёвое молоко 1 литр 3.2% "+marker, "")
-			if complete.Status != "result" || complete.Mode != "single" || len(complete.Items) != 1 || complete.Items[0].Name != "Test milk" || complete.Items[0].Price != 570 || complete.Items[0].Store != "Dina" || complete.Speech != voice.Speech(complete.Items, "single") || sessions.sets != 0 {
+			if complete.Status != "result" || complete.Mode != "single" || len(complete.Items) != 1 || complete.Items[0].Name != "Test milk" || complete.Items[0].Price != 570 || complete.Items[0].Store != "Store A" || complete.Speech != voice.Speech(complete.Items, "single") || sessions.sets != 0 {
 				t.Fatal("complete cheapest degradation failed")
 			}
 			assertQuery(1)
@@ -156,7 +156,7 @@ func TestVoiceGracefulDegradation(t *testing.T) {
 				t.Fatal("search TOP-3 degradation failed")
 			}
 			for i, item := range search.Items {
-				if item.Name != "Test milk" || item.Price != 570+i || item.Store != "Dina" {
+				if item.Name != "Test milk" || item.Price != 570+i || item.Store != "Store A" {
 					t.Fatal("search returned invalid product result")
 				}
 			}

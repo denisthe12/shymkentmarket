@@ -123,7 +123,7 @@ func TestCloneRestrictedSecurity(t *testing.T) {
 		t.Fatal("local role connect failed")
 	}
 	defer conn.Close(context.Background())
-	for _, sql := range []string{`UPDATE stores SET name=name WHERE false`, `DELETE FROM stores WHERE false`, `INSERT INTO stores(id,code,name) SELECT 'bad','DINA','bad' WHERE false`, `CREATE TABLE public.bad(id int)`, `ALTER TABLE stores ADD COLUMN bad int`} {
+	for _, sql := range []string{`UPDATE stores SET name=name WHERE false`, `DELETE FROM stores WHERE false`, `INSERT INTO stores(id,code,name) SELECT 'bad','STORE_A','bad' WHERE false`, `CREATE TABLE public.bad(id int)`, `ALTER TABLE stores ADD COLUMN bad int`} {
 		assertDenied(t, conn.Exec, ctx, sql, "42501")
 	}
 	t.Log("restricted login: exact reader membership/RLS/policies/SELECT matrix and private-table/DML/DDL denial PASS")

@@ -46,7 +46,7 @@ func (r *testRepository) GetProductByID(_ context.Context, id string) (catalog.P
 	if id != "opaque" {
 		return catalog.Product{}, catalog.ErrNotFound
 	}
-	return catalog.Product{ID: id, Name: "Milk", Attributes: map[string]json.RawMessage{}, Offers: []catalog.Offer{{StoreCode: catalog.DINA, StoreName: "Dina", Price: 100}}, MinPrice: 100, SnapshotAt: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)}, r.err
+	return catalog.Product{ID: id, Name: "Milk", Attributes: map[string]json.RawMessage{}, Offers: []catalog.Offer{{StoreCode: "STORE_A", StoreName: "Store A", Price: 100}}, MinPrice: 100, SnapshotAt: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)}, r.err
 }
 func (r *testRepository) GetDashboard(context.Context) (dashboard.Dashboard, error) {
 	return dashboard.Dashboard{PriceSpreads: []dashboard.PriceSpread{}, Locations: []dashboard.Location{}, Baskets: []dashboard.Basket{}}, r.err

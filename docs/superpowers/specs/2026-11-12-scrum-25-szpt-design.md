@@ -227,7 +227,7 @@ Matching уже держит разные фасовки разными SKU: `vo
 | Contracts | два пути и схемы в `openapi.yaml`, примеры проходят валидацию, линт Redocly |
 | Frontend vitest | форматирование фасовок и цены за единицу; `ProductCard` с `unitPrice` и без; страница группы на `mockAdapter`; sitemap с новыми URL |
 | Frontend e2e | каталог → плитка «СЗПТ» → группа → фасовка → переключение сортировки |
-| Локально | `node C:/Development/AdilBaga-local-ci/run-local.mjs` (все группы) перед каждым push |
+| Локально | `локальный CI-раннер вне репозитория` (все группы) перед каждым push |
 
 ### Релиз
 

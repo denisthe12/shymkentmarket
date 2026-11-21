@@ -170,7 +170,7 @@ try {
   create(fake, ['--network', net, '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
     '-e', 'PART13_FAKE_CONTAINER=1', '-v', `${join(root, 'scripts/perf/fake-upstash.mjs')}:/work/fake.mjs:ro`, '--user', 'node', 'node:20-alpine', 'node', '/work/fake.mjs']);
   tier = 'fixture'; await startDB(true);
-  for (const file of ['20260923000000_init','20261004000000_rls_runtime_access','20261005000000_snapshot_history']) sql(readFileSync(join(root, `backend/prisma/migrations/${file}/migration.sql`)));
+  for (const file of ['20261122000000_shymkent_baseline']) sql(readFileSync(join(root, `backend/prisma/migrations/${file}/migration.sql`)));
   sql(readFileSync(join(root, 'backend-go/tests/fixtures/catalog.sql'))); sql(readFileSync(join(root, 'scripts/ci/fixtures/voice-parity-overlay.sql')));
   reader(); sql('CREATE EXTENSION pg_stat_statements;'); await startAPI();
   await profile('mixed', 1, '30s', 'fixture-smoke'); await direct(await voiceInputs()); await clarify(await voiceInputs()); pass('fixture_smoke');
@@ -199,6 +199,7 @@ try {
   assert.deepEqual(auditA, auditB, 'product_mappings_double_restore_mismatch');
   remove(second); pass('product_mappings_field_complete_binary_safe_double_restore');
   securityAudit();
+  // The list below describes the restored inherited backup, not this repo's migration chain.
   assert.equal(sql('SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name;'), '20260923000000_init\n20261004000000_rls_runtime_access\n20261005000000_snapshot_history');
   reader(); pass('representative_integrity_history_RLS_restricted_role');
   // Profiling is enabled only after the plain restore and integrity proof.

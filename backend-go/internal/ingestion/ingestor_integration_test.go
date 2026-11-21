@@ -107,16 +107,8 @@ func TestLocalSnapshotPublication(t *testing.T) {
 	}
 	defer pool.Close()
 	repo := postgres.NewRepository(pool)
-	f, err := os.Open("../../../data/snapshots/final_dataset.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	b, err := Decode(f)
-	f.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	b = withAnvar(b) // the dataset predates ANVAR; the part08 clone must carry the ANVAR store row
+	// The clone must already hold a published snapshot of this synthetic bundle, and exactly its stores.
+	b := preparedBundle(t)
 	engine, err := New(conn, 0, false)
 	if err != nil {
 		t.Fatal(err)
@@ -183,7 +175,7 @@ func TestLocalSnapshotPublication(t *testing.T) {
 	}
 	before := fingerprint()
 	report, err := engine.DryRun(ctx, b)
-	if err != nil || report.ReusedCanonical != 849 || report.NewCanonical != 0 || before != fingerprint() {
+	if err != nil || report.ReusedCanonical != len(b.Groups) || report.NewCanonical != 0 || before != fingerprint() {
 		t.Fatal("dry-run changed rows/identity")
 	}
 	candidate := cloneBundle(t, b)
@@ -224,7 +216,7 @@ func TestLocalSnapshotPublication(t *testing.T) {
 	}
 	writerRepo := postgres.NewRepository(conn)
 	baselineFreshness, err := writerRepo.SourceFreshness(ctx)
-	if err != nil || len(baselineFreshness) != 3 {
+	if err != nil || len(baselineFreshness) != len(previousIdentity.Stores) {
 		t.Fatal("baseline freshness unavailable")
 	}
 	for _, source := range baselineFreshness {
@@ -324,7 +316,7 @@ func TestLocalSnapshotPublication(t *testing.T) {
 		t.Fatal("price history")
 	}
 	fresh, err := writerRepo.SourceFreshness(ctx)
-	if err != nil || len(fresh) != 3 {
+	if err != nil || len(fresh) != len(previousIdentity.Stores) {
 		t.Fatal("freshness")
 	}
 	for _, f := range fresh {
@@ -355,7 +347,7 @@ func TestLocalSnapshotPublication(t *testing.T) {
 				bad.Sources = nil
 				raw := bad.RawProducts[:0]
 				for _, p := range bad.RawProducts {
-					if p.StoreCode != "FIX_PRICE" {
+					if p.StoreCode != "STORE_B" {
 						raw = append(raw, p)
 					}
 				}
@@ -364,7 +356,7 @@ func TestLocalSnapshotPublication(t *testing.T) {
 				for _, g := range bad.Groups {
 					members := []Member{}
 					for _, m := range g.Members {
-						if m.Raw.StoreCode != "FIX_PRICE" {
+						if m.Raw.StoreCode != "STORE_B" {
 							members = append(members, m)
 						}
 					}
@@ -422,5 +414,5 @@ func TestLocalSnapshotPublication(t *testing.T) {
 			}
 		})
 	}
-	t.Log("LOCAL 849 canonical IDs / dry-run / fail-fast lock / staged metadata isolation / N+1 publish / history / failed freshness and quality safety PASS")
+	t.Log("LOCAL prepared canonical IDs / dry-run / fail-fast lock / staged metadata isolation / N+1 publish / history / failed freshness and quality safety PASS")
 }

@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -93,7 +95,42 @@ type baseline struct {
 	// Remembered is the last known card of every product, including ones absent from the latest snapshot.
 	Remembered map[Identity]string
 	Categories map[string]string
-	Stores     map[string]string
+	// Stores maps every registered stores.code to its id; it is the set of required stores.
+	Stores map[string]string
+}
+
+// codes returns the registered store codes in a stable order.
+func (b baseline) codes() []string { return slices.Sorted(maps.Keys(b.Stores)) }
+
+// checkStores matches the bundle against the registered stores (public.stores) before
+// anything is staged: every product and source run must name a registered store, and
+// when the bundle carries source runs their set must equal the set of registered stores.
+// A bundle without source runs stays allowed; resolve then reports a store without products.
+func checkStores(b Bundle, registered map[string]string) error {
+	if len(registered) == 0 {
+		return errors.New("required store unavailable")
+	}
+	for _, p := range b.RawProducts {
+		if registered[p.StoreCode] == "" {
+			return errors.New("ingestion store unregistered")
+		}
+	}
+	if len(b.Sources) == 0 {
+		return nil
+	}
+	sources := map[string]bool{}
+	for _, s := range b.Sources {
+		sources[s.StoreCode] = true
+	}
+	if len(sources) != len(registered) {
+		return errors.New("ingestion stores mismatch")
+	}
+	for code := range sources {
+		if registered[code] == "" {
+			return errors.New("ingestion stores mismatch")
+		}
+	}
+	return nil
 }
 
 func (e *Ingestor) baseline(ctx context.Context) (baseline, error) {
@@ -122,11 +159,6 @@ func (e *Ingestor) baseline(ctx context.Context) (baseline, error) {
 	rows.Close()
 	if err != nil {
 		return b, errors.New("ingestion stores unavailable")
-	}
-	for _, code := range stores {
-		if b.Stores[code] == "" {
-			return b, errors.New("required store unavailable")
-		}
 	}
 	rows, err = e.conn.Query(ctx, `SELECT slug,id FROM categories`)
 	if err != nil {
@@ -196,7 +228,7 @@ func (e *Ingestor) baseline(ctx context.Context) (baseline, error) {
 // plan resolves b against the baseline after restoring remembered identities.
 func (e *Ingestor) plan(b Bundle, previous baseline) ([]resolved, Report, error) {
 	identities, restored := restoreIdentities(b, previous.Identities, previous.Remembered)
-	groups, report, err := resolve(b, identities, previous.Counts, previous.Categories, e.maxDrop, e.recluster)
+	groups, report, err := resolve(b, identities, previous.Counts, previous.Categories, previous.codes(), e.maxDrop, e.recluster)
 	report.RestoredCanonical = restored
 	return groups, report, err
 }
@@ -224,6 +256,9 @@ func (e *Ingestor) dryRun(ctx context.Context, b Bundle) (Report, error) {
 	defer e.unlock()
 	previous, err := e.baseline(ctx)
 	if err != nil {
+		return Report{}, err
+	}
+	if err := checkStores(b, previous.Stores); err != nil {
 		return Report{}, err
 	}
 	_, report, err := e.plan(b, previous)
@@ -286,6 +321,10 @@ func (e *Ingestor) stage(ctx context.Context, b Bundle) (*Staged, error) {
 		e.unlock()
 		return nil, err
 	}
+	if err := checkStores(b, previous.Stores); err != nil {
+		e.unlock()
+		return nil, err
+	}
 	id, err := opaqueID()
 	if err != nil {
 		e.unlock()
@@ -293,7 +332,7 @@ func (e *Ingestor) stage(ctx context.Context, b Bundle) (*Staged, error) {
 	}
 	s := &Staged{engine: e, id: id, previous: previous, raws: map[Identity]string{}, captures: map[string]time.Time{}}
 	fallback, _ := timestamp(b.GeneratedAt)
-	for _, code := range stores {
+	for code := range previous.Stores {
 		s.captures[code] = fallback
 	}
 	for _, source := range b.Sources {
@@ -322,7 +361,7 @@ func (e *Ingestor) stage(ctx context.Context, b Bundle) (*Staged, error) {
 	for _, p := range b.RawProducts {
 		counts[p.StoreCode]++
 	}
-	for _, code := range stores {
+	for _, code := range previous.codes() {
 		sourceID, err := opaqueID()
 		if err != nil {
 			e.unlock()

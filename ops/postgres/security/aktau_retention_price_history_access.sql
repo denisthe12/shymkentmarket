@@ -1,7 +1,7 @@
 -- Operator artifact, not a Prisma migration and NOT applied by runtime.
 -- Gives the retention group append-only access to public.price_history: SELECT+INSERT only.
 -- No UPDATE, DELETE or TRUNCATE; no other role gets access here.
--- Apply AFTER migration 20261107000000_price_history and AFTER aktau_retention_writer_role.sql
+-- Apply AFTER migration 20261122000000_shymkent_baseline and AFTER aktau_retention_writer_role.sql
 -- in the same database. Rollback: rollback_aktau_retention_price_history_access.sql, which must
 -- run BEFORE rollback_aktau_retention_writer_access.sql.
 BEGIN;

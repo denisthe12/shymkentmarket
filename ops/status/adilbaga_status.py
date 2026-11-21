@@ -38,7 +38,7 @@ REBOOT_FLAG = '/var/run/reboot-required'
 API = 'http://127.0.0.1:8080'
 CONTAINER = 'adilbaga-api'
 SERVICES = ('docker', 'cloudflared')
-TIMERS = ('aktau-sync', 'aktau-sync-full', 'aktau-go-monitor', 'aktau-sync-report')
+TIMERS = ('aktau-sync', 'aktau-go-monitor', 'aktau-sync-report')
 RUN_NAME = re.compile(r'^(daily|weekly)-\d{8}T\d{6}Z\.json$')
 KEPT = re.compile(r'"?kept_count"?\s*[=:]\s*(\d+)')
 DELETED = re.compile(r'"?deleted_count"?\s*[=:]\s*(\d+)')

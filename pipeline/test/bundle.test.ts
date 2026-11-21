@@ -1,14 +1,15 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { buildBundle, qualityReport } from '../src/agent/bundle.js'
-import { cp } from './helpers.js'
+import type { StoreCode } from '../src/types.js'
+import { cp, STORE_A, STORE_B, STORE_C } from './helpers.js'
 
-const a = cp('DINA', '1', 'Молоко FoodMaster 3.2% 1 л', { volumeMl: 1000, fatPercent: 3.2 })
-const b = cp('DANA', 'dana_2', 'Молоко Фудмастер 3,2% 1л', { volumeMl: 1000, fatPercent: 3.2 })
-const f = cp('FIX_PRICE', 'fp_3', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
-const n = cp('ANVAR', 'anvar_1', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
-a.product.imageUrl = 'https://cdn.dina/1.jpg'
-const sources = (['DINA', 'DANA', 'FIX_PRICE', 'ANVAR'] as const).map((s) => ({ storeCode: s, city: 'Aktau' as const, capturedAt: '2026-10-05T10:00:00.000Z', errorCount: 0, sourceStats: {} }))
+const a = cp(STORE_B, '1', 'Молоко FoodMaster 3.2% 1 л', { volumeMl: 1000, fatPercent: 3.2 })
+const b = cp(STORE_A, 'a_2', 'Молоко Фудмастер 3,2% 1л', { volumeMl: 1000, fatPercent: 3.2 })
+const f = cp(STORE_C, 'c_3', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+const n = cp('MAGNUM', 'm_1', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+a.product.imageUrl = 'https://cdn.example/1.jpg'
+const sources = ([STORE_B, STORE_A, STORE_C, 'MAGNUM'] as const).map((s) => ({ storeCode: s, city: 'Shymkent' as const, capturedAt: '2026-10-05T10:00:00.000Z', errorCount: 0, sourceStats: {} }))
 const bundle = buildBundle([
   { members: [a, b], method: 'ai', confidence: 0.97, review: 'approved' },
   { members: [f], method: 'deterministic', confidence: 1, review: 'approved' },
@@ -21,7 +22,7 @@ describe('bundle', () => {
     expect(bundle.rawProducts).toHaveLength(4)
     expect(bundle.sourceRuns.map((s) => s.productCount)).toEqual([1, 1, 1, 1])
     const g = bundle.canonicalProducts[0]!
-    expect(g).toMatchObject({ canonicalName: 'Молоко FoodMaster 3.2% 1 л', category: 'milk', imageUrl: 'https://cdn.dina/1.jpg', attributes: { volumeMl: 1000, fatPercent: 3.2 } })
+    expect(g).toMatchObject({ canonicalName: 'Молоко FoodMaster 3.2% 1 л', category: 'milk', imageUrl: 'https://cdn.example/1.jpg', attributes: { volumeMl: 1000, fatPercent: 3.2 } })
     expect(g.members[0]!.rawProduct).toEqual(bundle.rawProducts[0])
     expect(g.members[0]).toMatchObject({ matchMethod: 'ai', matchConfidence: 0.97, reviewStatus: 'approved' })
   })
@@ -30,12 +31,29 @@ describe('bundle', () => {
     for (const r of bundle.rawProducts) for (const k of ['sourceUrl', 'brand', 'category', 'oldPrice', 'imageUrl']) expect(r).toHaveProperty(k)
   })
   it('drops bulky image arrays from rawPayload but keeps imageUrl (bundle must stay under the Go size limit)', () => {
-    const x = cp('FIX_PRICE', 'fp_9', 'Сахар 2 кг', { weightGrams: 2000 }, null, 'сахар')
+    const x = cp(STORE_C, 'c_9', 'Сахар 2 кг', { weightGrams: 2000 }, null, 'сахар')
     x.product.imageUrl = 'https://img/9.jpg'
     x.product.rawPayload = { id: 9, title: 'Сахар', images: [{ src: 'https://img/9.jpg' }], resources: [{ src: 'https://img/9-big.jpg' }], preview: { url: 'https://img/9.jpg' } }
     const b = buildBundle([{ members: [x], method: 'deterministic', confidence: 1, review: 'approved' }], sources, '2026-10-05T12:00:00.000Z')
     expect(b.rawProducts[0]!.imageUrl).toBe('https://img/9.jpg')
     expect(Object.keys(b.rawProducts[0]!.rawPayload).sort()).toEqual(['agentFlags', 'id', 'title'])
+  })
+  it('takes the image of MAGNUM over a chain outside IMAGE_ORDER, whatever the member order', () => {
+    const other = cp(STORE_A as StoreCode, 'a_1', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    const magnum = cp('MAGNUM', 'm_1', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    other.product.imageUrl = 'https://img/a.jpg'
+    magnum.product.imageUrl = 'https://img/m.jpg'
+    for (const members of [[other, magnum], [magnum, other]]) {
+      const b = buildBundle([{ members, method: 'ai', confidence: 0.97, review: 'approved' }], sources, '2026-10-05T12:00:00.000Z')
+      expect(b.canonicalProducts[0]!.imageUrl).toBe('https://img/m.jpg')
+    }
+  })
+  it('falls back to a chain outside IMAGE_ORDER when MAGNUM has no image', () => {
+    const other = cp(STORE_A as StoreCode, 'a_2', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    const magnum = cp('MAGNUM', 'm_2', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    other.product.imageUrl = 'https://img/a2.jpg'
+    const b = buildBundle([{ members: [magnum, other], method: 'ai', confidence: 0.97, review: 'approved' }], sources, '2026-10-05T12:00:00.000Z')
+    expect(b.canonicalProducts[0]!.imageUrl).toBe('https://img/a2.jpg')
   })
   it('report counts cross-store matches', () => {
     expect(qualityReport(bundle)).toContain('Matched across 2+ stores: 1')

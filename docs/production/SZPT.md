@@ -39,7 +39,7 @@
 | Цена за единицу и округление | `backend-go/internal/szpt/models.go` |
 | SQL выборки участников группы и страниц | `backend-go/internal/postgres/szpt.go` |
 | HTTP | `GET /api/szpt`, `GET /api/szpt/{group}/products` — [OpenAPI](../../contracts/openapi.yaml), [API_V1_CONTRACT](API_V1_CONTRACT.md) |
-| Признак «продаётся на вес» и база цены (граммы на цену) | представление `public.offer_price_basis`, миграция `backend/prisma/migrations/20261114000000_offer_price_basis` |
+| Признак «продаётся на вес» и база цены (граммы на цену) | представление `public.offer_price_basis`, базовая миграция `backend/prisma/migrations/20261122000000_shymkent_baseline` (изменение правила = новая миграция, пересоздающая представление) |
 | То же правило при импорте | `pipeline/src/mapping/weight.ts` (`isVariableWeight`) |
 | Унаследованные правила для сырой баранины и конины | `pipeline/src/mapping/meat.ts`, тесты `pipeline/test/meat.test.ts`. Источники для Шымкента утверждает Backend 2. |
 | Операторские SQL-проверки, справка Backend 2 | `ops/postgres/szpt/offer_price_basis_check.sql`, `ops/postgres/szpt/szpt_members_explain.sql`. Любой локальный запуск требует проверенной одноразовой цели. |

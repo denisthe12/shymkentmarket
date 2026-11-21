@@ -93,7 +93,7 @@ func TestLocalClonePlans(t *testing.T) {
 		{"filters", discoverySQL, []any{categoryID, []string{key}, snapshot.ID}},
 		{"offers", offersSQL, []any{[]string{products[0].ID}, snapshot.ID}},
 		{"latest_snapshot", latestSnapshotSQL, nil},
-		{"price_history", priceHistorySQL, []any{products[0].ID, "DINA", 100}},
+		{"price_history", priceHistorySQL, []any{products[0].ID, "STORE_A", 100}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

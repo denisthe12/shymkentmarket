@@ -115,8 +115,8 @@ func (f vocabularyParserFunc) Parse(ctx context.Context, in voice.Input) (voice.
 }
 
 const vocabularyNextSnapshotSQL = `INSERT INTO snapshots(id,status,"publishedAt") VALUES('voice-next','published','2026-10-06 11:00:00');
-INSERT INTO raw_products(id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES('voice-next-raw','dina','next','Synthetic',100,'voice-next');
-INSERT INTO offers(id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId") VALUES('voice-next-offer','p2','voice-next-raw','dina',100,true,'2026-10-06 11:00:00','voice-next');`
+INSERT INTO raw_products(id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES('voice-next-raw','store-a','next','Synthetic',100,'voice-next');
+INSERT INTO offers(id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId") VALUES('voice-next-offer','p2','voice-next-raw','store-a',100,true,'2026-10-06 11:00:00','voice-next');`
 
 func TestLocalVoiceVocabularySnapshotSwitch(t *testing.T) {
 	admin, _, repo := vocabularyRepos(t)

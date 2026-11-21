@@ -8,5 +8,5 @@ INSERT INTO canonical_products(id,name,"categoryId",attributes)
 SELECT 'voice-product-'||n,'Synthetic product '||n,'voice-'||n,'{"weightGrams":1000}'::jsonb
 FROM generate_series(1,7) n;
 INSERT INTO offers(id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId")
-SELECT 'voice-offer-'||n,'voice-product-'||n,'r1','dina',100,true,'2026-10-05 11:00:00','fixture-internal-v1'
+SELECT 'voice-offer-'||n,'voice-product-'||n,'r1','store-a',100,true,'2026-10-05 11:00:00','fixture-internal-v1'
 FROM generate_series(1,7) n;

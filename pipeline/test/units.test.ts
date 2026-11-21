@@ -23,6 +23,6 @@ describe('units', () => {
     expect(extractFat('Сок 100%')).toBeNull()
   })
   it('normalizes ё, quotes and spaces', () => {
-    expect(normalizeText('  Сахар «АНВАР»  ёлка ')).toBe('сахар анвар елка')
+    expect(normalizeText('  Сахар «ЛИДЕР»  ёлка ')).toBe('сахар лидер елка')
   })
 })

@@ -24,7 +24,6 @@ export function expectedSlots(now) {
   const slots = [], from = now - DAY, day0 = Math.floor(from / DAY) * DAY;
   for (let d = day0 - DAY; d <= now; d += DAY) {
     for (const h of [1, 13]) slots.push({ kind: 'daily', slotUTC: d + h * HOUR });
-    if (new Date(d).getUTCDay() === 0) slots.push({ kind: 'weekly', slotUTC: d + 22 * HOUR });
   }
   return slots.filter(s => s.slotUTC > from && s.slotUTC <= now).sort((a, b) => a.slotUTC - b.slotUTC);
 }
@@ -55,15 +54,6 @@ function dailyLine(slot, run, now) {
     : `❌ ${t} — не опубликовано: сбой публикации (код 1)`;
   return `❌ ${t} — не опубликовано (код ${code})`;
 }
-function weeklyLine(run, now) {
-  const p = 'Полный скрап (вс 22:00 UTC):';
-  if (!run) return `❌ ${p} не найден`;
-  if (run.status === 'running') return now - Date.parse(run.startedAt) >= STUCK ? `❌ ${p} не завершился` : `⏳ ${p} ещё идёт`;
-  const vals = Object.values(run.stores);
-  if (run.exitCode === 0) return `✅ ${p} ${vals.filter(v => v === 0).length}/${vals.length} сети`;
-  const failed = [...Object.keys(run.stores).filter(k => bad(run.stores[k])), ...(Array.isArray(run.scopeFailed) ? run.scopeFailed : [])];
-  return failed.length ? `❌ ${p} упали ${failed.join(', ')}` : `❌ ${p} сбой (код ${run.exitCode})`;
-}
 const plural = (n, one, few, many) => n % 10 === 1 && n % 100 !== 11 ? one
   : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many;
 function monitorLine(now, s) {
@@ -86,7 +76,6 @@ export function buildReport({ now, runs, monitorState }) {
   const lines = [`Отчёт Aktau Market · ${a.getUTCDate()} ${MONTHS[a.getUTCMonth()]}`];
   const slots = expectedSlots(now), pick = s => pickRun(s, runs);
   for (const s of slots.filter(x => x.kind === 'daily')) lines.push(dailyLine(s, pick(s), now));
-  for (const s of slots.filter(x => x.kind === 'weekly')) lines.push(weeklyLine(pick(s), now));
   lines.push(monitorLine(now, monitorState));
   return lines.join('\n');
 }

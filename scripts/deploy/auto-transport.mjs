@@ -37,33 +37,10 @@ const approvedExceptions=[
     ['contracts/README.md','4839a0739abbddd1ffef71ad33ce879e0f43572e','78221239d4730bc1a95301f8247da86a97bfea3c'],
   ]},
 
-  // PR103 schema delta: Backend2 reports applied migrations, checksums/RLS/SELECT PASS.
-  // Candidate is additionally bound by exact-main CI/artifact and independent root approval.
-  // This entry authorizes no migration execution or unknown protected object.
-  {active:'e50de2532259ab477e8491c4bddc2e6120ef3da0',blobs:[
-    ['backend/prisma/migrations/20261107000000_price_history/migration.sql',null,'2863a1d1d060d9f62e14d51187d7bb21a3e8c580'],
-    ['backend/prisma/migrations/20261107000100_product_identities/migration.sql',null,'d8f8e9c551c68b6a901d17f56db16523ad35344e'],
-    ['backend/prisma/schema.prisma','2f270ddd9e1aa24683fc15766d67c1b88d1251fe','00315ade499cc561f0731ae0875b1b46643dac11'],
-  ]},
-
   // Contract tooling pair reviewed against the Part15 release.
   {active:'438ecdfa3d386a186dcd8b73c3c10aef5e79dc82',blobs:[
     ['contracts/package.json','ee97d962531376e81a0b9175d8eef2aaa36a7c9c','48a7866b9084cbc25b2dafc1089713eb555e0a38'],
     ['contracts/pnpm-lock.yaml','5ec3371eba46c18660421d89949aa0ebf890d534','4a631ef27450ce85b818e4fe02705b9bcd224c13'],
-  ]},
-  // SCRUM-19 taxonomy migration (PR #57): data-only, no DDL, already applied to production. It is the only
-  // protected change between the active API release 6a4b4c7 (PR #54) and main.
-  {active:'6a4b4c7a91ec471db54987b689c3c87a785523a3',blobs:[
-    ['backend/prisma/migrations/20261021000000_scrum19_milk_taxonomy/migration.sql',null,'1fe70e318dbc46838bcede80f310b569ca22b415'],
-  ]},
-  // Anvar release: the only protected change between the active API release 49f6823 (read from
-  // /etc/adilbaga/release.env on 2026-11-05) and main. Migrations are applied by hand before the sync step.
-  {active:'49f6823768817b0390f215de42439cce523bf5d3',blobs:[
-    ['backend/prisma/migrations/20261102000000_store_anvar_enum/migration.sql',null,'7c4b69f3d8873512fbd4a3f91d7b7ccd604bc51f'],
-    ['backend/prisma/migrations/20261102000100_store_anvar_rows/migration.sql',null,'22fa4002ab4a00cc8872b38e9d23bed5c6b5f33e'],
-    ['backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql',null,'c272af519556133988e9feea18edf10e111a4a7b'],
-    ['backend/prisma/schema.prisma','6ea0e340fec18ca93446cce2cdc909ea7f330344','2f270ddd9e1aa24683fc15766d67c1b88d1251fe'],
-    ['contracts/openapi.yaml','0339280f3065d7ad73d3f483335721751500e8c6','988a269b2fd0a0ef79550bc63dd7b44dfc73d6fc'],
   ]},
 ];
 function compatibilityGit(args) {

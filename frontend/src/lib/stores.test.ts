@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { StoreLocationDto } from '../api/types'
 import { groupByStore, locationKey, storeColor } from './stores'
 
-const point = (storeCode: StoreLocationDto['storeCode'], address: string): StoreLocationDto => ({
+const point = (storeCode: string, address: string): StoreLocationDto => ({
   storeCode,
   storeName: storeCode,
   name: storeCode,
@@ -13,21 +13,23 @@ const point = (storeCode: StoreLocationDto['storeCode'], address: string): Store
 
 describe('stores', () => {
   it('groups points by chain in order of first appearance', () => {
-    const groups = groupByStore([point('DANA', 'a'), point('DINA', 'b'), point('DANA', 'c')])
+    const groups = groupByStore([point('STORE_A', 'a'), point('MAGNUM', 'b'), point('STORE_A', 'c')])
     expect(groups.map((g) => [g.storeCode, g.locations.map((l) => l.address)])).toEqual([
-      ['DANA', ['a', 'c']],
-      ['DINA', ['b']],
+      ['STORE_A', ['a', 'c']],
+      ['MAGNUM', ['b']],
     ])
   })
 
-  it('gives each known chain its own color and unknown ones a neutral gray', () => {
-    const colors = new Set(['DINA', 'DANA', 'FIX_PRICE', 'ANVAR'].map(storeColor))
-    expect(colors.size).toBe(4)
-    expect(storeColor('ANVAR')).toBe('#b8860b')
-    expect(storeColor('SMALL')).toBe('#697178')
+  it('gives Magnum its own non-green color and every other chain a neutral gray', () => {
+    const magnum = storeColor('MAGNUM')
+    expect(magnum).not.toBe('#697178')
+    // зелёный в UI значит «здесь дешевле»: канал G не должен доминировать
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(magnum.slice(i, i + 2), 16))
+    expect(g > r && g > b).toBe(false)
+    expect(storeColor('STORE_X')).toBe('#697178')
   })
 
   it('builds the marker key from chain and address', () => {
-    expect(locationKey(point('DINA', '5-й микрорайон, 30'))).toBe('DINA:5-й микрорайон, 30')
+    expect(locationKey(point('MAGNUM', 'Демонстрационный адрес 1'))).toBe('MAGNUM:Демонстрационный адрес 1')
   })
 })

@@ -53,7 +53,7 @@ func TestReaderRolloutLifecycle(t *testing.T) {
 	}
 	defer admin.Close(context.Background())
 	bootstrap := securityArtifact(t, "security", "aktau_api_reader_role.sql")
-	migration := securityArtifact(t, "migrations", "20261004000000_rls_runtime_access", "migration.sql")
+	migration := runtimeAccessArtifact(t)
 	rollback := securityArtifact(t, "security", "rollback_aktau_api_reader_access.sql")
 	var tables, enabled, forced, policies, roles int
 	err = admin.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE relrowsecurity),count(*) FILTER(WHERE relforcerowsecurity),(SELECT count(*) FROM pg_policies WHERE schemaname='public'),(SELECT count(*) FROM pg_roles WHERE rolname IN ('aktau_api_reader','part04_api_login')) FROM pg_class WHERE relnamespace='public'::regnamespace AND relname=ANY($1) AND relkind='r'`, append(append([]string(nil), runtimeTables...), "raw_products", "product_mappings")).Scan(&tables, &enabled, &forced, &policies, &roles)
@@ -85,7 +85,7 @@ func TestReaderRolloutLifecycle(t *testing.T) {
 		"database CONNECT":      `GRANT CONNECT ON DATABASE part04_security TO aktau_api_reader`,
 		"function EXECUTE":      `CREATE FUNCTION public.part04_acl_probe() RETURNS integer LANGUAGE SQL AS 'SELECT 1'; GRANT EXECUTE ON FUNCTION public.part04_acl_probe() TO aktau_api_reader`,
 		"procedure EXECUTE":     `CREATE PROCEDURE public.part04_acl_probe() LANGUAGE SQL AS 'SELECT 1'; GRANT EXECUTE ON PROCEDURE public.part04_acl_probe() TO aktau_api_reader`,
-		"type USAGE":            `GRANT USAGE ON TYPE public."StoreCode" TO aktau_api_reader`,
+		"type USAGE":            `GRANT USAGE ON TYPE public."SnapshotStatus" TO aktau_api_reader`,
 		"default ACL recipient": `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO aktau_api_reader`,
 		"default ACL owner":     `ALTER DEFAULT PRIVILEGES FOR ROLE aktau_api_reader IN SCHEMA public GRANT SELECT ON TABLES TO PUBLIC`,
 		"function ownership":    `CREATE FUNCTION public.part04_owned_probe() RETURNS integer LANGUAGE SQL AS 'SELECT 1'; ALTER FUNCTION public.part04_owned_probe() OWNER TO aktau_api_reader`,
@@ -316,7 +316,7 @@ func TestReaderCreatorAnchorLifecycle(t *testing.T) {
 	}
 	baseline := securitySnapshot(t, ctx, operator, true)
 	bootstrap := securityArtifact(t, "security", "aktau_api_reader_role.sql")
-	migration := securityArtifact(t, "migrations", "20261004000000_rls_runtime_access", "migration.sql")
+	migration := runtimeAccessArtifact(t)
 	rollback := securityArtifact(t, "security", "rollback_aktau_api_reader_access.sql")
 	// Fail closed after creation too: opt-in self-grant settings must not leave
 	// a newly-created reader with inherited/settable operator access behind.
@@ -487,7 +487,7 @@ func TestOperatorCloneRuntime(t *testing.T) {
 		t.Fatal("independent local role connection failed")
 	}
 	defer conn.Close(context.Background())
-	for _, sql := range []string{`UPDATE stores SET name=name WHERE false`, `DELETE FROM stores WHERE false`, `INSERT INTO stores(id,code,name) SELECT 'bad','DINA','bad' WHERE false`, `CREATE TABLE public.bad(id int)`, `ALTER TABLE stores ADD COLUMN bad int`} {
+	for _, sql := range []string{`UPDATE stores SET name=name WHERE false`, `DELETE FROM stores WHERE false`, `INSERT INTO stores(id,code,name) SELECT 'bad','STORE_A','bad' WHERE false`, `CREATE TABLE public.bad(id int)`, `ALTER TABLE stores ADD COLUMN bad int`} {
 		assertDenied(t, conn.Exec, ctx, sql, "42501")
 	}
 	_ = conn.Close(context.Background())
@@ -548,6 +548,24 @@ func securityArtifact(t *testing.T, path ...string) string {
 		t.Fatal("security artifact unavailable")
 	}
 	return string(data)
+}
+
+// runtimeAccessArtifact is the reader RLS/grant section of the baseline migration, run as its own
+// transaction with the bounds of the former standalone runtime-access migration. The section is
+// cut between its two marker comments, so a change to the baseline is exercised here unchanged.
+func runtimeAccessArtifact(t *testing.T) string {
+	t.Helper()
+	baseline := securityArtifact(t, "migrations", "20261122000000_shymkent_baseline", "migration.sql")
+	const begin, end = "-- Runtime read access (RLS and grants for aktau_api_reader).\n", "\n-- Snapshot history.\n"
+	start := strings.Index(baseline, begin)
+	if start < 0 {
+		t.Fatal("runtime access section unavailable")
+	}
+	length := strings.Index(baseline[start:], end)
+	if length < 0 || !strings.Contains(baseline[start:start+length], "DO $guard$") {
+		t.Fatal("runtime access section unavailable")
+	}
+	return "BEGIN;\nSET LOCAL lock_timeout = '5s';\nSET LOCAL statement_timeout = '10s';\n" + baseline[start:start+length] + "\nCOMMIT;\n"
 }
 
 func executeSecurity(t *testing.T, ctx context.Context, conn *pgx.Conn, sql string) {

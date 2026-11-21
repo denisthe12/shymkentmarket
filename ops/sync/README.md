@@ -2,10 +2,9 @@
 
 > **Aktau legacy/reference — NOT Shymkent operating instructions.** Роли, таймеры, магазины, VPS и команды ниже относятся к Актау. Команды с заполнителями в угловых скобках приведены как исторические шаблоны. Не запускайте этот runbook для Шымкента. Для проверок кода используйте [общий onboarding](../../docs/developer-onboarding.md#локальные-проверки).
 
-Два таймера:
+Таймер:
 
-- `aktau-sync.timer` запускает `pipeline/scripts/daily-sync.sh` дважды в день: 06:00 и 18:00 по Актау (`01:00` и `13:00` UTC). Четыре скрапера (Dina, Dana, Fix Price, Анвар) идут параллельно, затем sync по словарю и ingest с публикацией snapshot. Занимает около 3 минут (журнал VPS, 13–15.11.2026): Dina 23–28 с, Fix Price 42–45 с, Dana (HTML-скрапер, пул запросов) 104–134 с, Анвар 144–158 с — он и задаёт критический путь; sync, ingest и retention — ещё около 40 с. Лимит юнита `TimeoutStartSec=20min`; каждый скрапер дополнительно ограничен `SCRAPE_TIMEOUT_SEC` (по умолчанию 720 с): зависший скрапер убивается и считается упавшим (сеть берётся из прошлого файла, exit 3), остальные сети публикуются.
-- `aktau-sync-full.timer` запускает `pipeline/scripts/weekly-full-scrape.sh` раз в неделю: воскресенье 22:00 UTC (понедельник 03:00 по Актау). Это полный скрап каталога (`SCRAPE_ALL=1`) трёх сетей — Dina, Dana, Fix Price (Анвар в него не входит) — **без публикации**: ingest не запускается. Последний прогон 2026-11-08 22:00 UTC: Dina 768 с, Fix Price 299 с, Dana 175 с. Лимит `TimeoutStartSec=2h`.
+- `aktau-sync.timer` запускает `pipeline/scripts/daily-sync.sh` по расписанию; для Шымкента расписание не активировано. Скрапер Magnum (`SYNC_STORES=MAGNUM`) запускается из скрипта, затем sync по словарю и ingest с публикацией snapshot. Лимит юнита `TimeoutStartSec=20min`; каждый скрапер дополнительно ограничен `SCRAPE_TIMEOUT_SEC` (по умолчанию 720 с): зависший скрапер убивается и считается упавшим (сеть берётся из прошлого файла, exit 3), остальные сети публикуются.
 
 Ingestion не входит в API-релиз (`deploy/`) и ставится отдельно.
 
@@ -13,14 +12,13 @@ Ingestion не входит в API-релиз (`deploy/`) и ставится о
 
 | Код | Значение | Статус юнита |
 |---|---|---|
-| `0` | все четыре скрапера удачны, snapshot опубликован | `SUCCESS` |
-| `1` | ошибка sync/ingest или упали все четыре скрапера; snapshot не опубликован, на сайте остаются прошлые цены | `failed` |
+| `0` | скрапер Magnum удачен, snapshot опубликован | `SUCCESS` |
+| `1` | ошибка sync/ingest или упал скрапер Magnum; snapshot не опубликован, на сайте остаются прошлые цены | `failed` |
 | `3` | snapshot опубликован, но хотя бы одна сеть взята из прошлого удачного файла (не старше `SYNC_MAX_SOURCE_AGE_HOURS`, 36 ч); в журнале строка `[sync] stale stores: <список>` | `failed` |
 | `4` | snapshot опубликован, но очистка старых snapshot упала; в stderr строка `[sync] retention failed`. Если одновременно есть устаревшая сеть, итоговый код `3` | `failed` |
 
 Код `3` намеренно даёт `failed` (в юните нет `SuccessExitStatus`), чтобы проблема со скрапером была видна, хотя сайт обновился.
 
-Еженедельный прогон: `0` — всё удачно, любой ненулевой код — упал скрапер (тогда `scope` и `sync` не запускаются), `scope:dina`/`scope:dana` или `sync`. Упавший scope-шаг `sync` не пропускает: `unmapped.json` обновляется, а в конце в журнале `[full] failed scope steps: <список>` и код 1.
 
 ## Требования на VPS
 
@@ -33,15 +31,13 @@ Ingestion не входит в API-релиз (`deploy/`) и ставится о
 ## Установка
 
 ```bash
-sudo cp ops/sync/aktau-sync.service ops/sync/aktau-sync.timer \
-        ops/sync/aktau-sync-full.service ops/sync/aktau-sync-full.timer /etc/systemd/system/
+sudo cp ops/sync/aktau-sync.service ops/sync/aktau-sync.timer /etc/systemd/system/
 sudo install -m 600 -o aktau-sync ops/sync/aktau-sync.env.example /etc/aktau-sync.env
-sudoedit /etc/aktau-sync.env     # заполнить INGEST_DATABASE_URL и REVALIDATE_HMAC_SECRET; FIXPRICE_* уже заданы
+sudoedit /etc/aktau-sync.env     # заполнить INGEST_DATABASE_URL и REVALIDATE_HMAC_SECRET
 sudo systemctl daemon-reload
-sudo systemctl enable --now aktau-sync.timer aktau-sync-full.timer
+sudo systemctl enable --now aktau-sync.timer
 ```
 
-Еженедельный юнит читает тот же `/etc/aktau-sync.env`, но ему нужны только `FIXPRICE_*` (скрапер Fix Price); `INGEST_*` и `REVALIDATE_*` он не использует.
 
 ## Обновление кода на VPS
 
@@ -58,7 +54,7 @@ scp aktau-<sha7>.bundle <vps>:/tmp/
 ```
 
 ```bash
-systemctl is-active aktau-sync aktau-sync-full        # оба inactive
+systemctl is-active aktau-sync        # inactive
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync rev-parse HEAD   # записать для отката
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync status --porcelain=v1   # пусто
 sudo -n -u aktau-sync -H git -C /opt/aktau-sync fetch /tmp/aktau-<sha7>.bundle refs/tmp/release
@@ -72,19 +68,19 @@ PATH должен совпадать с PATH юнита. Откат: те же �
 
 ## Файлы прогонов
 
-Каждый прогон `daily-sync.sh` и `weekly-full-scrape.sh` пишет JSON-файл с итогом; по ним ежедневный Telegram-отчёт (`scripts/ops/sync-report.mjs`, см. `ops/monitor/README.md`, «Daily sync report») собирает строки по прогонам.
+Каждый прогон `daily-sync.sh` пишет JSON-файл с итогом; по ним ежедневный Telegram-отчёт (`scripts/ops/sync-report.mjs`, см. `ops/monitor/README.md`, «Daily sync report») собирает строки по прогонам.
 
 - Каталог задаёт `RUN_STATUS_DIR`; в обоих юнитах `Environment=RUN_STATUS_DIR=/var/lib/aktau-sync/runs`. Пусто или не задано (локальные запуски, тесты) — файлы не пишутся. Скрипт сам создаёт каталог (`mkdir -p`, 0755); если создать не удалось, в stderr `cannot create RUN_STATUS_DIR, run file disabled`, код выхода прогона не меняется.
-- Имя: `<kind>-<старт UTC, YYYYMMDDTHHMMSSZ>.json`, `kind` = `daily` | `weekly`; права 0644; запись атомарная (временный файл в том же каталоге, затем `mv`).
+- Имя: `<kind>-<старт UTC, YYYYMMDDTHHMMSSZ>.json`, `kind` = `daily`; права 0644; запись атомарная (временный файл в том же каталоге, затем `mv`).
 - При старте файл имеет `"status":"running"`, `finishedAt` и `exitCode` равны `null`; по выходу скрипта (`trap EXIT`) он перезаписывается итогом (`"status":"finished"`). Убитый прогон остаётся `running`; отчёт считает такой файл зависшим, если ему больше 25 минут.
-- Хранятся 60 самых новых файлов (`daily-*` и `weekly-*` вместе); чистка выполняется после записи итога. Ошибка записи файла код выхода скрипта не меняет.
+- Хранятся 60 самых новых файлов (`daily-*`); чистка выполняется после записи итога. Ошибка записи файла код выхода скрипта не меняет.
 
 Ежедневный файл:
 
 ```json
 {"version":1,"kind":"daily","startedAt":"2026-11-09T13:00:01Z","finishedAt":"2026-11-09T13:03:27Z",
  "status":"finished","exitCode":3,"published":true,
- "stores":{"dina":0,"dana":1,"fixprice":0,"anvar":0},"stale":["dana"],"retention":"ok"}
+ "stores":{"magnum":1},"stale":["magnum"],"retention":"ok"}
 ```
 
 - `stores` — код выхода каждого скрапера, `null`, если скрапер не завершился до выхода скрипта;
@@ -92,7 +88,6 @@ PATH должен совпадать с PATH юнита. Откат: те же �
 - `stale` — сети, взятые из прошлого файла (код 3);
 - `retention` — `ok` | `skipped` | `failed` | `null` (до очистки не дошли).
 
-Еженедельный файл: `"kind":"weekly"`, `stores` с `dina`/`dana`/`fixprice`, `scopeFailed` (список `scope:dina`/`scope:dana`), `"published":false`, без `stale` и `retention`.
 
 Просмотр на VPS: `ls -lt /var/lib/aktau-sync/runs | head`, `cat /var/lib/aktau-sync/runs/<файл>`.
 
@@ -113,45 +108,17 @@ PATH должен совпадать с PATH юнита. Откат: те же �
 Ежедневный отчёт о прогонах приходит в Telegram в 13:30 UTC (18:30 по Актау) и устроен в `ops/monitor/README.md`; отсутствие сообщения — сигнал проверить VPS вручную.
 
 ```bash
-systemctl list-timers 'aktau-sync*'      # ближайшие запуски обоих таймеров
+systemctl list-timers 'aktau-sync*'      # ближайший запуск таймера
 sudo systemctl start aktau-sync          # ручной запуск ежедневного прогона
-sudo systemctl start aktau-sync-full     # ручной запуск полного скрапа (долгий, без публикации)
 journalctl -u aktau-sync -n 200          # логи ежедневного прогона
-journalctl -u aktau-sync-full -n 200     # логи полного скрапа
 systemctl status aktau-sync              # status=0/SUCCESS или failed
 ```
 
-В журнале каждая строка скрапера помечена сетью (`[dina]`, `[dana]`, `[fixprice]`), а итог сети — строкой `[sync] <сеть> exit=<код> took=<N>s` (`[full] ...` в еженедельном прогоне).
-
-## Результат полного скрапа
-
-Полный прогон пишет в отдельные каталоги и не затирает узкие ежедневные файлы:
-
-- `data/sources-full/*.json` — полные source-файлы сетей;
-- `data/sources-full/dina-scope-categories.candidate.json` — **кандидат** нового набора категорий Dina (его пересчитывает `pnpm scope:dina`);
-- `data/sources-full/dana-scope-sections.candidate.json` — **кандидат** набора подразделов Dana (`pnpm scope:dana`; завершается с кодом 1, если у товаров scope нет подраздела, тогда еженедельный прогон падает, а кандидат всё равно записан для разбора);
-- `data/sync-full/unmapped.json` — товары вне словаря для еженедельной обработки новых товаров.
-
-Кандидат не применяется автоматически. Набор категорий меняется осознанно, вручную, через обычный PR:
-
-```bash
-# 1. На машине разработчика, в checkout репозитория на свежем main: забрать кандидат с VPS
-git switch -c data/refresh-dina-scope
-scp <vps>:/opt/aktau-sync/data/sources-full/dina-scope-categories.candidate.json data/mapping/dina-scope-categories.json
-git diff data/mapping/dina-scope-categories.json          # просмотреть изменения набора
-git add data/mapping/dina-scope-categories.json && git commit -m "data(mapping): refresh dina scope categories"
-git push -u origin HEAD                                    # дальше — PR и мерж в main
-
-# 2. После мержа — выполнить раздел «Обновление кода на VPS» выше.
-```
-
-Кандидат Dana обновляется так же: `scp <vps>:/opt/aktau-sync/data/sources-full/dana-scope-sections.candidate.json data/mapping/dana-scope-sections.json`, ветка `data/refresh-dana-scope`, коммит `data(mapping): refresh dana scope sections`, PR и мерж в `main`, затем отдельный exact-source rollout после readback, не слепой pull на VPS.
-
-Режимы Dana в журнале: `[DANA] mode: sections` (штатный, ~70 с), `legacy root` (нет или устарел scope-файл, ~80 с), `full` (еженедельный). `DANA_CONCURRENCY` по умолчанию 3, максимум 4; при 429/5xx от Dana поставить `1` в `/etc/aktau-sync.env`. Если подраздел пропал с сайта или упал, скрап Dana завершается с ошибкой, прежний файл остаётся, юнит получает exit 3 (stale `dana`).
+В журнале каждая строка скрапера помечена сетью (`[magnum]`), а итог сети — строкой `[sync] <сеть> exit=<код> took=<N>s`.
 
 Не коммитьте прямо в `/opt/aktau-sync`: локальный коммит создаёт неутверждённый source drift, а у пользователя `aktau-sync` нет прав на push.
 
-Разбор ошибок — `docs/data/SYNC_RUNBOOK.md §4`, еженедельный прогон — `§5`.
+Разбор ошибок — `docs/data/SYNC_RUNBOOK.md §2`.
 
 ## История цен по месяцам
 
@@ -161,13 +128,13 @@ git push -u origin HEAD                                    # дальше — PR
 - Месяц магазина пишется один раз и не меняется. Товар, появившийся позже, попадает в историю со следующего месяца.
 - Если запись истории упала, прогон ничего не удаляет, `sync` завершается кодом `4` со строкой `[sync] retention failed`; snapshot при этом опубликован. Снапшоты копятся, пока ошибку не починят.
 - Статус сопоставления хранится в `reviewStatus` (`pending` и другие); для аналитики фильтровать по нему.
-- Доступ: после миграции `20261107000000_price_history` и после `aktau_retention_writer_role.sql` владелец применяет `ops/postgres/security/aktau_retention_price_history_access.sql` (SELECT и INSERT, без UPDATE/DELETE). Откат в обратном порядке: сначала `rollback_aktau_retention_price_history_access.sql`, затем `rollback_aktau_retention_writer_access.sql`, потому что откат роли ждёт ровно свои 10 прав.
+- Доступ: после миграции `20261122000000_shymkent_baseline` и после `aktau_retention_writer_role.sql` владелец применяет `ops/postgres/security/aktau_retention_price_history_access.sql` (SELECT и INSERT, без UPDATE/DELETE). Откат в обратном порядке: сначала `rollback_aktau_retention_price_history_access.sql`, затем `rollback_aktau_retention_writer_access.sql`, потому что откат роли ждёт ровно свои 10 прав.
 - Разовый импорт из CSV (владелец, одна транзакция, ничего не удаляет и не меняет, повторный запуск строк не добавляет): `node ops/postgres/psql-run.mjs import-price-history < history.csv` (см. [настройку owner-подключения](../postgres/README.md#sql-operator-commands), запускать из Git Bash: в PowerShell `< file` не работает).
 
 ## Реестр UUID товаров
 
 Таблица `public.product_identities` хранит последний `canonicalProductId` каждого товара магазина. По ней товар, пропавший из снимков на любой срок, при возвращении получает прежний UUID. `cmd/ingest` обновляет реестр в транзакции публикации, `cmd/prune` её не трогает.
 
-- Порядок установки: миграция `20261107000100_product_identities`, затем `ops/postgres/security/aktau_ingest_product_identities_access.sql` (SELECT, INSERT, UPDATE), затем заполнение реестра, и только потом новый код. Новый код без таблицы падает на чтении реестра, старый код её не замечает.
+- Порядок установки: миграция `20261122000000_shymkent_baseline`, затем `ops/postgres/security/aktau_ingest_product_identities_access.sql` (SELECT, INSERT, UPDATE), затем заполнение реестра, и только потом новый код. Новый код без таблицы падает на чтении реестра, старый код её не замечает.
 - Откат доступа: только после отката кода, иначе следующий прогон упадёт на чтении реестра и публикация остановится. Сначала `rollback_aktau_ingest_product_identities_access.sql`, затем `rollback_aktau_ingest_writer_access.sql`, потому что откат роли ждёт ровно свои 17 политик.
 - Заполнение реестра (владелец, одна транзакция, ничего не удаляет, повторный запуск безопасен): `node ops/postgres/psql-run.mjs backfill-product-identities`. Сначала берутся месячные цены, затем хранимые снимки, потому что они свежее. Не запускать во время sync, в 01:00 и 13:00 UTC: заполнение и публикация пишут в одни строки, и публикация может упасть. Если между заполнением и переключением кода прошёл sync, запустить заполнение ещё раз прямо перед переключением. После отката кода запустить снова перед повторной выкладкой.

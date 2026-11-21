@@ -1,12 +1,13 @@
 package observability
 
 import (
+	"adilbaga/backend-go/internal/catalog"
 	"math"
 	"sync"
 	"time"
 )
 
-// No exporter or public route. Every dimension is mapped into a closed set;
+// No exporter or public route. Every dimension is mapped into a closed set (store codes: the stores table);
 // neither duration samples nor arbitrary labels are retained.
 var Default = NewRegistry()
 
@@ -120,7 +121,10 @@ func (r *Registry) Age(store string, now, captured time.Time) {
 	}
 	key := "snapshot_age_seconds"
 	if store != "" {
-		if oneOf(store, "DINA", "DANA", "FIX_PRICE", "ANVAR") == "other" {
+		// The store label comes from source_runs joined to public.stores (postgres.SourceFreshness),
+		// never from request input, so the label set is bounded by the stores table rows.
+		// A value outside the store code format is dropped, never labelled.
+		if !catalog.ValidStoreCode(store) {
 			return
 		}
 		key = "source_age_seconds|" + store

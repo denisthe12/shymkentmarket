@@ -13,9 +13,9 @@ const product: ProductCardDto = {
   minPrice: 570,
   // Порядок намеренно нарушен: карточка сортирует сама
   offers: [
-    { storeCode: 'FIX_PRICE', storeName: 'Fix Price', price: 650, oldPrice: null },
-    { storeCode: 'DINA', storeName: 'Dina', price: 570, oldPrice: 660 },
-    { storeCode: 'DANA', storeName: 'Dana', price: 620, oldPrice: null },
+    { storeCode: 'STORE_B', storeName: 'Store B', price: 650, oldPrice: null },
+    { storeCode: 'MAGNUM', storeName: 'Magnum', price: 570, oldPrice: 660 },
+    { storeCode: 'STORE_A', storeName: 'Store A', price: 620, oldPrice: null },
   ],
   snapshotAt: '2026-09-24T00:00:00.000Z',
 }
@@ -47,15 +47,15 @@ describe('ProductCard', () => {
     expect(card.querySelector('s')?.textContent?.replace(/\s/g, ' ')).toBe('660 ₸')
 
     const rows = within(screen.getByTestId('offer-list')).getAllByRole('listitem')
-    expect(rows.map(text)).toEqual(['Dina, самая низкая цена570 ₸', 'Dana620 ₸', 'Fix Price650 ₸'])
+    expect(rows.map(text)).toEqual(['Magnum, самая низкая цена570 ₸', 'Store A620 ₸', 'Store B650 ₸'])
     expect(rows[0]).toHaveAttribute('data-best', 'true')
     expect(rows[1]).not.toHaveAttribute('data-best')
   })
 
   it('shows saving against the most expensive store and snapshot date', () => {
     renderCard(product)
-    const saving = screen.getByText(/дешевле, чем в Fix Price/)
-    expect(saving).toHaveTextContent(/^На 80\s₸ дешевле, чем в Fix Price$/)
+    const saving = screen.getByText(/дешевле, чем в Store B/)
+    expect(saving).toHaveTextContent(/^На 80\s₸ дешевле, чем в Store B$/)
     // Выделена только сумма, фраза — обычным цветом
     expect(saving).not.toHaveClass('text-accent')
     expect(within(saving).getByText(/^80\s₸$/)).toHaveClass('text-accent')
@@ -74,7 +74,7 @@ describe('ProductCard', () => {
     // Сравнивать не с чем — единственное предложение не выделяется как самое дешёвое
     const [row] = within(screen.getByTestId('offer-list')).getAllByRole('listitem')
     expect(row).not.toHaveAttribute('data-best')
-    expect(text(row)).toBe('Dina570 ₸')
+    expect(text(row)).toBe('Magnum570 ₸')
   })
 
   it('shows a rounded-down discount badge for the best offer', () => {
@@ -95,8 +95,8 @@ describe('ProductCard', () => {
       ...product,
       offers: [
         ...product.offers,
-        { storeCode: 'DINA', storeName: 'Magnum', price: 700, oldPrice: null },
-        { storeCode: 'DANA', storeName: 'Small', price: 900, oldPrice: null },
+        { storeCode: 'MAGNUM', storeName: 'Magnum', price: 700, oldPrice: null },
+        { storeCode: 'STORE_A', storeName: 'Small', price: 900, oldPrice: null },
       ],
     })
     const rows = within(screen.getByTestId('offer-list')).getAllByRole('listitem')
@@ -140,8 +140,8 @@ describe('ProductCard sold by weight', () => {
     attributes: {},
     minPrice: 822,
     offers: [
-      { storeCode: 'DINA', storeName: 'Dina', price: 822, oldPrice: 889 },
-      { storeCode: 'ANVAR', storeName: 'Анвар', price: 900, oldPrice: null },
+      { storeCode: 'MAGNUM', storeName: 'Magnum', price: 822, oldPrice: 889 },
+      { storeCode: 'STORE_B', storeName: 'Store B', price: 900, oldPrice: null },
     ],
   }
 
@@ -152,7 +152,7 @@ describe('ProductCard sold by weight', () => {
     expect(screen.queryByTestId('unit-price')).toBeNull()
     expect(screen.queryByText(/дешевле, чем в/)).toBeNull()
     const rows = within(screen.getByTestId('offer-list')).getAllByRole('listitem').map((li) => text(li))
-    expect(rows).toEqual(['Dina, самая низкая цена822 ₸/кг', 'Анвар900 ₸/кг'])
+    expect(rows).toEqual(['Magnum, самая низкая цена822 ₸/кг', 'Store B900 ₸/кг'])
   })
 
   it('stays exactly as before when soldByWeight is falsy', () => {

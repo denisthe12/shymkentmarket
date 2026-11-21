@@ -1,7 +1,6 @@
 package location
 
 import (
-	"adilbaga/backend-go/internal/catalog"
 	"math"
 	"testing"
 )
@@ -13,12 +12,12 @@ func TestLocation(t *testing.T) {
 	if math.Abs(Haversine(0, 0, 1, 0)-111194.9266) > 0.1 {
 		t.Fatal("known distance")
 	}
-	points := []Location{{StoreCode: catalog.DINA, Address: "far", Latitude: 1}, {StoreCode: catalog.DINA, Address: "first"}, {StoreCode: catalog.DINA, Address: "tie"}, {StoreCode: catalog.DANA, Address: "other"}}
-	l, d := Nearest(0, 0, catalog.DINA, points)
+	points := []Location{{StoreCode: "STORE_A", Address: "far", Latitude: 1}, {StoreCode: "STORE_A", Address: "first"}, {StoreCode: "STORE_A", Address: "tie"}, {StoreCode: "STORE_B", Address: "other"}}
+	l, d := Nearest(0, 0, "STORE_A", points)
 	if l == nil || l.Address != "first" || d != 0 {
 		t.Fatal("nearest tie")
 	}
-	if l, _ := Nearest(0, 0, catalog.DINA, nil); l != nil {
+	if l, _ := Nearest(0, 0, "STORE_A", nil); l != nil {
 		t.Fatal("empty")
 	}
 }

@@ -10,10 +10,10 @@ const card = (name: string) => ({ name, brand: null, category: 'sugar', attribut
 const names = ['Сахар песок 1 кг', 'Соль поваренная 1 кг', 'Соль морская Сахара 500 г', 'Тұз йодированный 1 кг']
 
 describe('salt is separated from sugar', () => {
-  const keys = names.map((n, i) => canonicalKey([`DINA:${i}`]))
+  const keys = names.map((n, i) => canonicalKey([`STORE_B:${i}`]))
   const base = DictionarySchema.parse({ version: 1, generatedAt: '2026-10-06T00:00:00.000Z',
     canonicals: Object.fromEntries(names.map((n, i) => [keys[i], card(n)])),
-    products: Object.fromEntries(names.map((_, i) => [`DINA:${i}`, keys[i]!])), storeCategories: {} })
+    products: Object.fromEntries(names.map((_, i) => [`STORE_B:${i}`, keys[i]!])), storeCategories: {} })
   const moves = names.flatMap((n, i) => SALT.test(n) && !/сахар\b/i.test(n.replace(/Сахара/i, '')) ? [{ key: keys[i]!, to: 'salt', reason: 'salt product' }] : [])
   const d = applyOverrides(base, OverridesSchema.parse({ version: 1, moveCategory: moves }))
 

@@ -3,7 +3,7 @@ import type { OfferDto } from '../api/types'
 import { discountPercent, topOffers } from './offers'
 
 const offer = (storeName: string, price: number, oldPrice: number | null = null): OfferDto => ({
-  storeCode: 'DINA',
+  storeCode: 'MAGNUM',
   storeName,
   price,
   oldPrice,

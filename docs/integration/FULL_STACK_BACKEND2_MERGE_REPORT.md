@@ -22,7 +22,7 @@ Backend 2 also introduced a tracked root `AGENTS.md`. The pre-merge integration 
 
 ## Integrated files and contract impact
 
-- Kept Backend 2's migration history, `backend/prisma/seed.ts`, four `backend/scripts/{pipeline,report,audit_suite,verify_db}.ts` files, `backend/src/modules/{import,normalization,matching}/**`, `data/snapshots/**`, and non-conflicting Backend 2 docs (`docs/05_BACKEND_2_IMPLEMENTATION_PLAN.md`, `docs/BACKEND_2_AGENT_AUDIT_INSTRUCTION.md`). Migration/seed/parsers/pipeline were **not executed**.
+- Kept Backend 2's migration history, `backend/prisma/seed.ts`, four `backend/scripts/{pipeline,report,audit_suite,verify_db}.ts` files, `backend/src/modules/{import,normalization,matching}/**`, `data/snapshots/**`, and non-conflicting Backend 2 docs (`docs/05_BACKEND_2_IMPLEMENTATION_PLAN.md`, `docs/BACKEND_2_AGENT_AUDIT_INSTRUCTION.md` (удалены позднее)). Migration/seed/parsers/pipeline were **not executed**.
 - `backend/prisma/schema.prisma` was already identical to Backend 2 and retains `directUrl = env("DIRECT_URL")`; no schema or migration edits were made.
 - Added three verified Aktau `StoreLocation` rows to the seed's address-based idempotent list: FIX_PRICE 2 микрорайон, 12/1 (43.637982, 51.172943); DANA 6 микрорайон, 12 (43.639041, 51.169180); DANA 4 микрорайон, 48 (43.636747, 51.164392). The live DB already contained them; seed was not run.
 - New Backend 2 source needed seven narrow null guards to compile under the preserved `noUncheckedIndexedAccess` setting (`matcher.service.ts`, `normalizer.service.ts`); no matching/normalization behavior was redesigned.

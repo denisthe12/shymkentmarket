@@ -23,26 +23,26 @@
   ],
   "locations": [
     {
-      "storeCode": "DINA",
-      "storeName": "Dina",
-      "name": "Dina — демо-точка",
-      "address": "Актау, демонстрационный адрес (не проверен)",
-      "latitude": 43.635,
-      "longitude": 51.169
+      "storeCode": "MAGNUM",
+      "storeName": "Magnum",
+      "name": "Magnum — демо-точка",
+      "address": "Демонстрационный адрес 1 (не проверен)",
+      "latitude": 42.321,
+      "longitude": 69.591
     },
     {
-      "storeCode": "DANA",
-      "storeName": "Dana",
-      "name": "Dana — демо-точка",
-      "address": "Актау, демонстрационный адрес (не проверен)",
-      "latitude": 43.645,
-      "longitude": 51.181
+      "storeCode": "STORE_A",
+      "storeName": "Store A",
+      "name": "Store A — демо-точка",
+      "address": "Демонстрационный адрес 2 (не проверен)",
+      "latitude": 42.331,
+      "longitude": 69.603
     }
   ],
   "baskets": [
     {
-      "storeCode": "DINA",
-      "storeName": "Dina",
+      "storeCode": "MAGNUM",
+      "storeName": "Magnum",
       "total": 570,
       "items": [
         {
@@ -69,8 +69,8 @@
       ]
     },
     {
-      "storeCode": "DANA",
-      "storeName": "Dana",
+      "storeCode": "STORE_A",
+      "storeName": "Store A",
       "total": 620,
       "items": [
         {

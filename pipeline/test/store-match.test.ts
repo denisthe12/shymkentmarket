@@ -14,8 +14,8 @@ const base: Dictionary = DictionarySchema.parse({
     c_soap: card('Мыло Лактель детское 90 г', 'household', { weightGrams: 90 }),
     c_busy: card('Молоко Простоквашино 2,5% 1 л', 'milk', { volumeMl: 1000, fatPercent: 2.5 }),
   },
-  products: { 'DINA:1': 'c_milk1', 'DANA:dana_2': 'c_milk2', 'DINA:5': 'c_busy', 'ANVAR:anvar_0': 'c_busy' },
-  storeCategories: { 'DINA|Молоко': 'milk', 'ANVAR|Старая категория': 'dairy' },
+  products: { 'STORE_B:1': 'c_milk1', 'STORE_A:a_2': 'c_milk2', 'STORE_B:5': 'c_busy', 'MAGNUM:m_0': 'c_busy' },
+  storeCategories: { 'STORE_B|Молоко': 'milk', 'MAGNUM|Старая категория': 'dairy' },
 })
 
 const cand = (key: string): MatchCandidate => {
@@ -23,9 +23,9 @@ const cand = (key: string): MatchCandidate => {
   return { key, name: c.name, brand: c.brand, category: c.category, attributes: c.attributes }
 }
 const item = (n: number, name: string, candidates: MatchCandidate[], path = ['Молочные продукты', 'Молоко']): MatchItem =>
-  ({ id: `ANVAR:anvar_${n}`, name, sourceCategoryPath: path, candidates })
+  ({ id: `MAGNUM:m_${n}`, name, sourceCategoryPath: path, candidates })
 const dec = (n: number, match: string | null, confidence: number, category = 'milk'): MatchDecision =>
-  ({ id: `ANVAR:anvar_${n}`, category: category as CategorySlug, match, confidence })
+  ({ id: `MAGNUM:m_${n}`, category: category as CategorySlug, match, confidence })
 
 describe('buildCandidates', () => {
   it('builds candidates only from scope categories and drops size conflicts', () => {
@@ -50,64 +50,64 @@ describe('applyDecisions', () => {
   }
 
   it('keeps every base mapping and card unchanged', () => {
-    const r = applyDecisions(base, 'ANVAR', [i1, item(3, 'Йогурт Х', [])], [dec(1, 'c_milk1', 0.99), dec(3, null, 0.2, 'dairy')])
+    const r = applyDecisions(base, 'MAGNUM', [i1, item(3, 'Йогурт Х', [])], [dec(1, 'c_milk1', 0.99), dec(3, null, 0.2, 'dairy')])
     same(r)
   })
   it('attaches a confident decision to the chosen candidate', () => {
-    const r = applyDecisions(base, 'ANVAR', [i1], [dec(1, 'c_milk1', 0.99)])
-    expect(r.dict.products['ANVAR:anvar_1']).toBe('c_milk1')
+    const r = applyDecisions(base, 'MAGNUM', [i1], [dec(1, 'c_milk1', 0.99)])
+    expect(r.dict.products['MAGNUM:m_1']).toBe('c_milk1')
     expect(r.stats.attached).toBe(1)
     expect(r.stats.created).toBe(0)
   })
   it('creates a pending singleton for a 0.8–0.95 decision and an approved one for no match', () => {
     const i2 = item(2, 'Молоко Лактель 2,5% 1 л', [cand('c_milk1')])
     const i3 = item(3, 'Что-то новое 500 г', [])
-    const r = applyDecisions(base, 'ANVAR', [i2, i3], [dec(2, 'c_milk1', 0.88), dec(3, null, 0.1, 'dairy')])
-    const pending = r.dict.canonicals[canonicalKey(['ANVAR:anvar_2'])]!
+    const r = applyDecisions(base, 'MAGNUM', [i2, i3], [dec(2, 'c_milk1', 0.88), dec(3, null, 0.1, 'dairy')])
+    const pending = r.dict.canonicals[canonicalKey(['MAGNUM:m_2'])]!
     expect(pending).toMatchObject({ review: 'pending', method: 'ai', confidence: 0.88, brand: null, category: 'milk' })
-    expect(r.dict.products['ANVAR:anvar_2']).toBe(canonicalKey(['ANVAR:anvar_2']))
-    expect(r.dict.canonicals[canonicalKey(['ANVAR:anvar_3'])]).toMatchObject({ review: 'approved', method: 'deterministic', confidence: 1, category: 'dairy', attributes: { weightGrams: 500 } })
+    expect(r.dict.products['MAGNUM:m_2']).toBe(canonicalKey(['MAGNUM:m_2']))
+    expect(r.dict.canonicals[canonicalKey(['MAGNUM:m_3'])]).toMatchObject({ review: 'approved', method: 'deterministic', confidence: 1, category: 'dairy', attributes: { weightGrams: 500 } })
     expect(r.stats).toMatchObject({ attached: 0, created: 2, pendingSingletons: 1 })
   })
   it('rejects a match outside the item candidates', () => {
-    const r = applyDecisions(base, 'ANVAR', [i1], [dec(1, 'c_soap', 0.99)])
-    expect(r.dict.products['ANVAR:anvar_1']).toBe(canonicalKey(['ANVAR:anvar_1']))
+    const r = applyDecisions(base, 'MAGNUM', [i1], [dec(1, 'c_soap', 0.99)])
+    expect(r.dict.products['MAGNUM:m_1']).toBe(canonicalKey(['MAGNUM:m_1']))
     expect(r.stats.rejectedOutsideCandidates).toBe(1)
     expect(r.stats.created).toBe(1)
   })
   it('rejects a match with a different size', () => {
     const small = item(1, 'Молоко Лактель 2,5% 0,9 л', [cand('c_milk1')])
-    const r = applyDecisions(base, 'ANVAR', [small], [dec(1, 'c_milk1', 0.99)])
-    expect(r.dict.products['ANVAR:anvar_1']).not.toBe('c_milk1')
+    const r = applyDecisions(base, 'MAGNUM', [small], [dec(1, 'c_milk1', 0.99)])
+    expect(r.dict.products['MAGNUM:m_1']).not.toBe('c_milk1')
     expect(r.stats.rejectedSize).toBe(1)
   })
   it('never attaches two items of the same store to one canonical', () => {
     const i4 = item(4, 'Молоко Лактель 2,5% 1 литр', [cand('c_milk1')])
-    const r = applyDecisions(base, 'ANVAR', [i1, i4], [dec(1, 'c_milk1', 0.99), dec(4, 'c_milk1', 0.97)])
-    expect(r.dict.products['ANVAR:anvar_1']).toBe('c_milk1')
-    expect(r.dict.products['ANVAR:anvar_4']).not.toBe('c_milk1')
+    const r = applyDecisions(base, 'MAGNUM', [i1, i4], [dec(1, 'c_milk1', 0.99), dec(4, 'c_milk1', 0.97)])
+    expect(r.dict.products['MAGNUM:m_1']).toBe('c_milk1')
+    expect(r.dict.products['MAGNUM:m_4']).not.toBe('c_milk1')
     expect(r.stats.sameStoreConflicts).toBe(1)
   })
   it('does not attach to a card that already holds a product of this store in the base', () => {
     const i5 = item(5, 'Молоко Простоквашино 2,5% 1 л', [cand('c_busy')])
-    const r = applyDecisions(base, 'ANVAR', [i5], [dec(5, 'c_busy', 0.99)])
-    expect(r.dict.products['ANVAR:anvar_5']).not.toBe('c_busy')
+    const r = applyDecisions(base, 'MAGNUM', [i5], [dec(5, 'c_busy', 0.99)])
+    expect(r.dict.products['MAGNUM:m_5']).not.toBe('c_busy')
     expect(r.stats.sameStoreConflicts).toBe(1)
   })
   it('throws when a decision is missing', () => {
     const i2 = item(2, 'Молоко Лактель 2,5% 1 л', [cand('c_milk1')])
-    expect(() => applyDecisions(base, 'ANVAR', [i1, i2], [dec(1, 'c_milk1', 0.99)])).toThrow(/ANVAR:anvar_2/)
+    expect(() => applyDecisions(base, 'MAGNUM', [i1, i2], [dec(1, 'c_milk1', 0.99)])).toThrow(/MAGNUM:m_2/)
   })
   it('throws on duplicate or unknown decisions', () => {
-    expect(() => applyDecisions(base, 'ANVAR', [i1], [dec(1, null, 0.1), dec(1, null, 0.1)])).toThrow(/ANVAR:anvar_1/)
-    expect(() => applyDecisions(base, 'ANVAR', [i1], [dec(1, null, 0.1), dec(9, null, 0.1)])).toThrow(/ANVAR:anvar_9/)
+    expect(() => applyDecisions(base, 'MAGNUM', [i1], [dec(1, null, 0.1), dec(1, null, 0.1)])).toThrow(/MAGNUM:m_1/)
+    expect(() => applyDecisions(base, 'MAGNUM', [i1], [dec(1, null, 0.1), dec(9, null, 0.1)])).toThrow(/MAGNUM:m_9/)
   })
   it('adds store categories by majority vote and never overwrites base keys', () => {
     const path = ['Молочные продукты', 'Молоко']
     const items = [item(1, 'Молоко А 1 л', [], path), item(2, 'Молоко Б 1 л', [], path), item(3, 'Молоко В 1 л', [], path), item(4, 'Что-то', [], ['Старая категория'])]
-    const r = applyDecisions(base, 'ANVAR', items, [dec(1, null, 0, 'milk'), dec(2, null, 0, 'milk'), dec(3, null, 0, 'dairy'), dec(4, null, 0, 'milk')])
-    expect(r.dict.storeCategories[storeCategoryKey('ANVAR', path)]).toBe('milk')
-    expect(r.dict.storeCategories['ANVAR|Старая категория']).toBe('dairy') // из base, голос milk проигнорирован
+    const r = applyDecisions(base, 'MAGNUM', items, [dec(1, null, 0, 'milk'), dec(2, null, 0, 'milk'), dec(3, null, 0, 'dairy'), dec(4, null, 0, 'milk')])
+    expect(r.dict.storeCategories[storeCategoryKey('MAGNUM', path)]).toBe('milk')
+    expect(r.dict.storeCategories['MAGNUM|Старая категория']).toBe('dairy') // из base, голос milk проигнорирован
   })
 })
 
@@ -120,8 +120,8 @@ describe('MatchDecisionSchema / validateDecisions', () => {
   it('reports missing, extra and malformed decisions', () => {
     const items = [item(1, 'a', []), item(2, 'b', [])]
     expect(validateDecisions(items, [dec(1, null, 0.1), dec(2, null, 0.1)])).toBeNull()
-    expect(validateDecisions(items, [dec(1, null, 0.1)])).toMatch(/ANVAR:anvar_2/)
-    expect(validateDecisions(items, [dec(1, null, 0.1), dec(2, null, 0.1), dec(3, null, 0.1)])).toMatch(/ANVAR:anvar_3/)
+    expect(validateDecisions(items, [dec(1, null, 0.1)])).toMatch(/MAGNUM:m_2/)
+    expect(validateDecisions(items, [dec(1, null, 0.1), dec(2, null, 0.1), dec(3, null, 0.1)])).toMatch(/MAGNUM:m_3/)
     expect(validateDecisions(items, 'oops')).toMatch(/array/)
   })
 })

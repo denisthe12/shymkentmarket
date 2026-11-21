@@ -14,7 +14,7 @@ var _ dashboard.Repository = (*Repository)(nil)
 const dashboardSQL = `WITH current_snapshot AS (
  SELECT id FROM public.snapshots WHERE status='published' AND "publishedAt" IS NOT NULL ORDER BY "publishedAt" DESC,id DESC LIMIT 1
 ), visible_stores AS (
- SELECT s.id,s.code,s.name FROM public.stores s WHERE EXISTS (
+ SELECT s.id,s.code,s.name,s."sortOrder" FROM public.stores s WHERE EXISTS (
  SELECT 1 FROM public.offers o WHERE o."snapshotId"=(SELECT id FROM current_snapshot) AND o."storeId"=s.id)
 ), usable AS MATERIALIZED (
  SELECT p.id,p.name,p."categoryId",p.attributes,o."storeId",o.price,o."snapshotAt"
@@ -43,12 +43,12 @@ const dashboardSQL = `WITH current_snapshot AS (
  THEN (u.attributes->>slots.key)::numeric END BETWEEN slots.lo AND slots.hi
  AND u.name ~* slots.pattern
 ), baskets AS (
- SELECT s.code,s.name,sum(coalesce(best.price,0)) total,
+ SELECT s.code,s.name,s."sortOrder",sum(coalesce(best.price,0)) total,
  jsonb_agg(jsonb_build_object('categorySlug',slots.slug,'categoryName',slots.name,
  'productId',best.id,'name',best.name,'price',best.price) ORDER BY slots.ord) items
  FROM visible_stores s CROSS JOIN slots
  LEFT JOIN candidates best ON best."storeId"=s.id AND best.ord=slots.ord AND best.choice=1
- GROUP BY s.id,s.code,s.name
+ GROUP BY s.id,s.code,s.name,s."sortOrder"
 )
 SELECT jsonb_build_object(
  'summary',jsonb_build_object('canonicalProducts',(SELECT count(*) FROM aggregates),
@@ -60,9 +60,9 @@ SELECT jsonb_build_object(
  ORDER BY difference DESC,id COLLATE "ru-x-icu") FROM spreads),'[]'::jsonb),
  'locations',coalesce((SELECT jsonb_agg(jsonb_build_object('storeCode',s.code,'storeName',s.name,
  'name',l.name,'address',l.address,'latitude',l.latitude,'longitude',l.longitude)
- ORDER BY s.code,l.name,l.id) FROM public.store_locations l JOIN visible_stores s ON s.id=l."storeId"),'[]'::jsonb),
+ ORDER BY s.code COLLATE "C",l.name,l.id) FROM public.store_locations l JOIN visible_stores s ON s.id=l."storeId"),'[]'::jsonb),
  'baskets',coalesce((SELECT jsonb_agg(jsonb_build_object('storeCode',code,'storeName',name,'total',total,'items',items)
- ORDER BY CASE code WHEN 'DINA' THEN 1 WHEN 'DANA' THEN 2 WHEN 'FIX_PRICE' THEN 3 WHEN 'ANVAR' THEN 4 END)
+ ORDER BY "sortOrder",code COLLATE "C")
  FROM baskets),'[]'::jsonb)) FROM current_snapshot`
 
 func (r *Repository) GetDashboard(ctx context.Context) (dashboard.Dashboard, error) {

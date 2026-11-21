@@ -49,16 +49,18 @@ func TestAgesAndDependencySignals(t *testing.T) {
 	r := NewRegistry()
 	now := time.Unix(10000, 0)
 	r.Age("", now, now.Add(-time.Hour))
-	r.Age("DINA", now, now.Add(-time.Minute))
-	r.Age("DANA", now, now.Add(time.Minute))
-	r.Age("FIX_PRICE", now, time.Time{})
-	r.Age("ANVAR", now, now.Add(-2*time.Minute))
+	r.Age("STORE_A", now, now.Add(-time.Minute))
+	r.Age("STORE_B", now, now.Add(time.Minute))
+	r.Age("STORE_C", now, time.Time{})
+	r.Age("MAGNUM", now, now.Add(-2*time.Minute))
+	r.Age("bad code", now, now.Add(-time.Minute))
+	r.Age("magnum", now, now.Add(-time.Minute))
 	for _, kind := range []string{"db", "redis", "gemini", "ingestion"} {
 		operation := map[string]string{"db": "query", "redis": "get", "gemini": "parse", "ingestion": "publish"}[kind]
 		r.Dependency(kind, operation, "failure", 10*time.Millisecond)
 	}
 	s := r.Snapshot()
-	if s.Gauges["snapshot_age_seconds"] != 3600 || s.Gauges["source_age_seconds|DINA"] != 60 || s.Gauges["source_age_seconds|DANA"] != 0 || s.Gauges["source_age_seconds|ANVAR"] != 120 || len(s.Gauges) != 4 || len(s.Series) != 4 {
+	if s.Gauges["snapshot_age_seconds"] != 3600 || s.Gauges["source_age_seconds|STORE_A"] != 60 || s.Gauges["source_age_seconds|STORE_B"] != 0 || s.Gauges["source_age_seconds|MAGNUM"] != 120 || len(s.Gauges) != 4 || len(s.Series) != 4 {
 		t.Fatal("invalid sampled age/dependency signals")
 	}
 }

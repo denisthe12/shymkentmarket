@@ -5,7 +5,7 @@ import (
 	"context"
 )
 
-const locationsSQL = `SELECT s.code,l.address,l.latitude,l.longitude FROM public.store_locations l JOIN public.stores s ON s.id=l."storeId" ORDER BY s.code,l.name,l.id`
+const locationsSQL = `SELECT s.code,l.address,l.latitude,l.longitude FROM public.store_locations l JOIN public.stores s ON s.id=l."storeId" ORDER BY s.code COLLATE "C",l.name,l.id`
 
 func (r *Repository) ListLocations(ctx context.Context) ([]location.Location, error) {
 	rows, err := r.db.Query(ctx, locationsSQL)

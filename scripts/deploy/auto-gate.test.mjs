@@ -276,102 +276,6 @@ for(const mode of ['120000','100755','160000'])test(`tooling Git mode ${mode} is
   assert.throws(()=>transport.verifyCompatibility(active,reviewed));
 }));
 
-// Active release 6a4b4c7 (PR #54). The only protected delta from it to main is the data-only SCRUM-19 taxonomy
-// migration (PR #57, already applied to production), absent in the active tree and pinned by blob in the candidate.
-const active2='6a4b4c7a91ec471db54987b689c3c87a785523a3';
-const scrum19='backend/prisma/migrations/20261021000000_scrum19_milk_taxonomy/migration.sql';
-const scrum19Blob='1fe70e318dbc46838bcede80f310b569ca22b415';
-const scrum19Table={[scrum19]:[null,scrum19Blob]};
-const git2=(extra={})=>({old:active2,paths:[scrum19],table:scrum19Table,...extra});
-test('active 6a4b4c7 admits exactly the pinned SCRUM-19 migration (absent before, pinned blob after)',()=>withGit(git2(),calls=>{
-  transport.verifyCompatibility(active2,reviewed);
-  assert.equal(calls.filter(a=>a.includes('ls-tree')).length,2);
-}));
-test('active 6a4b4c7 admits a future verified main with the same pinned migration blob',()=>{
-  const next='c'.repeat(40);withGit(git2({next}),()=>transport.verifyCompatibility(active2,next));
-});
-for(const path of ['contracts/openapi.yaml','contracts/package.json','backend/prisma/schema.prisma',
-  'backend/prisma/migrations/20261022000000_other/migration.sql','deploy/compose.production.yml'])
-  test(`active 6a4b4c7 rejects extra protected change ${path}`,()=>withGit(git2({paths:[scrum19,path]}),()=>{
-    assert.throws(()=>transport.verifyCompatibility(active2,reviewed));
-  }));
-for(const paths of [[scrum19,scrum19],['backend/prisma/migrations/20261021000000_scrum19_milk_taxonomy/other.sql']])
-  test(`active 6a4b4c7 rejects duplicate/different path set ${paths.join(',')}`,()=>withGit(git2({paths}),()=>{
-    assert.throws(()=>transport.verifyCompatibility(active2,reviewed));
-  }));
-for(const hash of ['0'.repeat(40),'missing'])
-  test(`active 6a4b4c7 rejects ${hash==='missing'?'missing':'modified'} candidate blob`,()=>
-    withGit(git2({change:{[reviewed+':'+scrum19]:hash}}),()=>assert.throws(()=>transport.verifyCompatibility(active2,reviewed))));
-test('active 6a4b4c7 rejects a migration already present in the active tree (not an addition)',()=>
-  withGit(git2({change:{[active2+':'+scrum19]:'e'.repeat(40)}}),()=>assert.throws(()=>transport.verifyCompatibility(active2,reviewed))));
-for(const mode of ['120000','100755','160000'])test(`active 6a4b4c7 rejects migration Git mode ${mode}`,()=>withGit(git2({mode}),()=>{
-  assert.throws(()=>transport.verifyCompatibility(active2,reviewed));
-}));
-test('SCRUM-19 exception is bound to active 6a4b4c7 only',()=>{
-  const other='d'.repeat(40);withGit(git2({old:other}),()=>assert.throws(()=>transport.verifyCompatibility(other,reviewed)));
-});
-test('the 438ecdfa tooling pair is not an exception for active 6a4b4c7',()=>withGit({old:active2},()=>{
-  assert.throws(()=>transport.verifyCompatibility(active2,reviewed));
-}));
-
-// Anvar release, contract 20.6: exact protected delta from the active API release 49f6823.
-const anvarActive='49f6823768817b0390f215de42439cce523bf5d3',anvarCandidate='c'.repeat(40);
-const anvarBlobs={
-  'backend/prisma/migrations/20261102000000_store_anvar_enum/migration.sql':[null,'7c4b69f3d8873512fbd4a3f91d7b7ccd604bc51f'],
-  'backend/prisma/migrations/20261102000100_store_anvar_rows/migration.sql':[null,'22fa4002ab4a00cc8872b38e9d23bed5c6b5f33e'],
-  'backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql':[null,'c272af519556133988e9feea18edf10e111a4a7b'],
-  'backend/prisma/schema.prisma':['6ea0e340fec18ca93446cce2cdc909ea7f330344','2f270ddd9e1aa24683fc15766d67c1b88d1251fe'],
-  'contracts/openapi.yaml':['0339280f3065d7ad73d3f483335721751500e8c6','988a269b2fd0a0ef79550bc63dd7b44dfc73d6fc'],
-};
-function withAnvarGit({paths=Object.keys(anvarBlobs),blobs=anvarBlobs},run) {
-  const original=childProcess.spawnSync,ok=text=>({status:0,stdout:Buffer.from(text)});
-  childProcess.spawnSync=(_,args)=>{
-    const a=args.slice(args.indexOf('--no-replace-objects')+1);
-    if(a[0]==='rev-parse')return ok(a.at(-1).replace('^{commit}','')+'\n');
-    if(a[0]==='diff')return ok(paths.map(p=>p+'\0').join(''));
-    if(a[0]==='ls-tree'){
-      const path=a.at(-1),hash=blobs[path]?.[a[a.indexOf('--')-1]===anvarActive?0:1];
-      return ok(hash?'100644 blob '+hash+'\t'+path+'\0':'');
-    }
-    throw Error('unexpected synthetic Git operation');
-  };
-  syncBuiltinESMExports();
-  try{return run();}finally{childProcess.spawnSync=original;syncBuiltinESMExports();}
-}
-test('Anvar exception accepts exactly its five pinned paths',()=>withAnvarGit({},()=>{
-  transport.verifyCompatibility(anvarActive,anvarCandidate);
-}));
-test('Anvar exception rejects an extra protected path',()=>withAnvarGit({paths:[...Object.keys(anvarBlobs),'deploy/compose.production.yml']},()=>{
-  assert.throws(()=>transport.verifyCompatibility(anvarActive,anvarCandidate));
-}));
-test('Anvar exception rejects a missing path',()=>withAnvarGit({paths:Object.keys(anvarBlobs).slice(1)},()=>{
-  assert.throws(()=>transport.verifyCompatibility(anvarActive,anvarCandidate));
-}));
-for(const path of Object.keys(anvarBlobs))test(`Anvar exception rejects a changed blob for ${path}`,()=>{
-  withAnvarGit({blobs:{...anvarBlobs,[path]:[anvarBlobs[path][0],'0'.repeat(40)]}},()=>{
-    assert.throws(()=>transport.verifyCompatibility(anvarActive,anvarCandidate));
-  });
-});
-
-const searchActive='e50de2532259ab477e8491c4bddc2e6120ef3da0';
-const searchBlobs={
-  'backend/prisma/migrations/20261107000000_price_history/migration.sql':[null,'2863a1d1d060d9f62e14d51187d7bb21a3e8c580'],
-  'backend/prisma/migrations/20261107000100_product_identities/migration.sql':[null,'d8f8e9c551c68b6a901d17f56db16523ad35344e'],
-  'backend/prisma/schema.prisma':['2f270ddd9e1aa24683fc15766d67c1b88d1251fe','00315ade499cc561f0731ae0875b1b46643dac11'],
-};
-test('search delta requires complete exact protected inventory and blobs',()=>{
-  const config={old:searchActive,next:reviewed,table:searchBlobs,paths:Object.keys(searchBlobs)};
-  withGit(config,()=>transport.verifyCompatibility(searchActive,reviewed));
-  for(const path of Object.keys(searchBlobs)) {
-    withGit({...config,paths:config.paths.filter(p=>p!==path)},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
-    for(const ref of [searchActive,reviewed])
-      withGit({...config,change:{[ref+':'+path]:'f'.repeat(40)}},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
-  }
-  withGit({...config,paths:[...config.paths,'contracts/openapi.yaml']},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
-  withGit({...config,mode:'120000'},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
-  withGit({...config,fail:true},()=>assert.throws(()=>transport.verifyCompatibility(searchActive,reviewed)));
-});
-
 test('the schema-only CI job is mandatory under its new name',()=>{
   assert.ok(mandatory.includes('DB Schema'));
   assert.ok(!mandatory.includes('Nest Reference'));
@@ -395,3 +299,15 @@ test('active 1cbd535 delta (seed removal + contracts README) requires every exac
   withGit({...config,mode:'120000'},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
   withGit({...config,fail:true},()=>assert.throws(()=>transport.verifyCompatibility(seedActive,reviewed)));
 });
+
+// Shymkent baseline: no migration is admitted by auto-transport. A migration reaches a database only through
+// the reviewed manual process, so every protected delta that contains one must be refused.
+for(const migration of ['20261122000000_shymkent_baseline','20261122000001_shymkent_taxonomy']) {
+  const path=`backend/prisma/migrations/${migration}/migration.sql`;
+  test(`${migration}/migration.sql is not allowed by auto-transport`,()=>{
+    for(const old of [active,'a'.repeat(40)])
+      withGit({old,paths:[path],table:{[path]:[null,'1'.repeat(40)]}},()=>assert.throws(()=>transport.verifyCompatibility(old,reviewed)));
+    withGit({paths:[...Object.keys(tooling),path],table:{...tooling,[path]:[null,'1'.repeat(40)]}},
+      ()=>assert.throws(()=>transport.verifyCompatibility(active,reviewed)));
+  });
+}
