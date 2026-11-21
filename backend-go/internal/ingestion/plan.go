@@ -38,7 +38,8 @@ type resolved struct {
 	Reused bool
 }
 
-func resolve(b Bundle, previous map[Identity][]string, counts map[string]int, categories map[string]string, maxDrop float64, recluster bool) ([]resolved, Report, error) {
+// stores are the registered store codes; each one must have products in b.
+func resolve(b Bundle, previous map[Identity][]string, counts map[string]int, categories map[string]string, stores []string, maxDrop float64, recluster bool) ([]resolved, Report, error) {
 	report := Report{RawCount: len(b.RawProducts), CanonicalCount: len(b.Groups), PerStore: map[string]int{}, SourceMetadataAvailability: len(b.Sources)}
 	fail := func(code string) ([]resolved, Report, error) {
 		report.FailureCode = code

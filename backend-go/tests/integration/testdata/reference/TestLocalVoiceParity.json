@@ -6,7 +6,7 @@
     "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"самое дешёвое молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
     "status": 201,
     "responseContentType": "application/json; charset=utf-8",
-    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Store B\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Store B. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
   },
   {
     "method": "POST",
@@ -15,7 +15,7 @@
     "body": "{\"latitude\":43.63798231415926,\"longitude\":51.16918027182818,\"text\":\"найди молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
     "status": 201,
     "responseContentType": "application/json; charset=utf-8",
-    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Store B\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Store B.\"}"
   },
   {
     "method": "POST",
@@ -24,7 +24,7 @@
     "body": "{\"latitude\":\" 43.63798231415926 \",\"longitude\":\"5.116918027182818e+01\",\"text\":\"самое дешёвое молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
     "status": 201,
     "responseContentType": "application/json; charset=utf-8",
-    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Store B\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Store B. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
   },
   {
     "method": "POST",
@@ -42,7 +42,7 @@
     "body": "{\"sessionId\":\"1377161d-108d-47d3-bb65-74fd5a38f2b8\",\"text\":\"1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
     "status": 201,
     "responseContentType": "application/json; charset=utf-8",
-    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Dana. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
+    "response": "{\"status\":\"result\",\"mode\":\"single\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Store B\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Самое выгодное предложение: Молоко Альфа за 100 тенге в Store B. Ближайшая точка — Synthetic fixture address, примерно 7328 метров.\"}"
   },
   {
     "method": "POST",
@@ -69,7 +69,7 @@
     "body": "{\"sessionId\":\"bf290937-42a4-4dd8-bf0d-500621b33263\",\"text\":\"найди 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
     "status": 201,
     "responseContentType": "application/json; charset=utf-8",
-    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Store B\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Store B.\"}"
   },
   {
     "method": "POST",
@@ -96,7 +96,7 @@
     "body": "{\"sessionId\":\"60cf8eb4-8f4a-4d8b-8da2-f0b41e73dee8\",\"text\":\"молоко 1 литр 3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
     "status": 201,
     "responseContentType": "application/json; charset=utf-8",
-    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Store B\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Store B.\"}"
   },
   {
     "method": "POST",
@@ -123,7 +123,7 @@
     "body": "{\"sessionId\":\"bdb89c4e-1266-4e52-b1c6-07b434d27ad1\",\"text\":\"3.2% privacyprobeqzrvnxtkmwbdjlf\"}",
     "status": 201,
     "responseContentType": "application/json; charset=utf-8",
-    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Dana\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Dana.\"}"
+    "response": "{\"status\":\"result\",\"mode\":\"list\",\"items\":[{\"name\":\"Молоко Альфа\",\"price\":100,\"store\":\"Store B\",\"address\":\"Synthetic fixture address\",\"distanceMeters\":7328,\"imageUrl\":null}],\"speech\":\"Нашёл один вариант. Первый — Молоко Альфа за 100 тенге в Store B.\"}"
   },
   {
     "method": "POST",

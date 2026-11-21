@@ -13,18 +13,18 @@ INSERT INTO snapshots(id,status,"startedAt","publishedAt") VALUES
  (SELECT "publishedAt"-interval '1 day' FROM snapshots WHERE id='fixture-internal-v1')),
 ('scrum7-building','building','2099-01-02',NULL);
 INSERT INTO raw_products(id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES
-('scrum7-old-raw','dina','scrum7-old','Old',1,'scrum7-old'),
-('scrum7-building-raw','dina','scrum7-building','Building',1,'scrum7-building');
+('scrum7-old-raw','store-a','scrum7-old','Old',1,'scrum7-old'),
+('scrum7-building-raw','store-a','scrum7-building','Building',1,'scrum7-building');
 INSERT INTO canonical_products(id,name,"categoryId") VALUES
 ('scrum7-z','Current Z','scrum7-z'),('scrum7-a','Current A','scrum7-a'),
 ('scrum7-stale','Old','scrum7-stale'),('scrum7-out','Out','scrum7-out'),
 ('scrum7-zero','Zero','scrum7-zero'),('scrum7-negative','Negative','scrum7-negative'),
 ('scrum7-unpublished','Building','scrum7-unpublished');
 INSERT INTO offers(id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId") VALUES
-('scrum7-z','scrum7-z','r1','dina',1,true,'2026-10-01','fixture-internal-v1'),
-('scrum7-a','scrum7-a','r1','dina',1,true,'2026-10-01','fixture-internal-v1'),
-('scrum7-out','scrum7-out','r1','dina',1,false,'2026-10-01','fixture-internal-v1'),
-('scrum7-zero','scrum7-zero','r1','dina',0,true,'2026-10-01','fixture-internal-v1'),
-('scrum7-negative','scrum7-negative','r1','dina',-1,true,'2026-10-01','fixture-internal-v1'),
-('scrum7-stale','scrum7-stale','scrum7-old-raw','dina',1,true,'2099-01-01','scrum7-old'),
-('scrum7-unpublished','scrum7-unpublished','scrum7-building-raw','dina',1,true,'2099-01-02','scrum7-building');
+('scrum7-z','scrum7-z','r1','store-a',1,true,'2026-10-01','fixture-internal-v1'),
+('scrum7-a','scrum7-a','r1','store-a',1,true,'2026-10-01','fixture-internal-v1'),
+('scrum7-out','scrum7-out','r1','store-a',1,false,'2026-10-01','fixture-internal-v1'),
+('scrum7-zero','scrum7-zero','r1','store-a',0,true,'2026-10-01','fixture-internal-v1'),
+('scrum7-negative','scrum7-negative','r1','store-a',-1,true,'2026-10-01','fixture-internal-v1'),
+('scrum7-stale','scrum7-stale','scrum7-old-raw','store-a',1,true,'2099-01-01','scrum7-old'),
+('scrum7-unpublished','scrum7-unpublished','scrum7-building-raw','store-a',1,true,'2099-01-02','scrum7-building');

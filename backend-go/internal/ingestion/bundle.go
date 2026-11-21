@@ -1,13 +1,13 @@
 package ingestion
 
 import (
+	"adilbaga/backend-go/internal/catalog"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
 	"math"
 	"reflect"
-	"slices"
 	"strings"
 	"time"
 )
@@ -57,9 +57,9 @@ type Identity struct{ StoreCode, SourceProductID string }
 
 func (r RawProduct) Identity() Identity { return Identity{r.StoreCode, r.SourceProductID} }
 
-var stores = []string{"DINA", "DANA", "FIX_PRICE", "ANVAR"}
-
-func knownStore(v string) bool { return slices.Contains(stores, v) }
+// Validate checks only the store code format; which stores exist is checked against
+// public.stores by the ingestor (checkStores), before any snapshot row is written.
+func validStore(v string) bool { return catalog.ValidStoreCode(v) }
 func reject() error            { return errors.New("prepared bundle invalid") }
 
 // Prepared-file limit only, not a new public voice/search limit.
@@ -110,7 +110,7 @@ func (b Bundle) Validate() error {
 	}
 	raw := make(map[Identity]RawProduct)
 	for _, p := range b.RawProducts {
-		if !knownStore(p.StoreCode) || strings.TrimSpace(p.SourceProductID) == "" || strings.TrimSpace(p.Name) == "" || p.Price <= 0 || p.Price > math.MaxInt32 {
+		if !validStore(p.StoreCode) || strings.TrimSpace(p.SourceProductID) == "" || strings.TrimSpace(p.Name) == "" || p.Price <= 0 || p.Price > math.MaxInt32 {
 			return reject()
 		}
 		if p.OldPrice != nil && (*p.OldPrice < math.MinInt32 || *p.OldPrice > math.MaxInt32) {
@@ -153,7 +153,7 @@ func (b Bundle) Validate() error {
 	}
 	sourceSeen := map[string]bool{}
 	for _, s := range b.Sources {
-		if !knownStore(s.StoreCode) || sourceSeen[s.StoreCode] || s.ErrorCount < 0 {
+		if !validStore(s.StoreCode) || sourceSeen[s.StoreCode] || s.ErrorCount < 0 {
 			return reject()
 		}
 		if _, err := timestamp(s.CapturedAt); err != nil {
@@ -163,9 +163,6 @@ func (b Bundle) Validate() error {
 			return reject()
 		}
 		sourceSeen[s.StoreCode] = true
-	}
-	if len(b.Sources) != 0 && len(sourceSeen) != len(stores) {
-		return reject()
 	}
 	return nil
 }

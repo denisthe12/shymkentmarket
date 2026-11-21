@@ -38,7 +38,7 @@ func (e *env) stores(t *testing.T) []string {
 	}
 	second := e.prefix + "store2"
 	e.exec(t, `INSERT INTO public.stores(id,code,name)
- SELECT $1,c,$1 FROM unnest(enum_range(NULL::"StoreCode")) c
+ SELECT $1,c,$1 FROM (VALUES ('STORE_A'),('STORE_B')) v(c)
  WHERE NOT EXISTS (SELECT 1 FROM public.stores WHERE code=c) AND NOT EXISTS (SELECT 1 FROM public.stores WHERE id=$1) LIMIT 1`, second)
 	var n int
 	if e.admin.QueryRow(e.ctx, `SELECT count(*) FROM public.stores WHERE id=$1`, second).Scan(&n) != nil || n != 1 {

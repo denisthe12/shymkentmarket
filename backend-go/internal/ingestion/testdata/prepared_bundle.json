@@ -1,0 +1,269 @@
+{
+  "version": "1.0",
+  "generatedAt": "2026-11-21T09:00:00.000Z",
+  "rawProducts": [
+    {
+      "storeCode": "STORE_A",
+      "sourceProductId": "a-milk-1",
+      "sourceUrl": null,
+      "name": "Молоко 3,2% 1 л",
+      "brand": null,
+      "category": null,
+      "price": 520,
+      "oldPrice": 560,
+      "imageUrl": null,
+      "rawPayload": {}
+    },
+    {
+      "storeCode": "STORE_B",
+      "sourceProductId": "b-milk-1",
+      "sourceUrl": null,
+      "name": "Молоко 3.2% 1л",
+      "brand": null,
+      "category": null,
+      "price": 540,
+      "oldPrice": null,
+      "imageUrl": null,
+      "rawPayload": {}
+    },
+    {
+      "storeCode": "STORE_A",
+      "sourceProductId": "a-cream-1",
+      "sourceUrl": null,
+      "name": "Сливки 8,5% 0,5 л",
+      "brand": null,
+      "category": null,
+      "price": 610,
+      "oldPrice": null,
+      "imageUrl": null,
+      "rawPayload": {}
+    },
+    {
+      "storeCode": "STORE_A",
+      "sourceProductId": "a-sugar-1",
+      "sourceUrl": null,
+      "name": "Сахар 1 кг",
+      "brand": null,
+      "category": null,
+      "price": 450,
+      "oldPrice": null,
+      "imageUrl": null,
+      "rawPayload": {}
+    },
+    {
+      "storeCode": "STORE_B",
+      "sourceProductId": "b-sugar-1",
+      "sourceUrl": null,
+      "name": "Сахар песок 1 кг",
+      "brand": null,
+      "category": null,
+      "price": 430,
+      "oldPrice": null,
+      "imageUrl": null,
+      "rawPayload": {}
+    },
+    {
+      "storeCode": "STORE_B",
+      "sourceProductId": "b-bread-1",
+      "sourceUrl": null,
+      "name": "Хлеб пшеничный 500 г",
+      "brand": null,
+      "category": null,
+      "price": 180,
+      "oldPrice": null,
+      "imageUrl": null,
+      "rawPayload": {}
+    },
+    {
+      "storeCode": "STORE_A",
+      "sourceProductId": "a-eggs-1",
+      "sourceUrl": null,
+      "name": "Яйца С1 10 шт",
+      "brand": null,
+      "category": null,
+      "price": 890,
+      "oldPrice": null,
+      "imageUrl": null,
+      "rawPayload": {}
+    }
+  ],
+  "canonicalProducts": [
+    {
+      "canonicalName": "Молоко 3,2% 1 л",
+      "brand": null,
+      "category": "milk",
+      "imageUrl": "https://img.example/milk.jpg",
+      "attributes": {
+        "volumeMl": 1000,
+        "fatPercent": 3.2
+      },
+      "members": [
+        {
+          "rawProduct": {
+            "storeCode": "STORE_A",
+            "sourceProductId": "a-milk-1",
+            "sourceUrl": null,
+            "name": "Молоко 3,2% 1 л",
+            "brand": null,
+            "category": null,
+            "price": 520,
+            "oldPrice": 560,
+            "imageUrl": null,
+            "rawPayload": {}
+          },
+          "matchMethod": "ai",
+          "matchConfidence": 0.97,
+          "reviewStatus": "approved"
+        },
+        {
+          "rawProduct": {
+            "storeCode": "STORE_B",
+            "sourceProductId": "b-milk-1",
+            "sourceUrl": null,
+            "name": "Молоко 3.2% 1л",
+            "brand": null,
+            "category": null,
+            "price": 540,
+            "oldPrice": null,
+            "imageUrl": null,
+            "rawPayload": {}
+          },
+          "matchMethod": "ai",
+          "matchConfidence": 0.97,
+          "reviewStatus": "approved"
+        }
+      ]
+    },
+    {
+      "canonicalName": "Сливки 8,5% 0,5 л",
+      "brand": null,
+      "category": "milk",
+      "imageUrl": null,
+      "attributes": {
+        "volumeMl": 500,
+        "fatPercent": 8.5
+      },
+      "members": [
+        {
+          "rawProduct": {
+            "storeCode": "STORE_A",
+            "sourceProductId": "a-cream-1",
+            "sourceUrl": null,
+            "name": "Сливки 8,5% 0,5 л",
+            "brand": null,
+            "category": null,
+            "price": 610,
+            "oldPrice": null,
+            "imageUrl": null,
+            "rawPayload": {}
+          },
+          "matchMethod": "deterministic",
+          "matchConfidence": 1,
+          "reviewStatus": "approved"
+        }
+      ]
+    },
+    {
+      "canonicalName": "Сахар 1 кг",
+      "brand": null,
+      "category": "sugar",
+      "imageUrl": null,
+      "attributes": {
+        "weightGrams": 1000
+      },
+      "members": [
+        {
+          "rawProduct": {
+            "storeCode": "STORE_A",
+            "sourceProductId": "a-sugar-1",
+            "sourceUrl": null,
+            "name": "Сахар 1 кг",
+            "brand": null,
+            "category": null,
+            "price": 450,
+            "oldPrice": null,
+            "imageUrl": null,
+            "rawPayload": {}
+          },
+          "matchMethod": "ai",
+          "matchConfidence": 0.97,
+          "reviewStatus": "approved"
+        },
+        {
+          "rawProduct": {
+            "storeCode": "STORE_B",
+            "sourceProductId": "b-sugar-1",
+            "sourceUrl": null,
+            "name": "Сахар песок 1 кг",
+            "brand": null,
+            "category": null,
+            "price": 430,
+            "oldPrice": null,
+            "imageUrl": null,
+            "rawPayload": {}
+          },
+          "matchMethod": "ai",
+          "matchConfidence": 0.97,
+          "reviewStatus": "approved"
+        }
+      ]
+    },
+    {
+      "canonicalName": "Хлеб пшеничный 500 г",
+      "brand": null,
+      "category": "bread",
+      "imageUrl": null,
+      "attributes": {
+        "weightGrams": 500
+      },
+      "members": [
+        {
+          "rawProduct": {
+            "storeCode": "STORE_B",
+            "sourceProductId": "b-bread-1",
+            "sourceUrl": null,
+            "name": "Хлеб пшеничный 500 г",
+            "brand": null,
+            "category": null,
+            "price": 180,
+            "oldPrice": null,
+            "imageUrl": null,
+            "rawPayload": {}
+          },
+          "matchMethod": "deterministic",
+          "matchConfidence": 1,
+          "reviewStatus": "approved"
+        }
+      ]
+    },
+    {
+      "canonicalName": "Яйца С1 10 шт",
+      "brand": null,
+      "category": "eggs",
+      "imageUrl": null,
+      "attributes": {
+        "packageCount": 10
+      },
+      "members": [
+        {
+          "rawProduct": {
+            "storeCode": "STORE_A",
+            "sourceProductId": "a-eggs-1",
+            "sourceUrl": null,
+            "name": "Яйца С1 10 шт",
+            "brand": null,
+            "category": null,
+            "price": 890,
+            "oldPrice": null,
+            "imageUrl": null,
+            "rawPayload": {}
+          },
+          "matchMethod": "deterministic",
+          "matchConfidence": 1,
+          "reviewStatus": "approved"
+        }
+      ]
+    }
+  ],
+  "sourceRuns": []
+}

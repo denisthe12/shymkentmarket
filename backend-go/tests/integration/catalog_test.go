@@ -323,12 +323,12 @@ func TestDeterministicCatalog(t *testing.T) {
 	})
 	t.Run("hides a store without data in the current snapshot", func(t *testing.T) {
 		// The API role cannot read source_runs, so a store is visible only when the snapshot has an offer for it.
-		// The ANVAR row and its three locations come from the migrations, as in production before the first publish.
+		// The MAGNUM row (sortOrder 10, no locations) comes from the baseline migration, as in production before the first publish.
 		// Extra rows are committed (the read-only pool is another session) and removed again below.
 		t.Cleanup(func() {
-			_, err := admin.Exec(context.Background(), `DELETE FROM offers WHERE id='o-anvar'; DELETE FROM raw_products WHERE id='r-anvar'`)
+			_, err := admin.Exec(context.Background(), `DELETE FROM offers WHERE id='o-magnum'; DELETE FROM raw_products WHERE id='r-magnum'; UPDATE stores SET "sortOrder"=10 WHERE code='MAGNUM'`)
 			if err != nil {
-				t.Error("anvar fixture cleanup failed")
+				t.Error("magnum fixture cleanup failed")
 			}
 		})
 		d, err := repo.GetDashboard(ctx)
@@ -336,23 +336,41 @@ func TestDeterministicCatalog(t *testing.T) {
 			t.Fatal("dashboard failed")
 		}
 		for _, b := range d.Baskets {
-			if b.StoreCode == "ANVAR" {
+			if b.StoreCode == "MAGNUM" {
 				t.Fatal("store without offers in the snapshot must not get a basket")
 			}
 		}
 		if len(d.Baskets) != 3 || d.Summary.Stores != 3 || len(d.Locations) != 2 {
 			t.Fatalf("hidden store leaked: %d baskets, %d stores, %d locations", len(d.Baskets), d.Summary.Stores, len(d.Locations))
 		}
-		if _, err = admin.Exec(ctx, `INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") VALUES ('r-anvar','66abe18e-c352-4127-8426-af58b3b408b1','1','Fixture',55,'fixture-internal-v1');
-INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId") VALUES ('o-anvar','p4','r-anvar','66abe18e-c352-4127-8426-af58b3b408b1',55,true,'2026-10-05 11:00:00','fixture-internal-v1')`); err != nil {
-			t.Fatal("anvar offer fixture insert failed")
+		if _, err = admin.Exec(ctx, `INSERT INTO raw_products (id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") SELECT 'r-magnum',id,'1','Fixture',55,'fixture-internal-v1' FROM stores WHERE code='MAGNUM';
+INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId") SELECT 'o-magnum','p4','r-magnum',id,55,true,'2026-10-05 11:00:00','fixture-internal-v1' FROM stores WHERE code='MAGNUM'`); err != nil {
+			t.Fatal("magnum offer fixture insert failed")
 		}
-		d, err = repo.GetDashboard(ctx)
-		if err != nil {
-			t.Fatal("dashboard failed")
+		codes := func() []string {
+			t.Helper()
+			d, err := repo.GetDashboard(ctx)
+			if err != nil {
+				t.Fatal("dashboard failed")
+			}
+			if len(d.Baskets) != 4 || d.Summary.Stores != 4 || len(d.Locations) != 2 {
+				t.Fatalf("magnum must appear once the snapshot has its offers: %d baskets, %d stores, %d locations", len(d.Baskets), d.Summary.Stores, len(d.Locations))
+			}
+			out := []string{}
+			for _, b := range d.Baskets {
+				out = append(out, string(b.StoreCode))
+			}
+			return out
 		}
-		if len(d.Baskets) != 4 || d.Baskets[3].StoreCode != "ANVAR" || d.Summary.Stores != 4 || len(d.Locations) != 5 {
-			t.Fatalf("anvar must appear once the snapshot has its offers: %d baskets, %d stores, %d locations", len(d.Baskets), d.Summary.Stores, len(d.Locations))
+		// Baskets follow stores."sortOrder" (MAGNUM 10, fixture stores the default 100), then code.
+		if got := codes(); !reflect.DeepEqual(got, []string{"MAGNUM", "STORE_A", "STORE_B", "STORE_C"}) {
+			t.Fatalf("basket order by sortOrder = %v", got)
+		}
+		if _, err = admin.Exec(ctx, `UPDATE stores SET "sortOrder"=200 WHERE code='MAGNUM'`); err != nil {
+			t.Fatal("sortOrder update failed")
+		}
+		if got := codes(); !reflect.DeepEqual(got, []string{"STORE_A", "STORE_B", "STORE_C", "MAGNUM"}) {
+			t.Fatalf("basket order after sortOrder change = %v", got)
 		}
 	})
 	t.Run("demo basket slot filters", func(t *testing.T) {
@@ -376,7 +394,7 @@ INSERT INTO canonical_products (id,name,brand,"categoryId",attributes) VALUES
 ('bk-doshirak90','Лапша Доширак 90 г','A','groats','{"weightGrams":90}'),
 ('bk-yogurt','Йогурт FRUTTIS 115 г','A','dairy','{"weightGrams":115}');
 INSERT INTO offers (id,"canonicalProductId","rawProductId","storeId",price,"inStock","snapshotAt","snapshotId")
-SELECT 'o-'||id,id,'r1','dina',CASE id WHEN 'bk-pasta' THEN 185 WHEN 'bk-rice' THEN 636 WHEN 'bk-yogurt' THEN 231 WHEN 'bk-doshirak' THEN 341 ELSE 1 END,true,'2026-10-01 10:00:00','fixture-internal-v1'
+SELECT 'o-'||id,id,'r1','store-a',CASE id WHEN 'bk-pasta' THEN 185 WHEN 'bk-rice' THEN 636 WHEN 'bk-yogurt' THEN 231 WHEN 'bk-doshirak' THEN 341 ELSE 1 END,true,'2026-10-01 10:00:00','fixture-internal-v1'
 FROM canonical_products WHERE id LIKE 'bk-%'`); err != nil {
 			t.Fatal("demo basket fixture insert failed")
 		}
@@ -393,7 +411,7 @@ FROM canonical_products WHERE id LIKE 'bk-%'`); err != nil {
 			}
 		}
 		if want := []string{"p1", "bk-pasta", "bk-rice", "bk-yogurt", "bk-doshirak"}; !reflect.DeepEqual(got, want) || d.Baskets[0].Total != 120+185+636+231+341 {
-			t.Fatalf("dina slots %v total %d", got, d.Baskets[0].Total)
+			t.Fatalf("STORE_A slots %v total %d", got, d.Baskets[0].Total)
 		}
 	})
 	t.Run("restricted role and read-only pool", func(t *testing.T) {
@@ -416,7 +434,7 @@ FROM canonical_products WHERE id LIKE 'bk-%'`); err != nil {
 			t.Fatal("restricted role connect")
 		}
 		defer role.Close(context.Background())
-		for _, sql := range []string{`UPDATE stores SET name=name`, `DELETE FROM stores WHERE false`, `INSERT INTO stores(id,code,name) VALUES('bad','DINA','bad')`, `CREATE TABLE public.bad(id int)`, `ALTER TABLE stores ADD COLUMN bad int`} {
+		for _, sql := range []string{`UPDATE stores SET name=name`, `DELETE FROM stores WHERE false`, `INSERT INTO stores(id,code,name) VALUES('bad','STORE_A','bad')`, `CREATE TABLE public.bad(id int)`, `ALTER TABLE stores ADD COLUMN bad int`} {
 			assertDenied(t, role.Exec, ctx, sql, "42501")
 		}
 	})

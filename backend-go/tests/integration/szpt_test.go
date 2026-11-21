@@ -198,8 +198,8 @@ func TestDeterministicSzpt(t *testing.T) {
 		g := func(v float64) *float64 { return &v }
 		want := map[string]basis{
 			"w-pot1": {true, g(1000)}, "w-pot2": {true, g(1000)}, "w-cuc1": {true, g(1000)}, "w-cuc2": {true, g(1000)},
-			"w-chk1": {true, g(1800)}, "w-beef1": {true, g(1000)}, "w-mince-w": {true, g(1000)}, "w-pot-out": {true, g(1000)},
-			"h14":        {true, g(300)},
+			"w-chk1": {true, g(1000)}, "w-beef1": {true, g(1000)}, "w-mince-w": {true, g(1000)}, "w-pot-out": {true, g(1000)},
+			"h14":        {true, g(1000)},
 			"w-mince-p1": {}, "w-mince-p2": {}, "w-mince-p3": {}, "w-mince-x": {}, "w-sug-fix": {},
 			"r1": {}, "e1": {}, "u1": {}, "h5": {},
 		}
@@ -331,7 +331,7 @@ func TestDeterministicSzpt(t *testing.T) {
 		for _, o := range r1.Offers {
 			got = append(got, row{o.StoreCode, o.Price, o.UnitPrice.Value})
 		}
-		if !reflect.DeepEqual(got, []row{{catalog.DINA, 600, 750}, {catalog.DANA, 640, 800}}) {
+		if !reflect.DeepEqual(got, []row{{"STORE_A", 600, 750}, {"STORE_B", 640, 800}}) {
 			t.Errorf("r1 offers = %+v", got)
 		}
 	})
@@ -430,11 +430,12 @@ func TestDeterministicSzpt(t *testing.T) {
 	})
 
 	t.Run("weighted_prices", func(t *testing.T) {
+		// A MAGNUM weighted price is per 1 kg, whatever the name ("1.8 кг") or attributes (weightGrams 2) say.
 		chk := find(t, list(t, szpt.Query{Group: "chicken"}), "w-chk1")
-		if !chk.SoldByWeight || chk.UnitPrice == nil || *chk.UnitPrice != kg(822.22) || chk.MinPrice != 1480 {
+		if !chk.SoldByWeight || chk.UnitPrice == nil || *chk.UnitPrice != kg(1480) || chk.MinPrice != 1480 {
 			t.Errorf("w-chk1 = soldByWeight %v, unitPrice %+v, minPrice %d", chk.SoldByWeight, chk.UnitPrice, chk.MinPrice)
 		}
-		if len(chk.Offers) != 1 || !chk.Offers[0].SoldByWeight || chk.Offers[0].UnitPrice == nil || *chk.Offers[0].UnitPrice != kg(822.22) {
+		if len(chk.Offers) != 1 || !chk.Offers[0].SoldByWeight || chk.Offers[0].UnitPrice == nil || *chk.Offers[0].UnitPrice != kg(1480) {
 			t.Errorf("w-chk1 offers = %+v", chk.Offers)
 		}
 		cuc := find(t, list(t, szpt.Query{Group: "cucumbers"}), "w-cuc1")
@@ -504,13 +505,13 @@ func TestDeterministicSzpt(t *testing.T) {
 		}
 	})
 
-	// Phase 3: weighted Anvar carp (priceUnit kg, no package size) is priced per kg; fish sorts by per-kg price.
+	// Phase 3: the weighted MAGNUM carp (isWeighted, no package size) is priced per kg; fish sorts by per-kg price.
 	t.Run("phase3_fish_per_kg", func(t *testing.T) {
 		carp := find(t, list(t, szpt.Query{Group: "fish"}), "n-fish-in83")
 		if !carp.SoldByWeight || carp.UnitPrice == nil || *carp.UnitPrice != kg(2990) || carp.MinPrice != 2990 {
 			t.Errorf("n-fish-in83 = soldByWeight %v, unitPrice %+v, minPrice %d", carp.SoldByWeight, carp.UnitPrice, carp.MinPrice)
 		}
-		if len(carp.Offers) != 1 || carp.Offers[0].StoreCode != "ANVAR" || !carp.Offers[0].SoldByWeight {
+		if len(carp.Offers) != 1 || carp.Offers[0].StoreCode != "MAGNUM" || !carp.Offers[0].SoldByWeight {
 			t.Errorf("n-fish-in83 offers = %+v", carp.Offers)
 		}
 		groups, err := repo.ListGroups(ctx)

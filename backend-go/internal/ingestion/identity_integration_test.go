@@ -38,6 +38,81 @@ func identityBundle(ids ...RawProduct) Bundle {
 	return b
 }
 
+func seedStores(t *testing.T, ctx context.Context, admin *pgx.Conn, codes ...string) {
+	t.Helper()
+	for _, code := range codes {
+		if _, err := admin.Exec(ctx, `INSERT INTO stores(id,code,name) VALUES($1,$2,$1) ON CONFLICT(code) DO NOTHING`, "identity-"+code, code); err != nil {
+			t.Fatal("store seed failed")
+		}
+	}
+}
+
+// The registered stores (public.stores) decide which stores a bundle must carry: a source run set that
+// differs from them, or a product of an unregistered store, fails before any snapshot row is written.
+func TestLocalIdentityStoreSet(t *testing.T) {
+	adminURL, writerURL := os.Getenv("TEST_IDENTITY_ADMIN_DATABASE_URL"), os.Getenv("TEST_IDENTITY_WRITER_DATABASE_URL")
+	if adminURL == "" || writerURL == "" {
+		t.Skip("disposable identity database not configured")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	admin, writer := identityConn(t, ctx, adminURL), identityConn(t, ctx, writerURL)
+	seedStores(t, ctx, admin, "STORE_A", "STORE_B")
+	var registered []string
+	rows, err := admin.Query(ctx, `SELECT code FROM stores ORDER BY code`)
+	if err != nil {
+		t.Fatal("stores unavailable")
+	}
+	for rows.Next() {
+		var code string
+		if rows.Scan(&code) != nil {
+			t.Fatal("stores unavailable")
+		}
+		registered = append(registered, code)
+	}
+	rows.Close()
+	if len(registered) < 2 {
+		t.Fatalf("registered stores = %v", registered)
+	}
+	engine, err := New(writer, 100, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshots := func() int {
+		t.Helper()
+		var n int
+		if admin.QueryRow(ctx, `SELECT count(*) FROM snapshots`).Scan(&n) != nil {
+			t.Fatal("snapshots unavailable")
+		}
+		return n
+	}
+	products := []RawProduct{}
+	for _, code := range registered {
+		products = append(products, raw(code, "set-"+code))
+	}
+	onlyA := identityBundle(products...)
+	onlyA.Sources = []SourceInput{{StoreCode: "STORE_A", CapturedAt: "2026-11-07T11:00:00Z"}}
+	unknown := identityBundle(append(products, raw("STORE_X", "set-x"))...)
+	before := snapshots()
+	for name, tc := range map[string]struct {
+		bundle Bundle
+		want   string
+	}{"source runs only STORE_A": {onlyA, "ingestion stores mismatch"}, "unregistered STORE_X": {unknown, "ingestion store unregistered"}} {
+		if _, err := engine.DryRun(ctx, tc.bundle); err == nil || err.Error() != tc.want {
+			t.Fatalf("%s dry-run: got %v, want %s", name, err, tc.want)
+		}
+		if s, err := engine.Stage(ctx, tc.bundle); err == nil || err.Error() != tc.want {
+			if s != nil {
+				s.Close()
+			}
+			t.Fatalf("%s stage: got %v, want %s", name, err, tc.want)
+		}
+		if snapshots() != before {
+			t.Fatalf("%s created a snapshot", name)
+		}
+	}
+}
+
 func TestLocalIdentityRegistry(t *testing.T) {
 	adminURL, writerURL := os.Getenv("TEST_IDENTITY_ADMIN_DATABASE_URL"), os.Getenv("TEST_IDENTITY_WRITER_DATABASE_URL")
 	if adminURL == "" || writerURL == "" {
@@ -46,16 +121,13 @@ func TestLocalIdentityRegistry(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	admin, writer := identityConn(t, ctx, adminURL), identityConn(t, ctx, writerURL)
-	for _, code := range stores {
-		if _, err := admin.Exec(ctx, `INSERT INTO stores(id,code,name) VALUES($1,$2::"StoreCode",$1) ON CONFLICT(code) DO NOTHING`, "identity-"+code, code); err != nil {
-			t.Fatal("store seed failed")
-		}
-	}
+	// MAGNUM comes from the baseline migration; the synthetic stores are seeded here.
+	seedStores(t, ctx, admin, "STORE_A", "STORE_B", "STORE_C")
 	engine, err := New(writer, 100, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, e, d, f, n := raw("DINA", "reg-a"), raw("DINA", "reg-e"), raw("DANA", "reg-d"), raw("FIX_PRICE", "reg-f"), raw("ANVAR", "reg-n")
+	a, e, d, f, n := raw("STORE_A", "reg-a"), raw("STORE_A", "reg-e"), raw("STORE_B", "reg-d"), raw("STORE_C", "reg-f"), raw("MAGNUM", "reg-n")
 	publish := func(b Bundle) Report {
 		t.Helper()
 		s, err := engine.Stage(ctx, b)
@@ -71,7 +143,7 @@ func TestLocalIdentityRegistry(t *testing.T) {
 	registered := func(p RawProduct) string {
 		t.Helper()
 		var id string
-		if admin.QueryRow(ctx, `SELECT i."canonicalProductId" FROM product_identities i JOIN stores s ON s.id=i."storeId" WHERE s.code::text=$1 AND i."sourceProductId"=$2`, p.StoreCode, p.SourceProductID).Scan(&id) != nil {
+		if admin.QueryRow(ctx, `SELECT i."canonicalProductId" FROM product_identities i JOIN stores s ON s.id=i."storeId" WHERE s.code=$1 AND i."sourceProductId"=$2`, p.StoreCode, p.SourceProductID).Scan(&id) != nil {
 			t.Fatalf("no registry row for %s", p.SourceProductID)
 		}
 		return id
@@ -141,13 +213,13 @@ func TestLocalIdentityBackfill(t *testing.T) {
 		t.Fatal("backfill script unavailable")
 	}
 	seed := []string{
-		`INSERT INTO stores(id,code,name) VALUES('identity-DINA','DINA','DINA') ON CONFLICT(code) DO NOTHING`,
+		`INSERT INTO stores(id,code,name) VALUES('identity-STORE_A','STORE_A','STORE_A') ON CONFLICT(code) DO NOTHING`,
 		`INSERT INTO canonical_products(id,name,"categoryId") SELECT v,v,(SELECT id FROM categories ORDER BY id LIMIT 1) FROM unnest(ARRAY['bf-x-old','bf-x-new','bf-y-old','bf-y-new']) v`,
 		`INSERT INTO price_history(month,"storeId","canonicalProductId","sourceProductId","rawName",price,"reviewStatus","capturedAt","snapshotId")
-		 SELECT m::date,(SELECT id FROM stores WHERE code='DINA'),c,s,s,100,'approved',m::timestamp,'bf-history'
+		 SELECT m::date,(SELECT id FROM stores WHERE code='STORE_A'),c,s,s,100,'approved',m::timestamp,'bf-history'
 		 FROM (VALUES('2026-09-01','bf-x-old','bf-x'),('2026-10-01','bf-x-new','bf-x'),('2026-09-01','bf-y-old','bf-y')) v(m,c,s)`,
 		`INSERT INTO snapshots(id,status,"publishedAt") VALUES('bf-snapshot','published','2026-11-01')`,
-		`INSERT INTO raw_products(id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") SELECT 'bf-raw',id,'bf-y','bf-y',100,'bf-snapshot' FROM stores WHERE code='DINA'`,
+		`INSERT INTO raw_products(id,"storeId","sourceProductId","rawName","rawPrice","snapshotId") SELECT 'bf-raw',id,'bf-y','bf-y',100,'bf-snapshot' FROM stores WHERE code='STORE_A'`,
 		`INSERT INTO product_mappings(id,"rawProductId","canonicalProductId","matchMethod") VALUES('bf-map','bf-raw','bf-y-new','deterministic')`,
 	}
 	for _, q := range seed {

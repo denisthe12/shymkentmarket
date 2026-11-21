@@ -305,8 +305,8 @@ func TestHTTPProductOfferTieComparison(t *testing.T) {
 		}
 		return value
 	}
-	base := `{"id":"p1","snapshotAt":"2026-10-05T10:00:00.000Z","offers":[{"storeCode":"DINA","storeName":"Dina","price":100,"oldPrice":null},{"storeCode":"DANA","storeName":"Dana","price":100,"oldPrice":120}]}`
-	reversed := `{"id":"p1","snapshotAt":"2026-10-05T10:00:00.000Z","offers":[{"storeCode":"DANA","storeName":"Dana","price":100,"oldPrice":120},{"storeCode":"DINA","storeName":"Dina","price":100,"oldPrice":null}]}`
+	base := `{"id":"p1","snapshotAt":"2026-10-05T10:00:00.000Z","offers":[{"storeCode":"STORE_A","storeName":"Store A","price":100,"oldPrice":null},{"storeCode":"STORE_B","storeName":"Store B","price":100,"oldPrice":120}]}`
+	reversed := `{"id":"p1","snapshotAt":"2026-10-05T10:00:00.000Z","offers":[{"storeCode":"STORE_B","storeName":"Store B","price":100,"oldPrice":120},{"storeCode":"STORE_A","storeName":"Store A","price":100,"oldPrice":null}]}`
 	for _, test := range []struct {
 		name, a, b     string
 		equal, invalid bool
@@ -314,7 +314,7 @@ func TestHTTPProductOfferTieComparison(t *testing.T) {
 		{"equal_price_reverse", base, reversed, true, false},
 		{"descending_left", strings.Replace(base, `"price":100`, `"price":101`, 1), reversed, false, true},
 		{"descending_right", reversed, strings.Replace(base, `"price":100`, `"price":101`, 1), false, true},
-		{"store_name", base, strings.Replace(reversed, `"Dana"`, `"Different"`, 1), false, false},
+		{"store_name", base, strings.Replace(reversed, `"Store B"`, `"Different"`, 1), false, false},
 		{"old_price", base, strings.Replace(reversed, `"oldPrice":120`, `"oldPrice":121`, 1), false, false},
 		{"timestamp_exact", base, strings.Replace(reversed, `.000Z`, `Z`, 1), false, false},
 		{"product_order", "[" + base + "," + strings.Replace(base, `"p1"`, `"p2"`, 1) + "]", "[" + strings.Replace(reversed, `"p1"`, `"p2"`, 1) + "," + reversed + "]", false, false},

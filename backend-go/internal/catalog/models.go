@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"time"
 )
 
@@ -30,14 +31,15 @@ type FilterSchema struct {
 	Category string             `json:"category"`
 	Filters  []FilterDefinition `json:"filters"`
 }
+
+// StoreCode is a stores.code value. The set of stores lives in public.stores, not in code.
 type StoreCode string
 
-const (
-	DINA     StoreCode = "DINA"
-	DANA     StoreCode = "DANA"
-	FixPrice StoreCode = "FIX_PRICE"
-	Anvar    StoreCode = "ANVAR"
-)
+// storeCodePattern is the one store code format, shared with the stores.code CHECK and the OpenAPI StoreCode.
+var storeCodePattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]{1,31}$`)
+
+// ValidStoreCode reports whether code has the store code format; it does not say the store exists.
+func ValidStoreCode(code string) bool { return storeCodePattern.MatchString(code) }
 
 type Offer struct {
 	StoreCode StoreCode `json:"storeCode"`

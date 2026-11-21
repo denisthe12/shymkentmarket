@@ -256,7 +256,7 @@ func (f *phaseFixture) ListProducts(ctx context.Context, _ catalog.ProductQuery)
 	if err := f.wait(ctx, "product_selection", f.productDelay); err != nil {
 		return nil, err
 	}
-	return []catalog.Product{{Name: "fixture", Offers: []catalog.Offer{{StoreCode: catalog.DINA, StoreName: "fixture", Price: 570}}}}, nil
+	return []catalog.Product{{Name: "fixture", Offers: []catalog.Offer{{StoreCode: "STORE_A", StoreName: "fixture", Price: 570}}}}, nil
 }
 func (*phaseFixture) GetProductByID(context.Context, string) (catalog.Product, error) {
 	return catalog.Product{}, catalog.ErrNotFound
@@ -265,7 +265,7 @@ func (f *phaseFixture) ListLocations(ctx context.Context) ([]location.Location, 
 	if err := f.wait(ctx, "nearest_store_loading", 0); err != nil {
 		return nil, err
 	}
-	return []location.Location{{StoreCode: catalog.DINA, Address: "fixture", Latitude: 1, Longitude: 2}}, nil
+	return []location.Location{{StoreCode: "STORE_A", Address: "fixture", Latitude: 1, Longitude: 2}}, nil
 }
 
 func runVoicePhase(t *testing.T, ctx context.Context, categories catalog.CategoryRepository, products catalog.ProductRepository, locations location.Repository, providerTimeout time.Duration) (*phaseTrace, int) {

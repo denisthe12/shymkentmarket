@@ -36,14 +36,14 @@ func (r *testSzpt) ListProducts(_ context.Context, q szpt.Query) ([]szpt.Product
 			Product:      catalog.Product{ID: "p1", Name: "Картофель", Attributes: map[string]json.RawMessage{}, MinPrice: 300},
 			SoldByWeight: true,
 			UnitPrice:    &unit,
-			Offers:       []szpt.Offer{{Offer: catalog.Offer{StoreCode: catalog.DINA, StoreName: "Dina", Price: 300}, UnitPrice: &unit, SoldByWeight: true}},
+			Offers:       []szpt.Offer{{Offer: catalog.Offer{StoreCode: "STORE_A", StoreName: "Store A", Price: 300}, UnitPrice: &unit, SoldByWeight: true}},
 		}}, r.err
 	}
 	return []szpt.Product{{
 		Product: catalog.Product{ID: "r3", Name: "Рис Тест 500 г", Attributes: map[string]json.RawMessage{}, MinPrice: 420,
 			SnapshotAt: time.Date(2026, 11, 11, 1, 0, 51, 947e6, time.UTC)},
 		UnitPrice: &unit,
-		Offers:    []szpt.Offer{{Offer: catalog.Offer{StoreCode: catalog.DINA, StoreName: "Dina", Price: 420}, UnitPrice: &unit}},
+		Offers:    []szpt.Offer{{Offer: catalog.Offer{StoreCode: "STORE_A", StoreName: "Store A", Price: 420}, UnitPrice: &unit}},
 	}}, r.err
 }
 
@@ -101,7 +101,7 @@ func TestSzptRoutes(t *testing.T) {
 		t.Fatalf("products: %d %+v", w.Code, repo.query)
 	}
 	body := w.Body.String()
-	for _, want := range []string{`"minPrice":420,"offers":[{"storeCode":"DINA","storeName":"Dina","price":420,"oldPrice":null,"unitPrice":{"value":840,"unit":"kg"},"soldByWeight":false}]`,
+	for _, want := range []string{`"minPrice":420,"offers":[{"storeCode":"STORE_A","storeName":"Store A","price":420,"oldPrice":null,"unitPrice":{"value":840,"unit":"kg"},"soldByWeight":false}]`,
 		`"unitPrice":{"value":840,"unit":"kg"}`, `"snapshotAt":"2026-11-11T01:00:51.947Z"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("body lacks %s: %s", want, body)
@@ -151,7 +151,7 @@ func TestSzptRoutes(t *testing.T) {
 func TestExistingRoutesUnchanged(t *testing.T) {
 	s := szptRouter(&testSzpt{})
 	for path, want := range map[string]string{
-		"/api/products/opaque": `{"id":"opaque","name":"Milk","brand":null,"category":{"slug":"","name":""},"imageUrl":null,"attributes":{},"minPrice":100,"offers":[{"storeCode":"DINA","storeName":"Dina","price":100,"oldPrice":null}],"snapshotAt":"2026-10-01T00:00:00.000Z"}`,
+		"/api/products/opaque": `{"id":"opaque","name":"Milk","brand":null,"category":{"slug":"","name":""},"imageUrl":null,"attributes":{},"minPrice":100,"offers":[{"storeCode":"STORE_A","storeName":"Store A","price":100,"oldPrice":null}],"snapshotAt":"2026-10-01T00:00:00.000Z"}`,
 		"/api/dashboard":       `{"summary":{"canonicalProducts":0,"stores":0,"matchedAcrossStores":0,"snapshotAt":""},"priceSpreads":[],"locations":[],"baskets":[]}`,
 	} {
 		if w := s.get("GET", path); w.Code != 200 || w.Body.String() != want {
