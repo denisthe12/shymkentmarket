@@ -28,7 +28,7 @@ const membersOf = (d: Dictionary, key: string) => Object.entries(d.products).fil
 /**
  * Split-правило одноразовое: ключ карточки считается по первому участнику, поэтому по словарю нельзя понять,
  * применено ли правило, если к карточке позже присоединился другой магазин. Применённое правило хранит appliedAt и пропускается.
- * После полной пересборки словаря (dict:apply) разделения пропадают: чтобы применить их заново, снимите appliedAt с правил.
+ * Если словарь собран заново с пустого, разделения пропадают: чтобы применить их заново, снимите appliedAt с правил.
  */
 export function applyOverrides(dict: Dictionary, overrides: Overrides): Dictionary {
   const d: Dictionary = DictionarySchema.parse(structuredClone(dict))
