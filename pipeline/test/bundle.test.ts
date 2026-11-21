@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { buildBundle, qualityReport } from '../src/agent/bundle.js'
+import type { StoreCode } from '../src/types.js'
 import { cp } from './helpers.js'
 
 const a = cp('DINA', '1', 'Молоко FoodMaster 3.2% 1 л', { volumeMl: 1000, fatPercent: 3.2 })
@@ -36,6 +37,23 @@ describe('bundle', () => {
     const b = buildBundle([{ members: [x], method: 'deterministic', confidence: 1, review: 'approved' }], sources, '2026-10-05T12:00:00.000Z')
     expect(b.rawProducts[0]!.imageUrl).toBe('https://img/9.jpg')
     expect(Object.keys(b.rawProducts[0]!.rawPayload).sort()).toEqual(['agentFlags', 'id', 'title'])
+  })
+  it('takes the image of MAGNUM over a chain outside IMAGE_ORDER, whatever the member order', () => {
+    const other = cp('STORE_A' as StoreCode, 'a_1', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    const magnum = cp('MAGNUM', 'm_1', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    other.product.imageUrl = 'https://img/a.jpg'
+    magnum.product.imageUrl = 'https://img/m.jpg'
+    for (const members of [[other, magnum], [magnum, other]]) {
+      const b = buildBundle([{ members, method: 'ai', confidence: 0.97, review: 'approved' }], sources, '2026-10-05T12:00:00.000Z')
+      expect(b.canonicalProducts[0]!.imageUrl).toBe('https://img/m.jpg')
+    }
+  })
+  it('falls back to a chain outside IMAGE_ORDER when MAGNUM has no image', () => {
+    const other = cp('STORE_A' as StoreCode, 'a_2', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    const magnum = cp('MAGNUM', 'm_2', 'Сахар 1 кг', { weightGrams: 1000 }, null, 'сахар')
+    other.product.imageUrl = 'https://img/a2.jpg'
+    const b = buildBundle([{ members: [magnum, other], method: 'ai', confidence: 0.97, review: 'approved' }], sources, '2026-10-05T12:00:00.000Z')
+    expect(b.canonicalProducts[0]!.imageUrl).toBe('https://img/a2.jpg')
   })
   it('report counts cross-store matches', () => {
     expect(qualityReport(bundle)).toContain('Matched across 2+ stores: 1')

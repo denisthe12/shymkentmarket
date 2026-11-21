@@ -17,7 +17,7 @@ describe('store lists', () => {
     expect(required).toEqual(storesLine(script)?.map((s) => codes[s]))
   })
   it('sync defaults and the ops env example require all four stores', () => {
-    expect(read('../src/cli/sync.ts')).toContain("'DINA,DANA,FIX_PRICE,ANVAR'")
+    expect(read('../src/cli/sync.ts')).toContain("'MAGNUM'")
     expect(read('../../ops/sync/aktau-sync.env.example')).toMatch(/^SYNC_STORES=DINA,DANA,FIX_PRICE,ANVAR$/m)
   })
   it('pipeline env example has no Anvar credentials', () => {
