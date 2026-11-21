@@ -21,7 +21,7 @@
 - Файл записи: `backend-go/tests/integration/testdata/reference/<TestName>.json`, JSON-массив, `json.MarshalIndent` с двумя пробелами, `\n` в конце; поля `method,path,contentType,body,status,responseContentType,response`.
 - Ключ: `method`+`path`+`contentType`+`body`; повторы ключа проигрываются по порядку; промах — статус 599; сообщения об ошибках без тела запроса.
 - Отчёты в `docs/**/reports` и старые планы не редактируются.
-- Перед каждым push — `node C:/Development/AdilBaga-local-ci/run-local.mjs` (все группы), все PASS.
+- Перед каждым push — `локальный CI-раннер вне репозитория` (все группы), все PASS.
 
 ## Review Focus
 
@@ -145,14 +145,14 @@
   Expected: exit 0. Если есть diff — найти плавающее поле, добавить нормализацию в сравнение соответствующего теста (по образцу `equalHTTPProducts`, отдельным коммитом), перезаписать файлы, закоммитить и повторить шаг 3.
 
 - [ ] **Step 4: replay локально**
-  Run: `node C:/Development/AdilBaga-local-ci/run-local.mjs staging`
+  Run: `локальный CI-раннер вне репозитория staging`
   Expected: `PASS staging`; в `logs/staging.log` блоки `live reference parity` и `recorded reference parity`, в каждом пять `--- PASS`.
 
 - [ ] **Step 5: негативная проверка (локально, без коммита):** изменить одну цифру `response` в `TestLocalSecurityQueryParity.json` → `run-local.mjs staging` падает на `security query response mismatch`; удалить один обмен → падает с `reference: missing exchange`; вернуть файл `git checkout -- <file>`.
 
 - [ ] **Step 6: полный локальный CI, push 1**
   ```bash
-  node C:/Development/AdilBaga-local-ci/run-local.mjs
+  локальный CI-раннер вне репозитория
   git push -u origin claude/legacy-nest-analysis-176153
   ```
   Expected: локальный CI `ALL PASSED`; открыть draft PR в `main`; hosted CI 9/9 success. Номер run записать в описание PR как доказательство эквивалентности.
@@ -186,7 +186,7 @@
   ```
 
 - [ ] **Step 7: локальный CI**
-  Run: `node C:/Development/AdilBaga-local-ci/run-local.mjs`
+  Run: `локальный CI-раннер вне репозитория`
   Expected: `ALL PASSED`; в `logs/staging.log` нет строк `Nest`, блок `recorded reference parity` содержит `--- PASS` для всех пяти тестов и ни одного `--- SKIP`.
 
 ### Task 5: документация и остатки названия NestJS (push 2)
@@ -209,7 +209,7 @@
   ```bash
   git add -A
   git commit -m "docs: describe Go-only API and recorded reference"
-  node C:/Development/AdilBaga-local-ci/run-local.mjs
+  локальный CI-раннер вне репозитория
   git push
   ```
   Expected: `ALL PASSED`; hosted CI 9/9; PR переведён из draft в ready; в описании — run push 1 (эквивалентность), run push 2 и строка: «защищённые пути деплоя не изменены; release из `main` проходит transport от 1cbd535 без нового исключения».
@@ -227,7 +227,7 @@
 - Modify: `docs/production/GITHUB_BRANCH_PROTECTION.md:24`
 - Modify: `scripts/deploy/auto-transport.mjs` (`approvedExceptions`)
 - Delete: `backend/prisma/seed.ts`
-- Modify (вне репозитория): `C:\Development\AdilBaga-local-ci\run-local.mjs:4,14,28`, `C:\Development\AdilBaga-local-ci\inside.sh` (`ALL`)
+- Modify (вне репозитория): `локальный CI-раннер вне репозитория`, `скрипт локального CI-раннера` (`ALL`)
 
 **Interfaces:**
 - Consumes: SHA активного релиза `ACTIVE` — пользователь присылает вывод `sudo grep -E '^API_IMAGE=' /etc/adilbaga/release.env` с VPS (формат проверен 2026-11-08: `API_IMAGE=adilbaga-api:<40-символьный SHA>`, других SHA-строк в файле нет); `ACTIVE` — тег после `:`, должен совпадать с `^[a-f0-9]{40}$`; blob `SEED` = `git rev-parse ACTIVE:backend/prisma/seed.ts` (на 1cbd535 — `5a9debc5abe9ba91367e935dfe22662f849847e7`).
@@ -250,7 +250,7 @@
   ```bash
   git add -A .github/workflows/ci.yml scripts backend/prisma docs/production/GITHUB_BRANCH_PROTECTION.md
   git commit -m "ci: rename Nest Reference job to DB Schema; drop legacy seed"
-  node C:/Development/AdilBaga-local-ci/run-local.mjs
+  локальный CI-раннер вне репозитория
   git push -u origin <branch>
   ```
   Expected: `ALL PASSED`; hosted CI 9 джоб, среди них `DB Schema`, все success. В описании PR: `build` для SHA до этого PR больше не проходит `verifyCI`; откат — через образы на VPS (e50de25 и старше); transport-исключение покрывает только удаление `seed.ts` от `ACTIVE`.

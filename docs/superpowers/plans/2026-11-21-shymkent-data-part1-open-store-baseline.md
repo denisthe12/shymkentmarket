@@ -193,9 +193,9 @@
 **Files:**
 - Create: `docs/production/reports/SHYMKENT_DATA_BASELINE_REPORT.md`
 
-- [ ] **Step 1:** Скопировать `C:\Development\shymkentmarket-worktrees\async-scrapers-core\data\sources\magnum.json` в `data/sources/` (в `.gitignore`).
+- [ ] **Step 1:** Скопировать `локальный файл живого прогона 2026-11-21 (вне репозитория)` в `data/sources/` (в `.gitignore`).
 - [ ] **Step 2:** Одноразовая PostgreSQL (проверить сервер/БД/роль): база + таксономия → роли из `backend/prisma/security/` как в `run-db-integration.mjs` → `SYNC_STORES=MAGNUM SYNC_MAX_SOURCE_AGE_HOURS=720 pnpm sync` → Go `cmd/ingest` (`-apply`) → снимок опубликован; `SELECT count(*) FROM offers WHERE "snapshotId"=<новый>` > 0; `SELECT count(*) FROM offer_price_basis WHERE "soldByWeight"` ≈ число весовых в файле.
 - [ ] **Step 3:** Поиск `rg -n "\b(DINA|DANA|FIX_PRICE|ANVAR)\b"` по `pipeline backend backend-go contracts frontend ops scripts data` → пусто.
-- [ ] **Step 4:** Локальный CI `node C:/Development/AdilBaga-local-ci/run-local.mjs` с группами `contracts,go,schema,frontend,pipeline,security,ops,guard` → PASS.
+- [ ] **Step 4:** Локальный CI `локальный CI-раннер вне репозитория` с группами `contracts,go,schema,frontend,pipeline,security,ops,guard` → PASS.
 - [ ] **Step 5:** Отчёт по образцу `SHYMKENT_MAGNUM_ASYNC_SCRAPERS_REPORT.md`: база, изменённые файлы, сравнение схем (diff), решения по документам, проверки PASS/FAIL/SKIP/NOT_RUN, риски (совместимость клиентов с enum; роли `aktau_*`), условие остановки.
 - [ ] **Step 6: Commit** `git commit -m "Report the Shymkent data baseline"`. Push и PR — только после «да» Owner.

@@ -12,8 +12,8 @@ Ingestion не входит в API-релиз (`deploy/`) и ставится о
 
 | Код | Значение | Статус юнита |
 |---|---|---|
-| `0` | все четыре скрапера удачны, snapshot опубликован | `SUCCESS` |
-| `1` | ошибка sync/ingest или упали все четыре скрапера; snapshot не опубликован, на сайте остаются прошлые цены | `failed` |
+| `0` | скрапер Magnum удачен, snapshot опубликован | `SUCCESS` |
+| `1` | ошибка sync/ingest или упал скрапер Magnum; snapshot не опубликован, на сайте остаются прошлые цены | `failed` |
 | `3` | snapshot опубликован, но хотя бы одна сеть взята из прошлого удачного файла (не старше `SYNC_MAX_SOURCE_AGE_HOURS`, 36 ч); в журнале строка `[sync] stale stores: <список>` | `failed` |
 | `4` | snapshot опубликован, но очистка старых snapshot упала; в stderr строка `[sync] retention failed`. Если одновременно есть устаревшая сеть, итоговый код `3` | `failed` |
 
@@ -33,7 +33,7 @@ Ingestion не входит в API-релиз (`deploy/`) и ставится о
 ```bash
 sudo cp ops/sync/aktau-sync.service ops/sync/aktau-sync.timer /etc/systemd/system/
 sudo install -m 600 -o aktau-sync ops/sync/aktau-sync.env.example /etc/aktau-sync.env
-sudoedit /etc/aktau-sync.env     # заполнить INGEST_DATABASE_URL и REVALIDATE_HMAC_SECRET; FIXPRICE_* уже заданы
+sudoedit /etc/aktau-sync.env     # заполнить INGEST_DATABASE_URL и REVALIDATE_HMAC_SECRET
 sudo systemctl daemon-reload
 sudo systemctl enable --now aktau-sync.timer
 ```
@@ -80,7 +80,7 @@ PATH должен совпадать с PATH юнита. Откат: те же �
 ```json
 {"version":1,"kind":"daily","startedAt":"2026-11-09T13:00:01Z","finishedAt":"2026-11-09T13:03:27Z",
  "status":"finished","exitCode":3,"published":true,
- "stores":{"dina":0,"dana":1,"fixprice":0,"anvar":0},"stale":["dana"],"retention":"ok"}
+ "stores":{"magnum":1},"stale":["magnum"],"retention":"ok"}
 ```
 
 - `stores` — код выхода каждого скрапера, `null`, если скрапер не завершился до выхода скрипта;

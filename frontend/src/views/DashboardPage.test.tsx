@@ -75,7 +75,7 @@ describe('DashboardPage', () => {
       'Store A· 3 точки',
       'Store B· 2 точки',
     ])
-    expect(within(groups[2]).getByText('15-й микрорайон, 21')).toBeInTheDocument()
+    expect(within(groups[2]).getByText('Демонстрационный адрес 8')).toBeInTheDocument()
     expect(await screen.findByTestId('store-map')).toHaveTextContent('MAGNUM,MAGNUM,MAGNUM,STORE_A,STORE_A,STORE_A,STORE_B,STORE_B')
   })
 
@@ -98,10 +98,10 @@ describe('DashboardPage', () => {
 
   it('opens the basket contents with links to products', async () => {
     renderPage(<DashboardPage />, '/ru/dashboard')
-    const [dina, , fix] = await screen.findAllByTestId('basket')
-    await userEvent.click(within(dina).getByText('Состав корзины'))
-    expect(within(dina).getByRole('link', { name: /Молоко/ })).toHaveAttribute('href', expect.stringMatching(/^\/ru\/products\//))
-    expect(within(fix).getByText('нет в сети')).toBeInTheDocument()
+    const [magnum, , storeB] = await screen.findAllByTestId('basket')
+    await userEvent.click(within(magnum).getByText('Состав корзины'))
+    expect(within(magnum).getByRole('link', { name: /Молоко/ })).toHaveAttribute('href', expect.stringMatching(/^\/ru\/products\//))
+    expect(within(storeB).getByText('нет в сети')).toBeInTheDocument()
   })
 
   it('shows the chain basket next to its store points', async () => {

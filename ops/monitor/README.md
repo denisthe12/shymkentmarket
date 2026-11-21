@@ -179,12 +179,11 @@ the sync runs and a line about the monitor itself.
   and `/var/lib/aktau-monitor/state/state.json` (validated directly, v1 or v2,
   without taking `monitor.lock`).
 - Window `[now − 24 h, now]`. Expected daily runs start within one hour after the
-  01:00 and 13:00 UTC slots; the weekly full scrape is expected from Sunday 22:00 UTC.
+  01:00 and 13:00 UTC slots. There is no weekly full-scrape run any more.
 - One line per run, times in Aktau (UTC+5): ✅ code 0; ⚠️ code 3 (stale networks
   named) or code 4 (retention failed); ❌ code 1 or other non-zero, a run that is
   `running` for ≥ 25 minutes ("не завершился"), or no file ("прогон не найден");
-  ⏳ a recent `running` run. Weekly line: ✅ code 0, ❌ with the failed
-  networks/scope steps, or not found.
+  ⏳ a recent `running` run. No weekly line is emitted.
 - Monitor line: ✅ `lastUTC` within 15 minutes, empty queue, phase OK; ⚠️ `lastUTC`
   older than 15 minutes (checked first, so a stopped monitor is never hidden by a
   queue): `не запускался с HH:MM`, plus ` (D <month>)` when that Aktau date differs
@@ -201,9 +200,6 @@ the sync runs and a line about the monitor itself.
 - **A missing report at 18:30 Aktau is itself the alarm**: the report runs on the
   same VPS as the monitor, so a dead VPS sends neither. A silent monitor shows up
   as ⚠️/❌ in this report.
-- **Known limitation.** The weekly line appears only when Sunday 22:00 UTC falls
-  inside the 24-hour window. A Monday catch-up run after 22:00 UTC (the timer is
-  `Persistent=true` and fires late after VPS downtime) omits it.
 
 Manual one-shot (sends a real Telegram message):
 

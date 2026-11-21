@@ -60,7 +60,7 @@ SELECT jsonb_build_object(
  ORDER BY difference DESC,id COLLATE "ru-x-icu") FROM spreads),'[]'::jsonb),
  'locations',coalesce((SELECT jsonb_agg(jsonb_build_object('storeCode',s.code,'storeName',s.name,
  'name',l.name,'address',l.address,'latitude',l.latitude,'longitude',l.longitude)
- ORDER BY s.code,l.name,l.id) FROM public.store_locations l JOIN visible_stores s ON s.id=l."storeId"),'[]'::jsonb),
+ ORDER BY s.code COLLATE "C",l.name,l.id) FROM public.store_locations l JOIN visible_stores s ON s.id=l."storeId"),'[]'::jsonb),
  'baskets',coalesce((SELECT jsonb_agg(jsonb_build_object('storeCode',code,'storeName',name,'total',total,'items',items)
  ORDER BY "sortOrder",code COLLATE "C")
  FROM baskets),'[]'::jsonb)) FROM current_snapshot`

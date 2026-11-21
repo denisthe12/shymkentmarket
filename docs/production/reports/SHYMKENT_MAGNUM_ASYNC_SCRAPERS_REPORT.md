@@ -18,7 +18,7 @@ production нет.
 | --- | --- |
 | Репозиторий | `origin` fetch и push — `https://github.com/denisthe12/shymkentmarket.git`. |
 | База | `main` `f6d6d475d31b0630f19526e93c4a9bc90529ce15` (merge PR #3). Перед push `git fetch` подтвердил, что `origin/main` не сдвинулся и является предком ветки. |
-| Рабочее дерево | Отдельный worktree `C:\Development\shymkentmarket-worktrees\async-scrapers-core` (Windows, Git Bash), ветка `feat/async-scrapers-core`. |
+| Рабочее дерево | Отдельный worktree локальный worktree (вне репозитория) (Windows, Git Bash), ветка `feat/async-scrapers-core`. |
 | История | Рабочие коммиты задачи (18) по согласованию с Owner сжаты в один коммит до первого push; дерево после сжатия побайтно совпадает с деревом до сжатия (`git diff` пуст). |
 | Инструменты | Node `v24.18.0`, pnpm `10.32.1` (`packageManager`). Новых npm-зависимостей нет. |
 

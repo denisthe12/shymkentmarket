@@ -81,66 +81,66 @@
     {
       "storeCode": "MAGNUM",
       "storeName": "Magnum",
-      "name": "Magnum 5 мкр",
-      "address": "5-й микрорайон, 30",
-      "latitude": 43.6555,
-      "longitude": 51.1603
+      "name": "Magnum — демо-точка 1",
+      "address": "Демонстрационный адрес 1",
+      "latitude": 42.3215,
+      "longitude": 69.5903
     },
     {
       "storeCode": "MAGNUM",
       "storeName": "Magnum",
-      "name": "Magnum 12 мкр",
-      "address": "12-й микрорайон, 7",
-      "latitude": 43.6703,
-      "longitude": 51.1745
+      "name": "Magnum — демо-точка 2",
+      "address": "Демонстрационный адрес 2",
+      "latitude": 42.3303,
+      "longitude": 69.5745
     },
     {
       "storeCode": "MAGNUM",
       "storeName": "Magnum",
-      "name": "Magnum 27 мкр",
-      "address": "27-й микрорайон, 1А",
-      "latitude": 43.6862,
-      "longitude": 51.1561
+      "name": "Magnum — демо-точка 3",
+      "address": "Демонстрационный адрес 3",
+      "latitude": 42.3462,
+      "longitude": 69.6061
     },
     {
       "storeCode": "STORE_A",
       "storeName": "Store A",
-      "name": "Store A 3 мкр",
-      "address": "3-й микрорайон, 4",
-      "latitude": 43.6441,
-      "longitude": 51.1552
+      "name": "Store A — демо-точка 1",
+      "address": "Демонстрационный адрес 4",
+      "latitude": 42.3141,
+      "longitude": 69.6052
     },
     {
       "storeCode": "STORE_A",
       "storeName": "Store A",
-      "name": "Store A 14 мкр",
-      "address": "14-й микрорайон, 55",
-      "latitude": 43.6612,
-      "longitude": 51.1839
+      "name": "Store A — демо-точка 2",
+      "address": "Демонстрационный адрес 5",
+      "latitude": 42.3312,
+      "longitude": 69.5839
     },
     {
       "storeCode": "STORE_A",
       "storeName": "Store A",
-      "name": "Store A 32Б мкр",
-      "address": "32Б микрорайон, 12",
-      "latitude": 43.6958,
-      "longitude": 51.1702
+      "name": "Store A — демо-точка 3",
+      "address": "Демонстрационный адрес 6",
+      "latitude": 42.3558,
+      "longitude": 69.5702
     },
     {
       "storeCode": "STORE_B",
       "storeName": "Store B",
-      "name": "Store B Сити",
-      "address": "ТРЦ «Актау Сити», 9-й микрорайон",
-      "latitude": 43.6508,
-      "longitude": 51.1681
+      "name": "Store B — демо-точка 1",
+      "address": "Демонстрационный адрес 7",
+      "latitude": 42.3108,
+      "longitude": 69.5681
     },
     {
       "storeCode": "STORE_B",
       "storeName": "Store B",
-      "name": "Store B 15 мкр",
-      "address": "15-й микрорайон, 21",
-      "latitude": 43.6687,
-      "longitude": 51.1602
+      "name": "Store B — демо-точка 2",
+      "address": "Демонстрационный адрес 8",
+      "latitude": 42.3287,
+      "longitude": 69.6002
     }
   ],
   "baskets": [

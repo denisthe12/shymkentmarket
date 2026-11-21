@@ -66,7 +66,7 @@
 - Modify: `data/mapping/dictionary.json`, `data/mapping/overrides.json`
 - Create: `backend/prisma/migrations/<дата-время>_shymkent_taxonomy/migration.sql` (через `pnpm taxonomy:sql`)
 
-- [ ] **Step 1:** Скопировать `C:\Development\shymkentmarket-worktrees\async-scrapers-core\data\sources\magnum.json` в `data/sources/`; `pnpm dict:prepare MAGNUM` → записать число товаров и батчей.
+- [ ] **Step 1:** Скопировать `локальный файл живого прогона 2026-11-21 (вне репозитория)` в `data/sources/`; `pnpm dict:prepare MAGNUM` → записать число товаров и батчей.
 - [ ] **Step 2:** По одному субагенту Haiku (`model: haiku`) на батч, параллельно пачками; промпт субагенту: путь `prompt.md`, путь своего батча, путь своего файла решений, «читать только свой батч, писать только свой файл».
 - [ ] **Step 3:** `pnpm dict:apply-decisions MAGNUM --check` → для невалидных батчей повторить субагента (до 2 раз; дальше — разобрать вручную) → exit 0.
 - [ ] **Step 4:** `pnpm dict:apply-decisions MAGNUM` → записать `ApplyStats`.

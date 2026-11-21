@@ -30,6 +30,6 @@ describe('stores', () => {
   })
 
   it('builds the marker key from chain and address', () => {
-    expect(locationKey(point('DINA', '5-й микрорайон, 30'))).toBe('DINA:5-й микрорайон, 30')
+    expect(locationKey(point('MAGNUM', 'Демонстрационный адрес 1'))).toBe('MAGNUM:Демонстрационный адрес 1')
   })
 })

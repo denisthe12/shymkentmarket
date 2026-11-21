@@ -299,7 +299,7 @@
     ],
     "potatoes": [
       {
-        "id": "szpt-potatoes-dina",
+        "id": "szpt-potatoes-store-a",
         "name": "Картофель мытый",
         "brand": null,
         "category": {
@@ -341,7 +341,7 @@
         "snapshotAt": "2026-11-11T01:00:51.947Z"
       },
       {
-        "id": "szpt-potatoes-dana",
+        "id": "szpt-potatoes-store-b",
         "name": "Картофель молодой",
         "brand": null,
         "category": {

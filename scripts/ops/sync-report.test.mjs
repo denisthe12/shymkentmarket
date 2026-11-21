@@ -7,9 +7,9 @@ const TUE = Date.UTC(2026, 10, 10, 13, 30), MON = Date.UTC(2026, 10, 16, 13, 30)
 const iso = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 const D = (day, h, m = 0, s = 1) => Date.UTC(2026, 10, day, h, m, s);
 const daily = (startMs, over = {}) => ({ version: 1, kind: 'daily', startedAt: iso(startMs), finishedAt: iso(startMs + 600000), status: 'finished',
-  exitCode: 0, published: true, stores: { dina: 0, dana: 0, fixprice: 0, anvar: 0 }, stale: [], retention: 'ok', ...over });
+  exitCode: 0, published: true, stores: { magnum: 0, store_a: 0, store_b: 0, store_c: 0 }, stale: [], retention: 'ok', ...over });
 const weekly = (startMs, over = {}) => ({ version: 1, kind: 'weekly', startedAt: iso(startMs), finishedAt: iso(startMs + 600000), status: 'finished',
-  exitCode: 0, published: false, stores: { dina: 0, dana: 0, fixprice: 0 }, scopeFailed: [], ...over });
+  exitCode: 0, published: false, stores: { magnum: 0, store_a: 0, store_b: 0 }, scopeFailed: [], ...over });
 const okState = lastUTC => ({ version: 2, phase: 'OK', failures: 0, lastUTC, queue: [] });
 const q = n => Array.from({ length: n }, (_, i) => ({ id: String(i).padStart(32, 'a'), type: i % 2 ? 'incident_recovered' : 'incident_opened', atUTC: 1, attempts: 1 }));
 const one = (now, runs, monitorState = okState(now - 3 * 60000)) => buildReport({ now, runs, monitorState }).split('\n');
@@ -22,11 +22,11 @@ test('Tuesday example', () => {
       '✅ Монитор API: OK, проверка в 18:27'].join('\n'));
 });
 test('Monday example', () => {
-  const runs = [daily(D(16, 1), { exitCode: 3, stores: { dina: 0, dana: 1, fixprice: 0, anvar: 0 }, stale: ['dana'] }),
+  const runs = [daily(D(16, 1), { exitCode: 3, stores: { magnum: 0, store_a: 1, store_b: 0, store_c: 0 }, stale: ['store_a'] }),
     daily(D(16, 13), { exitCode: 1, published: false, retention: null })];
   const st = { version: 2, phase: 'OK', failures: 0, lastUTC: Date.UTC(2026, 10, 16, 13, 27), queue: q(2) };
   assert.equal(buildReport({ now: MON, runs, monitorState: st }),
-    ['Отчёт Aktau Market · 16 ноября', '⚠️ 06:00 — опубликовано, dana из прошлого файла (скрапер упал)',
+    ['Отчёт Aktau Market · 16 ноября', '⚠️ 06:00 — опубликовано, store_a из прошлого файла (скрапер упал)',
       '❌ 18:00 — не опубликовано: сбой публикации (код 1)',
       '⚠️ Монитор API: 2 неотправленные тревоги, проверка в 18:27'].join('\n'));
 });
@@ -40,10 +40,10 @@ test('expectedSlots has only daily slots (no weekly full scrape)', () => {
 });
 test('daily rows', () => {
   assert.equal(slot13(), '✅ 18:00 — опубликовано, 4/4 сети');
-  assert.equal(slot13({ exitCode: 3, stale: ['dana', 'anvar'], stores: { dina: 0, dana: 1, fixprice: 0, anvar: 1 } }), '⚠️ 18:00 — опубликовано, dana, anvar из прошлого файла (скрапер упал)');
+  assert.equal(slot13({ exitCode: 3, stale: ['store_a', 'store_c'], stores: { magnum: 0, store_a: 1, store_b: 0, store_c: 1 } }), '⚠️ 18:00 — опубликовано, store_a, store_c из прошлого файла (скрапер упал)');
   assert.equal(slot13({ exitCode: 4, retention: 'failed' }), '⚠️ 18:00 — опубликовано, сбой очистки старых snapshot (код 4)');
-  assert.equal(slot13({ exitCode: 1, published: false, stores: { dina: 1, dana: 1, fixprice: 2, anvar: 1 } }), '❌ 18:00 — не опубликовано: все скраперы упали (код 1)');
-  assert.equal(slot13({ exitCode: 1, published: false, stores: { dina: 1, dana: 0, fixprice: 1, anvar: 1 } }), '❌ 18:00 — не опубликовано: сбой публикации (код 1)');
+  assert.equal(slot13({ exitCode: 1, published: false, stores: { magnum: 1, store_a: 1, store_b: 2, store_c: 1 } }), '❌ 18:00 — не опубликовано: все скраперы упали (код 1)');
+  assert.equal(slot13({ exitCode: 1, published: false, stores: { magnum: 1, store_a: 0, store_b: 1, store_c: 1 } }), '❌ 18:00 — не опубликовано: сбой публикации (код 1)');
   assert.equal(slot13({ exitCode: 7 }), '❌ 18:00 — не опубликовано (код 7)');
 });
 test('running rows', () => {
@@ -85,7 +85,7 @@ test('stale monitor with queued alerts: staleness first, date only on another Ak
   assert.equal(last(one(TUE, [], st(Date.UTC(2026, 10, 9, 19, 30), 1))), '⚠️ Монитор API: не запускался с 00:30, 1 неотправленная тревога');
 });
 test('manual rerun inside the slot hour wins', () => {
-  const runs = [daily(D(10, 1)), daily(D(10, 13), { exitCode: 1, published: false, stores: { dina: 1, dana: 0, fixprice: 0, anvar: 0 } }), daily(D(10, 13, 20, 0))];
+  const runs = [daily(D(10, 1)), daily(D(10, 13), { exitCode: 1, published: false, stores: { magnum: 1, store_a: 0, store_b: 0, store_c: 0 } }), daily(D(10, 13, 20, 0))];
   assert.equal(one(TUE, runs)[2], '✅ 18:00 — опубликовано, 4/4 сети');
 });
 test('pickRun: other kind or outside hour is ignored', () => {

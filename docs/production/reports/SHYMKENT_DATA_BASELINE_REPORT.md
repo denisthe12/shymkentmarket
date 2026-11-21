@@ -66,7 +66,7 @@ SYNC_MAX_SOURCE_AGE_HOURS=720 pnpm sync` → `cmd/ingest` dry-run → `-apply` �
 | Показатель | Значение |
 | --- | --- |
 | Миграции | обе применены; в `categories` 12 строк, в `stores` одна (Magnum) |
-| `pnpm sync` | 1383 raw-товара Magnum, ошибок 0; в `magnum.json` 1403 товара, разницу в 20 отсёк сам `sync` |
+| `pnpm sync` | 1383 raw-товара Magnum, ошибок 0; в `magnum.json` 1403 товара, разницу в 20 отсёк сам `sync`: это растительные «Напитки …» из листа «Молоко», `refineCategory` (`pipeline/src/mapping/milk.ts`) переносит их в категорию `drinks`, а `drinks` не входит в `DEFAULT_PUBLISH_CATEGORIES` — ожидаемо |
 | `cmd/ingest` dry-run | PASS; `rawCount 1383`, `canonicalCount 1383`, нужные сети — только `MAGNUM` |
 | `cmd/ingest -apply` | PASS; один снимок `4ff3460b-7dd6-41c2-b3e3-7f90df5453a8` со статусом `published`; рассылка инвалидации кэша деградировала (адреса нет — ожидаемо локально) |
 | Офферов в снимке | 1383 |
@@ -81,25 +81,28 @@ SYNC_MAX_SOURCE_AGE_HOURS=720 pnpm sync` → `cmd/ingest` dry-run → `-apply` �
 
 `rg -n "\b(DINA|DANA|FIX_PRICE|ANVAR)\b" pipeline backend backend-go contracts frontend ops scripts data`
 (без `node_modules`, `.next`, `data/sources`, `data/sync`; документы других команд, исторические
-отчёты и спецификация/планы этого проекта в область не входят). Остались два совпадения:
+отчёты и спецификация/планы этого проекта в область не входят). Остались два совпадения (до правок финального ревью; после них остаётся только первое):
 
 | Место | Вердикт |
 | --- | --- |
 | `contracts/tests/contract.test.mjs:333` | допустимо: список старых кодов, которые тест проверяет как отсутствующие |
-| `frontend/src/lib/stores.test.ts:33` | остаток Актау в тесте области Frontend (`DINA` с адресом Актау); строка только в данных теста, на работу не влияет, передан Frontend |
+| `frontend/src/lib/stores.test.ts:33` | исправлено в финальной волне: `MAGNUM` с нейтральным демонстрационным адресом |
 
 ## Решения
 
-- **Открытый код сети.** Один шаблон `^[A-Z][A-Z0-9_]{1,31}$` везде: CHECK в БД, Go, pipeline, контракт. Заводить новую сеть — строка в `stores` и запись источника, без миграции enum.
+- **Открытый код сети.** Один шаблон `^[A-Z][A-Z0-9_]{1,31}$`: CHECK в БД, Go, контракт, ops-скрипт `scripts/ops/verify-go-production.mjs`, скрипт lite-baseline и комментарий во Frontend. Pipeline шаблон не использует: он опирается на закрытый реестр модулей `STORE_CODES`. Заводить новую сеть — строка в `stores` и запись источника, без миграции enum.
 - **Правило набора сетей при ingest (R3).** Бандл без `sourceRuns` по-прежнему допустим; если `sourceRuns` есть, набор их кодов должен совпадать с набором `stores.code` — как и было, без расширения.
 - **Таксономия: только добавление и правило времени (R13).** Миграции таксономии генерируются из словаря и только добавляют; метка времени новой миграции — позднее из «сейчас» и «последняя миграция + 1 с», потому что база датирована 2026-11-22, а сегодня 2026-11-21, и Prisma применяет по имени.
 - **База миграций заменена целиком.** Разовое исключение в защите миграций (`f0e442a`, `8c7f790`) разрешает только этот путь базы; новые миграции в список автотранспорта (`scripts/deploy/auto-transport.mjs`) не добавлялись.
+- **Строка `stores` и первый бандл.** Новая строка `stores` должна попасть в БД вместе с первым бандлом с этим кодом; иначе ingest падает (`ingestion stores mismatch` / у сети нет товаров). Это намеренное fail-closed поведение.
+- **Недопустимые коды сетей в метриках.** Такие коды отбрасываются из метрик. В тексте спецификации предлагалась метка `other`; отбрасывание — прежнее поведение и безопаснее.
+- **Документы (решение Owner).** Удалены три документа прежнего Backend 2: `docs/05_BACKEND_2_IMPLEMENTATION_PLAN.md`, `docs/context/04_BACKEND_2_SCOPE.md`, `docs/BACKEND_2_AGENT_AUDIT_INSTRUCTION.md`; живые ссылки на них исправлены. В `docs/00_TECHNICAL_SPEC.md` и `docs/01_RISKS_AND_DECISIONS.md` убраны только подробности доступа к источникам (редактирование, не удаление). Раздел «Факты об API» в спецификации async-scrapers-core оставлен как есть по решению Owner.
 - **Весовой Magnum — только по полям источника** (`rawPayload.isWeighted`), не по названию; `basisGrams` 1000.
 - **Документы.** Удалено 23 файла: `docs/backend-2/*` (3); `docs/data/*` кроме `SYNC_RUNBOOK.md` (10: источники и отчёты по прочим сетям, SCRUM-7); планы `scrum-7-anvar-full-catalog`, `scrum-7-review-fixes`, `fast-price-sync`, `dana-fast-scrape`, спецификация `fast-price-sync-design`; планы `scrum-19-milk-category`, `sochni-hide`, `dict-apply-applied-marker`; отчёты `2026-11-09-outdated-docs-audit`, `PRODUCTION_HANDOFF`. Оставлено: design-system, c2-removal, snapshot-retention, monthly-price-history, product-identity-registry, legacy-nest-removal, monitor-delivery, scrum-25-szpt, szpt-weighted, szpt-phase3, async-scrapers-core, спецификации и планы «Данных Шымкента». Ссылки в `docs/README.md` и спецификации monitor-delivery исправлены, `SYNC_RUNBOOK.md` переписан.
 
 ## Проверки
 
-Локальный CI — `node C:/Development/AdilBaga-local-ci/run-local.mjs` (Linux-контейнер, все
+Локальный CI — `локальный CI-раннер вне репозитория` (Linux-контейнер, все
 группы; прямой `node scripts/ci/run-checks.mjs` не запускался, на этом хосте нет python3).
 
 | Группа локального CI | Результат |
@@ -134,8 +137,8 @@ SYNC_MAX_SOURCE_AGE_HOURS=720 pnpm sync` → `cmd/ingest` dry-run → `-apply` �
 
 - **Совместимость клиентов.** Код сети в API теперь строка по шаблону, а не закрытый enum; клиенты с жёстким enum должны принимать новые коды. Контракт и `API_V1_CONTRACT.md` это описывают.
 - **Имена Актау не переименованы.** Роли `aktau_*`, юниты `ops/sync/aktau-sync*`, пакет `adilbaga-pipeline`, модуль Go `adilbaga/backend-go` оставлены намеренно; переименование — отдельная задача с инфраструктурой.
-- **Остатки Актау для других команд.** Frontend: `generate-og.mjs` (названия прочих сетей), списки сетей в i18n ru/kk, заголовки безопасности с хостами CDN, блог; тест `stores.test.ts` (адрес Актау), переменные `dina/fix` в `DashboardPage.test.tsx`, идентификаторы `szpt-potatoes-dina/dana` в `szpt.json`. Контракт: демонстрационный адрес «Актау» в примерах `dashboard.json` и `voice-start-result.json`, заголовок OpenAPI «Aktau Market API» (унаследован, оговорен в README). Go: координаты Актау в фикстуре `catalog.sql` и эталонах parity. Ops: фикстуры `sync-report` на старых названиях сетей, бренд и часовой пояс Актау в env-примере.
-- **Мелкие замечания ревью, отложенные.** `ORDER BY s.code` без `COLLATE "C"` в `dashboard.go`, `locations.go`, `freshness.go`; допуск строки `"true"` в `isWeighted` в SQL (парсер выдаёт только булево); нет теста соответствия словаря и сида области Magnum; в `pipeline_bundle.json` (генерируется) пара DINA→STORE_B — синтетика.
+- **Остатки Актау для других команд.** Frontend: `generate-og.mjs` (названия прочих сетей), списки сетей в i18n ru/kk, заголовки безопасности с хостами CDN, блог, бренд хлеба «Актау нан» в моках. Контракт: заголовок OpenAPI «Aktau Market API» (унаследован, оговорен в README). Go: координаты Актау в фикстуре `catalog.sql` и эталонах parity. Ops: бренд и часовой пояс Актау в env-примере, заголовок «Отчёт Aktau Market».
+- **Мелкие замечания ревью.** Допуск строки `"true"` в `isWeighted` в SQL (парсер выдаёт только булево); нет теста соответствия словаря и сида области Magnum; в `pipeline_bundle.json` (генерируется) пара DINA→STORE_B — синтетика. `ORDER BY` по коду сети в `dashboard.go`, `locations.go`, `freshness.go` приведён к `COLLATE "C"` в финальной волне.
 - **Данные Magnum.** Один склад (даркстор); СЗПТ-группы «рыба» и «яйца I категории» без совпадений — работа части 2.
 - **GitHub Actions** на этом HEAD ещё не запускались; workflows не менялись, релизные задания остаются закрытыми условием репозитория.
 

@@ -21,7 +21,7 @@
 - Применённые миграции (`20261006000000_catalog_taxonomy`, `20261102000200_anvar_taxonomy`) не редактируются.
 - Скрап Анвара: добавляются только `9043 Чай` и `9140 Свежая рыба, морепродукты`; кофе (9039) не добавляется.
 - Казахские имена — черновики для носителя языка.
-- Перед каждым push: `node C:/Development/AdilBaga-local-ci/run-local.mjs` (нужен Docker).
+- Перед каждым push: `локальный CI-раннер вне репозитория` (нужен Docker).
 - Команды на VPS вводит пользователь (`b2admin`, интерактивный ssh); агент пишет команды и проверяет вывод.
 - Откат данных после первой удачной публикации — только вперёд; разовый подъём `INGEST_MAX_STORE_DROP_PERCENT` — только с отдельного согласия пользователя.
 
@@ -156,7 +156,7 @@ git commit -m "feat(pipeline): raw lamb and horse meat from Dina into meat"
 
 ### Task 4: PR A
 
-- [ ] **Step 1: Локальный CI** — `node C:/Development/AdilBaga-local-ci/run-local.mjs`. Expected: все джобы зелёные.
+- [ ] **Step 1: Локальный CI** — `локальный CI-раннер вне репозитория`. Expected: все джобы зелёные.
 - [ ] **Step 2: Push и PR** (с согласия пользователя) — ветка в `main`, в описании: спека, план, что PR не меняет API и группы, порядок выката (Task 5).
 - [ ] **Step 3: CI GitHub зелёный → merge** (с согласия пользователя).
 
@@ -221,7 +221,7 @@ git commit -m "feat(pipeline): raw lamb and horse meat from Dina into meat"
 
 - [ ] **Step 1: Фикстура** — в `INSERT INTO categories` добавить `('salt','salt','Соль',NULL),('tea-coffee','tea-coffee','Чай и кофе',NULL),('fish','fish','Рыба и морепродукты',NULL)`. Новый блок «-- SZPT phase 3 …» по образцу блока hotfix (raw_products/canonical_products/offers): по 2 «in» и 3 «out» на группу из таблицы Task 6; баранина, конина и рыба Dina с payload `{"price_type":"weight","priceUnit":"kg","pricePerUnitMultiplier":1000}` (баранина и конина — категория `meat`), «Сазан потрошенный вес» — ANVAR с payload `{"priceUnit":"kg","pricePerUnitMultiplier":1000}`; чай и соль с `weightGrams`.
 - [ ] **Step 2: Тест** — добавить кейсы в `new_groups_membership`; отдельный подтест `phase3_fish_per_kg`: у `n-fish-in…` (ANVAR, 2 990 ₸ за кг) цена за кг 2 990, у группы `fish` `DefaultSort = unit_price_asc`.
-- [ ] **Step 3: Запустить** — `node C:/Development/AdilBaga-local-ci/run-local.mjs` (джоб Go integration) или `go test ./tests/integration -run TestDeterministicSzpt` с поднятой БД, как в CI. Expected: PASS.
+- [ ] **Step 3: Запустить** — `локальный CI-раннер вне репозитория` (джоб Go integration) или `go test ./tests/integration -run TestDeterministicSzpt` с поднятой БД, как в CI. Expected: PASS.
 - [ ] **Step 4: Регенерация explain SQL** — `cd backend-go && UPDATE_SZPT_EXPLAIN=1 go test ./internal/postgres -run Explain`, затем без env — PASS.
 - [ ] **Step 5: Commit** — `git commit -m "test(szpt): phase 3 membership fixture and explain SQL"`.
 

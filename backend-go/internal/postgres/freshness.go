@@ -21,7 +21,7 @@ const freshnessSQL = `WITH current_snapshot AS (
  FROM current_snapshot s JOIN public.source_runs sr ON sr."snapshotId"=s.id
  JOIN public.stores st ON st.id=sr."storeId"
  WHERE sr.status='succeeded' AND sr."capturedAt" IS NOT NULL
- ORDER BY st.code`
+ ORDER BY st.code COLLATE "C"`
 
 // Operator/history use only: API role intentionally cannot read source_runs.
 func (r *Repository) SourceFreshness(ctx context.Context) ([]SourceFreshness, error) {

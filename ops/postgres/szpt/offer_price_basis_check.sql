@@ -4,7 +4,8 @@
 -- One file, two parts:
 --   PRE  works at any time; uses the inline weighted rule.
 --        The rule (weighted CASE, defined ONCE in the :basis_cte variable below) must equal the CASE in
---        backend/prisma/migrations/20261122000000_shymkent_baseline/migration.sql and
+--        the latest migration that defines offer_price_basis (currently the Shymkent baseline; a rule change =
+--        a new migration recreating the view, existing migrations are never edited) and
 --        pipeline/src/mapping/weight.ts.
 --   POST runs only if public.offer_price_basis exists (to_regclass + \if); before the migration
 --        it prints a notice and is skipped.

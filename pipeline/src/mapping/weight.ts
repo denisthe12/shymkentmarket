@@ -6,8 +6,8 @@ import type { SourceProduct, StoreCode } from '../types.js'
  * цена приведена к кг. Название и единицу измерения не угадываем — только флаг.
  * Остальные сети: признака нет → false.
  */
-// Правило продублировано в SQL: backend/prisma/migrations/20261122000000_shymkent_baseline/migration.sql (view offer_price_basis)
-// и ops/postgres/szpt/offer_price_basis_check.sql; менять вместе.
+// Правило продублировано в SQL: последняя миграция, определяющая view offer_price_basis (сейчас базовая миграция Шымкента),
+// и ops/postgres/szpt/offer_price_basis_check.sql. Изменение правила = новая миграция, пересоздающая view (существующие миграции не правятся).
 export function isVariableWeight(storeCode: StoreCode, product: Pick<SourceProduct, 'name' | 'rawPayload'>): boolean {
   return storeCode === 'MAGNUM' && product.rawPayload.isWeighted === true
 }

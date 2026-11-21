@@ -22,7 +22,7 @@
 - Новые поля API только аддитивные: `Group.defaultSort`, `Product.soldByWeight`, `Offer.soldByWeight`.
 - Регулярки `~*` без `\b`, `\m`, `\M`; граница слова — класс `[^а-яё]` (урок SCRUM-19).
 - `aktau_api_reader` не получает доступ к `raw_products`; только `SELECT` на `offer_price_basis`.
-- Перед каждым push: `node C:/Development/AdilBaga-local-ci/run-local.mjs` (кроме docs-only).
+- Перед каждым push: `локальный CI-раннер вне репозитория` (кроме docs-only).
 - Команды на VPS вводит пользователь; агент их пишет и проверяет вывод. Не во время sync (01:00 и 13:00 UTC).
 - Коммиты заканчиваются строкой `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; PR — строкой `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 
@@ -105,7 +105,7 @@ t.Run("price_basis", func(t *testing.T) {
 
 - [ ] **Step 3: Запустить, убедиться, что падает**
 
-Run: `node C:/Development/AdilBaga-local-ci/run-local.mjs` (группа DB integration).
+Run: `локальный CI-раннер вне репозитория` (группа DB integration).
 Expected: FAIL — `relation "offer_price_basis" does not exist`.
 
 - [ ] **Step 4: Написать миграцию**
@@ -119,7 +119,7 @@ SQL view — дословно из спеки, часть 1 (регулярка 
 
 - [ ] **Step 6: Запустить, убедиться, что проходит**
 
-Run: `node C:/Development/AdilBaga-local-ci/run-local.mjs`
+Run: `локальный CI-раннер вне репозитория`
 Expected: `TestDeterministicSzpt/price_basis` PASS; остальные подтесты фазы 1 PASS (новые товары не попадают в старые группы, кроме `h14` в Task 3); security-тесты отката PASS.
 
 - [ ] **Step 7: Commit**
