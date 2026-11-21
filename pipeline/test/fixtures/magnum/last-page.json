@@ -1,0 +1,82 @@
+{
+  "content": [
+    {
+      "itemId": 3388114,
+      "extId": 358437,
+      "name": "Яйцо Шымкент Кус куриное без калибровки 30 шт",
+      "price": 236300,
+      "measureUnit": {
+        "id": 1115,
+        "valueForPrice": 1,
+        "isDividable": false,
+        "step": 1,
+        "nameML": {
+          "kk": "шт",
+          "ru": "шт"
+        },
+        "name": "шт",
+        "divideValue": 1,
+        "extId": 19
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/358437.jpg",
+      "imgList": [
+        "https://s3-pic.e-magnum.kz/item/358437-1.jpg",
+        "https://s3-pic.e-magnum.kz/item/358437-2.jpg"
+      ],
+      "barcodes": [
+        "4870212361581"
+      ],
+      "availabilityId": 3,
+      "isActive": true,
+      "isPromo": false,
+      "platformId": 7001,
+      "grossWeight": 2100
+    },
+    {
+      "itemId": 3388115,
+      "extId": 358438,
+      "name": "Яйцо Шымкент Кус куриное без калибровки 10 шт",
+      "price": 74300,
+      "measureUnit": {
+        "id": 1115,
+        "valueForPrice": 1,
+        "isDividable": false,
+        "step": 1,
+        "nameML": {
+          "kk": "шт",
+          "ru": "шт"
+        },
+        "name": "шт",
+        "divideValue": 1,
+        "extId": 19
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/358438.jpg",
+      "imgList": [
+        "https://s3-pic.e-magnum.kz/item/358438-1.jpg"
+      ],
+      "barcodes": [
+        "4870212361574"
+      ],
+      "availabilityId": 3,
+      "isActive": true,
+      "isPromo": false,
+      "platformId": 7001,
+      "grossWeight": 700
+    }
+  ],
+  "pageable": {
+    "pageNumber": 1,
+    "pageSize": 3,
+    "offset": 3,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalPages": 2,
+  "last": true,
+  "totalElements": 5,
+  "first": false,
+  "numberOfElements": 2,
+  "size": 3,
+  "number": 1,
+  "empty": false
+}

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { readSourceFile, writeSourceFile } from '../src/source-file.js'
-import type { SourceFile } from '../src/types.js'
+import { SourceFileSchema, type SourceFile } from '../src/types.js'
 
 const file = (products: SourceFile['products']): SourceFile => ({
   storeCode: 'DINA', city: 'Aktau', capturedAt: '2026-10-05T10:00:00.000Z', errorCount: 0,
@@ -11,8 +11,15 @@ const file = (products: SourceFile['products']): SourceFile => ({
 })
 const milk = { sourceProductId: '1', name: 'Молоко 3,2% 1 л', price: 590, oldPrice: null,
   imageUrl: 'https://x/1.jpg', sourceUrl: null, brand: null, sourceCategoryPath: ['Молоко'], rawPayload: { id: 1 } }
+const valid = file([milk])
 
 describe('source file', () => {
+  it('accepts any non-empty city and the MAGNUM store', () => {
+    expect(SourceFileSchema.parse({ ...valid, storeCode: 'MAGNUM', city: 'Shymkent' }).city).toBe('Shymkent')
+  })
+  it('rejects an empty city', () => {
+    expect(() => SourceFileSchema.parse({ ...valid, city: ' ' })).toThrow()
+  })
   it('round-trips a valid file', () => {
     const path = join(mkdtempSync(join(tmpdir(), 'src-')), 'dina.json')
     writeSourceFile(path, file([milk]))
