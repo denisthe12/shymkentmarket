@@ -115,7 +115,7 @@ SYNC_MAX_SOURCE_AGE_HOURS=720 pnpm sync` → `cmd/ingest` dry-run → `-apply` �
 | postgres (run-db-integration) | PASS, 26 с |
 | staging (run-ephemeral-staging) | PASS, 32 с |
 
-Итог: все 10 групп PASS, код выхода 0, на HEAD  (до коммита отчёта).
+Итог: все 10 групп PASS, код выхода 0, на HEAD e066186 (до коммита отчёта).
 
 | Другая проверка | Результат |
 | --- | --- |
