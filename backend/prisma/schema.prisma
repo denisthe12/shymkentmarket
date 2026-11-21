@@ -8,13 +8,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum StoreCode {
-  DINA
-  DANA
-  FIX_PRICE
-  ANVAR
-}
-
 enum MatchMethod {
   barcode
   deterministic
@@ -80,9 +73,10 @@ model SourceRun {
 
 model Store {
   id                String            @id @default(uuid())
-  code              StoreCode         @unique
+  code              String            @unique
   name              String
   logoUrl           String?
+  sortOrder         Int               @default(100)
   locations         StoreLocation[]
   rawProducts       RawProduct[]
   offers            Offer[]
