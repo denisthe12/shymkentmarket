@@ -56,7 +56,7 @@ if (group === 'contracts') {
   console.log(run('frontend cache flush helper', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'ops/frontend', '-p', '*_test.py']));
   console.log(run('VPS status helper', 'python3', ['-B', '-m', 'unittest', 'discover', '-s', 'ops/status', '-p', '*_test.py']));
   console.log(run('release transport guards', 'node', ['--test', 'scripts/deploy/auto-gate.test.mjs']));
-  console.log(run('disposable CI database guards', 'node', ['--test', 'scripts/ci/guard.test.mjs']));
+  console.log(run('disposable CI database guards', 'node', ['--test', 'scripts/ci/guard.test.mjs', 'scripts/ci/migration-guard.test.mjs']));
   console.log(run('staging parity no-skip guard', 'node', ['--test', 'scripts/ci/parity-output.test.mjs']).split('\n').slice(-8).join('\n'));
   run('tracked secrets / workflow policy', 'node', ['scripts/ci/check-source.mjs']);
   console.log(run('PostgreSQL operator synthetic guards', 'node', ['--test', 'ops/postgres/backup.test.mjs', 'ops/postgres/psql-run.test.mjs']).split('\n').slice(-10).join('\n'));

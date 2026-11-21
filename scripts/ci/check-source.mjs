@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { root, run } from './common.mjs';
+import { migrationDiffProblem } from './migration-guard.mjs';
 
 // Deterministic project-specific check, not an exhaustive secret scanner.
 export function check(path, bytes) {
@@ -33,7 +34,7 @@ const accepted = process.env.CI_BASE_SHA;
 if (accepted && !/^0{40}$/.test(accepted)) {
   assert.match(accepted, /^[a-f0-9]{40}$/i, 'invalid immutable base');
   const changed = run('migration immutable base diff', 'git', ['diff', '--name-status', accepted, '--', 'backend/prisma/migrations']);
-  for (const line of changed.split('\n').filter(Boolean)) assert.match(line, /^A\t/, 'existing migration modified/deleted');
+  assert.equal(migrationDiffProblem(changed.split('\n')), null, 'existing migration modified/deleted');
 }
 assert.equal(run('local migration byte drift', 'git', ['diff', 'HEAD', '--', 'backend/prisma/migrations']), '');
 console.log(`source/security policy PASS: ${files.length} files; bounded patterns only`);
