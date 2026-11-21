@@ -9,6 +9,10 @@ import { ANVAR_SCOPE, scrapeAnvar } from '../scrapers/anvar.js'
 import { DINA_SCOPE_ROOTS, scrapeDina } from '../scrapers/dina.js'
 import { defaultDinaScopePath, readDinaScope } from '../mapping/dina-scope.js'
 import { defaultDanaScopePath, readDanaScope } from '../mapping/dana-scope.js'
+import { assertNoErrors, resolveStoreLimits, runStore } from '../scrape/core/index.js'
+import { magnumModule } from '../scrape/stores/magnum/index.js'
+import { assertMagnumCoverage } from '../scrape/stores/magnum/coverage.js'
+import { MAGNUM_SCOPE } from '../scrape/stores/magnum/scope.js'
 import { assertCompleteScrape, resolveDanaConcurrency, resolveDinaBatchPages } from '../scrape-policy.js'
 
 // По умолчанию скрапим только категории публикуемого scope; SCRAPE_ALL=1 — весь каталог
@@ -51,17 +55,34 @@ const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
     console.log(`[ANVAR] mode: scope (${ANVAR_SCOPE.length} categories)`)
     return scrapeAnvar()
   },
+  // Скрап Magnum всегда ограничен MAGNUM_SCOPE: SCRAPE_ALL на него не влияет
+  MAGNUM: () => {
+    const { concurrency, rps } = resolveStoreLimits(magnumModule.storeCode, magnumModule.limits, process.env)
+    console.log(`[MAGNUM] mode: core (${MAGNUM_SCOPE.length} categories, concurrency ${concurrency}, rps ${rps})`)
+    return runStore(magnumModule)
+  },
   FIX_PRICE: () => process.env.FIXPRICE_HAR ? Promise.resolve(loadFixPriceFromHar(process.env.FIXPRICE_HAR)) : scrapeFixPrice(all ? {} : { aliases: FIXPRICE_SCOPE_ALIASES }),
 }
 
 const code = process.argv[2] as StoreCode
 const scraper = STORE_CODES.includes(code) ? SCRAPERS[code] : undefined
 if (!scraper) { console.error(`usage: scrape <${Object.keys(SCRAPERS).join('|')}>`); process.exit(2) }
-const file = await scraper()
+let file: SourceFile
+try {
+  file = await scraper()
+} catch (err) {
+  console.error(`[${code}] ${(err as Error).message}`)
+  process.exit(1)
+}
 const out = resolve(sourcesDir(), `${code.toLowerCase()}.json`)
 // Частично упавший узкий скрап (Dina батчами, Fix Price по алиасу) не перезаписывает прежний файл
 try {
-  assertCompleteScrape(file, { all })
+  // Magnum: любая ошибка запроса — отказ, прежний файл сохраняется
+  if (code === 'MAGNUM') {
+    assertNoErrors(file)
+    assertMagnumCoverage(file)
+  }
+  else assertCompleteScrape(file, { all })
 } catch (err) {
   console.error(`[${code}] ${(err as Error).message}`)
   process.exit(1)

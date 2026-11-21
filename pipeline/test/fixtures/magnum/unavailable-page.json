@@ -1,0 +1,103 @@
+{
+  "content": [
+    {
+      "itemId": 3619504,
+      "extId": 388700,
+      "name": "Яйцо Аймар Кус традиционное 45-65 гр 10 шт",
+      "price": 84900,
+      "measureUnit": {
+        "id": 1115,
+        "valueForPrice": 1,
+        "isDividable": false,
+        "step": 1,
+        "nameML": {
+          "kk": "шт",
+          "ru": "шт"
+        },
+        "name": "шт",
+        "divideValue": 1,
+        "extId": 19
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/388700.jpg",
+      "imgList": [
+        "https://s3-pic.e-magnum.kz/item/388700-1.jpg"
+      ],
+      "barcodes": [
+        "745314553087"
+      ],
+      "availabilityId": 3,
+      "isActive": true,
+      "isPromo": false,
+      "platformId": 7001,
+      "grossWeight": 600
+    },
+    {
+      "itemId": 3619502,
+      "extId": 388703,
+      "name": "Яйцо Аймар Кус традиционное 45-65 гр 15 шт",
+      "price": 0,
+      "measureUnit": {
+        "id": 1115,
+        "valueForPrice": 1,
+        "isDividable": false,
+        "step": 1,
+        "nameML": {
+          "kk": "шт",
+          "ru": "шт"
+        },
+        "name": "шт",
+        "divideValue": 1,
+        "extId": 19
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/388703.jpg",
+      "imgList": [
+        "https://s3-pic.e-magnum.kz/item/388703-1.jpg"
+      ],
+      "barcodes": [
+        "745314553001"
+      ],
+      "availabilityId": 0,
+      "isPromo": false,
+      "platformId": 7001,
+      "grossWeight": 900
+    },
+    {
+      "itemId": -100001,
+      "name": "Яйцо Аймар Кус традиционное 45-65 гр 15 шт (заглушка)",
+      "price": 0,
+      "measureUnit": {
+        "id": 1115,
+        "valueForPrice": 1,
+        "isDividable": false,
+        "step": 1,
+        "nameML": {
+          "kk": "шт",
+          "ru": "шт"
+        },
+        "name": "шт",
+        "divideValue": 1,
+        "extId": 19
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/388703.jpg",
+      "imgList": [],
+      "availabilityId": 0,
+      "isPromo": false,
+      "grossWeight": 0
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 3,
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalPages": 1,
+  "last": true,
+  "totalElements": 3,
+  "first": true,
+  "numberOfElements": 3,
+  "size": 3,
+  "number": 0,
+  "empty": false
+}

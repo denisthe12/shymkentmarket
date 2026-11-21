@@ -1,0 +1,118 @@
+{
+  "content": [
+    {
+      "itemId": 3387089,
+      "extId": 349111,
+      "name": "Фарш Эко говяжий 900 гр",
+      "price": 135200,
+      "measureUnit": {
+        "id": 1115,
+        "valueForPrice": 1,
+        "isDividable": false,
+        "step": 1,
+        "nameML": {
+          "kk": "шт",
+          "ru": "шт"
+        },
+        "name": "шт",
+        "divideValue": 1,
+        "extId": 19
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/349111.jpg",
+      "imgList": [
+        "https://s3-pic.e-magnum.kz/item/349111-1.jpg"
+      ],
+      "barcodes": [
+        "4870246440023"
+      ],
+      "availabilityId": 3,
+      "isActive": true,
+      "isPromo": false,
+      "platformId": 7001,
+      "grossWeight": 909
+    },
+    {
+      "itemId": 3426711,
+      "extId": 508119,
+      "name": "Фарш говяжий 70/30 700 гр",
+      "price": 537900,
+      "discount": {
+        "prevPrice": 632800
+      },
+      "measureUnit": {
+        "id": 1118,
+        "valueForPrice": 1,
+        "isDividable": true,
+        "step": 700,
+        "nameML": {
+          "kk": "кг",
+          "ru": "кг"
+        },
+        "name": "кг",
+        "divideValue": 1000,
+        "extId": 7
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/508119.jpg",
+      "imgList": [
+        "https://s3-pic.e-magnum.kz/item/508119-1.jpg",
+        "https://s3-pic.e-magnum.kz/item/508119-2.jpg"
+      ],
+      "barcodes": [
+        "2152790"
+      ],
+      "availabilityId": 3,
+      "isActive": true,
+      "isPromo": false,
+      "platformId": 7001,
+      "capacity": "",
+      "grossWeight": 1
+    },
+    {
+      "itemId": 4169718,
+      "extId": 521736,
+      "name": "Фарш Terra Meat из мраморной говядины 80/20 замороженный",
+      "price": 629900,
+      "measureUnit": {
+        "id": 1118,
+        "valueForPrice": 1,
+        "isDividable": true,
+        "step": 1100,
+        "nameML": {
+          "kk": "кг",
+          "ru": "кг"
+        },
+        "name": "кг",
+        "divideValue": 1000,
+        "extId": 7
+      },
+      "mainImg": "https://s3-pic.e-magnum.kz/item/521736.jpg",
+      "imgList": [
+        "https://s3-pic.e-magnum.kz/item/521736-1.jpg"
+      ],
+      "barcodes": [
+        "2157028",
+        "2222050"
+      ],
+      "availabilityId": 3,
+      "isActive": true,
+      "isPromo": false,
+      "platformId": 7001,
+      "grossWeight": 1
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 3,
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalPages": 1,
+  "last": true,
+  "totalElements": 3,
+  "first": true,
+  "numberOfElements": 3,
+  "size": 3,
+  "number": 0,
+  "empty": false
+}
