@@ -23,7 +23,7 @@ Backend 1 и Backend 2 ведутся в собственных ветках и 
 | API v1 | [Описание эталонного контракта](production/API_V1_CONTRACT.md). Исторический origin не используется для тестов Шымкента. |
 | Релиз API и брокер | [Deploy](../deploy/README.md), [auto-deploy](production/AUTO_DEPLOY_SETUP.md). Workflow сохраняет недоступность release jobs для Шымкента. |
 | Диагностика и эксплуатация | [Runbooks](runbooks/), [status helper](../ops/status/README.md), [монитор](../ops/monitor/README.md), [alert policy](production/OBSERVABILITY_ALERT_POLICY.md), [performance rehearsal](../scripts/perf/README.md). |
-| PostgreSQL и pipeline | [Backup и restore](../ops/postgres/README.md), [sync](../ops/sync/README.md), [sync runbook](data/SYNC_RUNBOOK.md), [Анвар](data/ANVAR_SOURCE.md), [Fix Price](data/FIXPRICE_SOURCE.md). Материалы для Backend 2, запуск источников не утверждён. |
+| PostgreSQL и pipeline | [Backup и restore](../ops/postgres/README.md), [sync](../ops/sync/README.md), [sync runbook](data/SYNC_RUNBOOK.md). Материалы для Backend 2, запуск источников не утверждён. |
 | Frontend | [Унаследованный README](../frontend/README.md), [VPS](production/FRONTEND_VPS_DEPLOYMENT.md), [cache invalidation](production/FRONTEND_REVALIDATION.md), [служебный helper](../ops/frontend/README.md). Для локального запуска в Шымкенте используйте onboarding. |
 
 ## HISTORICAL_AKTAU
