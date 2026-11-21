@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { Cluster } from '../src/agent/match.js'
 import { isolateForPublish } from '../src/mapping/publish.js'
 import type { StoreCode } from '../src/types.js'
-import { cp } from './helpers.js'
+import { cp, STORE_A, STORE_B, STORE_C } from './helpers.js'
 
-const a = cp('DINA', '1', 'Молоко FoodMaster 3.2% 1 л', { volumeMl: 1000, fatPercent: 3.2 })
-const b = cp('DANA', 'dana_2', 'FoodMaster молоко 3,2% 1л', { volumeMl: 1000, fatPercent: 3.2 })
-const c = cp('FIX_PRICE', 'fp_3', 'Молоко FM 3.2% 1000 мл', { volumeMl: 1000, fatPercent: 3.2 })
+const a = cp(STORE_B, '1', 'Молоко FoodMaster 3.2% 1 л', { volumeMl: 1000, fatPercent: 3.2 })
+const b = cp(STORE_A, 'a_2', 'FoodMaster молоко 3,2% 1л', { volumeMl: 1000, fatPercent: 3.2 })
+const c = cp(STORE_C, 'c_3', 'Молоко FM 3.2% 1000 мл', { volumeMl: 1000, fatPercent: 3.2 })
 
 describe('isolateForPublish', () => {
   it('splits a pending multi-store cluster into singletons keeping metadata', () => {
@@ -29,10 +29,10 @@ describe('isolateForPublish', () => {
 
 const cucumberKg = cp('MAGNUM', '10', 'Огурцы', {}, null, 'огурцы', 'vegetables')
 cucumberKg.product.rawPayload = { isWeighted: true, priceUnit: 'kg' }
-const cucumberPiece = cp('STORE_A' as StoreCode, 'a_11', 'Огурцы 1 шт', {}, null, 'огурцы', 'vegetables')
+const cucumberPiece = cp(STORE_A as StoreCode, 'a_11', 'Огурцы 1 шт', {}, null, 'огурцы', 'vegetables')
 const cucumberKg2 = cp('MAGNUM', '12', 'Огурцы', {}, null, 'огурцы', 'vegetables')
 cucumberKg2.product.rawPayload = { isWeighted: true, priceUnit: 'kg' }
-const cucumberPiece2 = cp('STORE_B' as StoreCode, 'b_13', 'Огурцы 1 шт', {}, null, 'огурцы', 'vegetables')
+const cucumberPiece2 = cp(STORE_B as StoreCode, 'b_13', 'Огурцы 1 шт', {}, null, 'огурцы', 'vegetables')
 
 describe('isolateForPublish weight guard', () => {
   it('weighted item in a group with a piece item becomes its own card', () => {

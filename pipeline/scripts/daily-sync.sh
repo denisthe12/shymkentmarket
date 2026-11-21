@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ежедневное обновление цен: четыре скрапера параллельно → словарь → cmd/ingest. Без LLM.
+# Ежедневное обновление цен: скраперы параллельно → словарь → cmd/ingest. Без LLM.
 # Нужные env: APP_ENV, INGEST_DATABASE_URL, INGEST_MAX_STORE_DROP_PERCENT (+ INGEST_PRODUCTION_APPLY_CONFIRM=1 в production).
 # Необязательные env:
 #   SOURCES_DIR  — каталог source-файлов сетей (по умолчанию data/sources);
@@ -13,8 +13,8 @@
 #   RETENTION_PRODUCTION_APPLY_CONFIRM=1 — подтверждение удаления в production (читает cmd/prune).
 # Упавший скрапер не перезаписывает свой source-файл, поэтому sync берёт прошлый удачный (если он не старше лимита).
 # Коды выхода:
-#   0 — все четыре скрапера удачны, snapshot опубликован;
-#   1 — ошибка sync/ingest или упали все четыре скрапера (snapshot не опубликован);
+#   0 — все скраперы удачны, snapshot опубликован;
+#   1 — ошибка sync/ingest или упали все скраперы (snapshot не опубликован);
 #   3 — snapshot опубликован, но хотя бы одна сеть взята из прошлого удачного файла
 #       (в журнале строка "[sync] stale stores: <list>");
 #   4 — snapshot опубликован, но очистка старых snapshot упала (в stderr строка "[sync] retention failed");
@@ -36,7 +36,7 @@ case "$SYNC_OUT" in
 esac
 BUNDLE="$SYNC_OUT/bundle.json"
 
-STORES=(dina dana fixprice anvar)
+STORES=(magnum)
 started=$SECONDS
 failed=()
 

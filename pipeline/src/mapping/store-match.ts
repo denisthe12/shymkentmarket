@@ -86,7 +86,7 @@ export function buildCandidates(dict: Dictionary, name: string, scope: ReadonlyS
   })
 }
 
-/** null — решения валидны и покрывают ровно товары батча; иначе причина (для `anvar:apply --check`) */
+/** null — решения валидны и покрывают ровно товары батча; иначе причина (для проверки решений перед применением) */
 export function validateDecisions(items: MatchItem[], decisions: unknown): string | null {
   if (!Array.isArray(decisions)) return 'decisions file is not a JSON array'
   const parsed: MatchDecision[] = []

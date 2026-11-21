@@ -3,7 +3,7 @@ import type { CategorySlug } from '../src/agent/taxonomy.js'
 import { refineMeat } from '../src/mapping/meat.js'
 import { refineCategory } from '../src/mapping/milk.js'
 
-// Сырая баранина и конина Dina лежат в разделах «Готовая еда» (→ other) и «Полуфабрикаты» (→ frozen); СЗПТ фаза 3
+// Сырая баранина и конина лежат в разделах «Готовая еда» (→ other) и «Полуфабрикаты» (→ frozen); СЗПТ фаза 3
 const cases: [CategorySlug, string, CategorySlug][] = [
   ['other', 'Баранина Задок', 'meat'],
   ['other', 'Баранина Шейная часть', 'meat'],
