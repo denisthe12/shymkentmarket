@@ -11,10 +11,10 @@ import { readSourceFile } from '../source-file.js'
 import { STORE_CODES, type StoreCode } from '../types.js'
 
 // pnpm dict:prepare <STORE> — задания для субагентов: data/agent/<store>-match/batch-NNN.json + prompt.md
-const USAGE = `usage: pnpm dict:prepare <${STORE_CODES.join('|')}>`
+const USAGE = `usage: pnpm dict:prepare <${STORE_CODES.join('|')}> [--force]`
 const fail = (msg: string): never => { console.error(`[dict:prepare] ${msg}`); process.exit(2) }
-const { positionals } = (() => {
-  try { return parseArgs({ allowPositionals: true, options: {} }) } catch (e) { return fail(`${(e as Error).message}\n${USAGE}`) }
+const { values, positionals } = (() => {
+  try { return parseArgs({ allowPositionals: true, options: { force: { type: 'boolean', default: false } } }) } catch (e) { return fail(`${(e as Error).message}\n${USAGE}`) }
 })()
 const store = positionals[0] as StoreCode
 if (positionals.length !== 1 || !STORE_CODES.includes(store)) fail(USAGE)
@@ -41,7 +41,13 @@ const items: MatchItem[] = file.products
 
 const dir = resolve(agentDir(), `${lower}-match`)
 mkdirSync(dir, { recursive: true })
+// Готовые решения субагентов не удаляем молча: перезапись только с --force
+const decisionFiles = readdirSync(dir).filter((f) => /^batch-\d+\.decisions\.json$/.test(f))
+if (decisionFiles.length > 0 && !values.force) {
+  fail(`${decisionFiles.length} decisions files already exist in ${dir}; apply them with pnpm dict:apply-decisions ${store}, or pass --force to delete them and re-prepare`)
+}
 for (const f of readdirSync(dir)) if (/^batch-\d+(\.decisions)?\.json$/.test(f)) rmSync(resolve(dir, f))
+if (decisionFiles.length > 0) console.log(`[dict:prepare] --force: removed ${decisionFiles.length} decisions files`)
 
 let batches = 0
 for (let i = 0; i < items.length; i += BATCH_SIZE) {

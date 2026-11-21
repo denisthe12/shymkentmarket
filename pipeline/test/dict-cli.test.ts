@@ -81,7 +81,9 @@ describe('dict:prepare / dict:apply-decisions', () => {
     expect(r.code).toBe(0)
     const dict = JSON.parse(readFileSync(resolve(dirs().mapping, 'dictionary.json'), 'utf8'))
     expect(Object.keys(dict.products).sort()).toEqual(['MAGNUM:1', 'MAGNUM:2', 'MAGNUM:3'])
-    expect(run('dict-prepare.ts', ['MAGNUM']).out).toContain('0 items')
+    const again = run('dict-prepare.ts', ['MAGNUM', '--force'])
+    expect(again.code).toBe(0)
+    expect(again.out).toMatch(/\b0 items\b/)
   })
 
   it('invalid decisions exit with 1', () => {
@@ -95,5 +97,63 @@ describe('dict:prepare / dict:apply-decisions', () => {
   it('missing source file exits with 2', () => {
     rmSync(resolve(dirs().sources, 'magnum.json'))
     expect(run('dict-prepare.ts', ['MAGNUM']).code).toBe(2)
+  })
+
+  it('prepare refuses to delete existing decisions without --force', () => {
+    run('dict-prepare.ts', ['MAGNUM'])
+    const dir = resolve(dirs().agent, 'magnum-match')
+    const decisionsPath = resolve(dir, 'batch-001.decisions.json')
+    writeFileSync(decisionsPath, '[]')
+    const r = run('dict-prepare.ts', ['MAGNUM'])
+    expect(r.code).toBe(2)
+    expect(r.out).toContain('--force')
+    expect(existsSync(decisionsPath)).toBe(true)
+    expect(existsSync(resolve(dir, 'batch-001.json'))).toBe(true)
+  })
+
+  it('prepare --force removes decisions and logs how many', () => {
+    run('dict-prepare.ts', ['MAGNUM'])
+    const dir = resolve(dirs().agent, 'magnum-match')
+    writeFileSync(resolve(dir, 'batch-001.decisions.json'), '[]')
+    const r = run('dict-prepare.ts', ['MAGNUM', '--force'])
+    expect(r.code).toBe(0)
+    expect(r.out).toContain('removed 1 decisions files')
+    expect(existsSync(resolve(dir, 'batch-001.decisions.json'))).toBe(false)
+    expect(existsSync(resolve(dir, 'batch-001.json'))).toBe(true)
+  })
+
+  describe('--check problems name the batch and the cause', () => {
+    const good = (id: string, over: object = {}) => ({ id, category: 'milk', match: null, confidence: 0.5, displayName: 'Молоко Тест', brand: null, ...over })
+    const check = (decisions: unknown[]) => {
+      run('dict-prepare.ts', ['MAGNUM'])
+      writeFileSync(resolve(dirs().agent, 'magnum-match', 'batch-001.decisions.json'), JSON.stringify(decisions))
+      return run('dict-apply-decisions.ts', ['MAGNUM', '--check'])
+    }
+    const all = ['MAGNUM:1', 'MAGNUM:2', 'MAGNUM:3']
+
+    it('unknown id', () => {
+      const r = check([...all, 'MAGNUM:99'].map((id) => good(id)))
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('batch-001.json: invalid')
+      expect(r.out).toContain('unknown decisions: MAGNUM:99')
+    })
+    it('duplicate id', () => {
+      const r = check([...all, 'MAGNUM:2'].map((id) => good(id)))
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('batch-001.json: invalid')
+      expect(r.out).toContain('duplicate decisions: MAGNUM:2')
+    })
+    it('missing id', () => {
+      const r = check(['MAGNUM:1', 'MAGNUM:2'].map((id) => good(id)))
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('batch-001.json: invalid')
+      expect(r.out).toContain('missing decisions: MAGNUM:3')
+    })
+    it('blank displayName', () => {
+      const r = check(all.map((id) => good(id, id === 'MAGNUM:2' ? { displayName: '   ' } : {})))
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('batch-001.json: invalid')
+      expect(r.out).toContain('decision #1 is malformed')
+    })
   })
 })
