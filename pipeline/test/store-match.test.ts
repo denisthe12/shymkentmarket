@@ -22,10 +22,10 @@ const cand = (key: string): MatchCandidate => {
   const c = base.canonicals[key]!
   return { key, name: c.name, brand: c.brand, category: c.category, attributes: c.attributes }
 }
-const item = (n: number, name: string, candidates: MatchCandidate[], path = ['Молочные продукты', 'Молоко']): MatchItem =>
-  ({ id: `MAGNUM:m_${n}`, name, sourceCategoryPath: path, candidates })
-const dec = (n: number, match: string | null, confidence: number, category = 'milk'): MatchDecision =>
-  ({ id: `MAGNUM:m_${n}`, category: category as CategorySlug, match, confidence })
+const item = (n: number, name: string, candidates: MatchCandidate[], path = ['Молочные продукты', 'Молоко'], weighted = false): MatchItem =>
+  ({ id: `MAGNUM:m_${n}`, name, sourceCategoryPath: path, candidates, weighted })
+const dec = (n: number, match: string | null, confidence: number, category = 'milk', displayName = 'Товар', brand: string | null = null): MatchDecision =>
+  ({ id: `MAGNUM:m_${n}`, category: category as CategorySlug, match, confidence, displayName, brand })
 
 describe('buildCandidates', () => {
   it('builds candidates only from scope categories and drops size conflicts', () => {
@@ -68,6 +68,45 @@ describe('applyDecisions', () => {
     expect(r.dict.products['MAGNUM:m_2']).toBe(canonicalKey(['MAGNUM:m_2']))
     expect(r.dict.canonicals[canonicalKey(['MAGNUM:m_3'])]).toMatchObject({ review: 'approved', method: 'deterministic', confidence: 1, category: 'dairy', attributes: { weightGrams: 500 } })
     expect(r.stats).toMatchObject({ attached: 0, created: 2, pendingSingletons: 1 })
+  })
+  it('names and brands a new card from the decision', () => {
+    const it1 = item(6, 'МОЛОКО БРЕНД 3,2% 900МЛ', [])
+    const r = applyDecisions(base, 'MAGNUM', [it1], [dec(6, null, 0.1, 'milk', 'Молоко Бренд 3,2% 900 мл', 'Бренд')])
+    expect(r.dict.canonicals[canonicalKey(['MAGNUM:m_6'])]).toMatchObject({ name: 'Молоко Бренд 3,2% 900 мл', brand: 'Бренд', attributes: { volumeMl: 900, fatPercent: 3.2 } })
+    expect(r.stats.rejectedName).toBe(0)
+  })
+  it('falls back to the source name when displayName conflicts with the source size', () => {
+    const it1 = item(6, 'МОЛОКО БРЕНД 3,2% 900МЛ', [])
+    const r = applyDecisions(base, 'MAGNUM', [it1], [dec(6, null, 0.1, 'milk', 'Молоко Бренд 3.2% 1 л', 'Бренд')])
+    const c = r.dict.canonicals[canonicalKey(['MAGNUM:m_6'])]!
+    expect(c.name).toBe('МОЛОКО БРЕНД 3,2% 900МЛ')
+    expect(c.attributes).toEqual({ volumeMl: 900, fatPercent: 3.2 })
+    expect(r.stats.rejectedName).toBe(1)
+  })
+  it('normalizes an empty brand to null', () => {
+    expect(MatchDecisionSchema.parse(dec(1, null, 0.5, 'milk', 'Молоко', '')).brand).toBeNull()
+    expect(MatchDecisionSchema.parse(dec(1, null, 0.5, 'milk', 'Молоко', '  ')).brand).toBeNull()
+  })
+  it('rejects a blank displayName in validateDecisions', () => {
+    expect(validateDecisions([item(1, 'a', [])], [dec(1, null, 0.1, 'milk', '  ')])).not.toBeNull()
+  })
+  it('rejects a size in displayName for a weighted item', () => {
+    const it1 = item(7, 'Картофель', [], ['Овощи'], true)
+    const r = applyDecisions(base, 'MAGNUM', [it1], [dec(7, null, 0.1, 'vegetables', 'Картофель 1 кг')])
+    const c = r.dict.canonicals[canonicalKey(['MAGNUM:m_7'])]!
+    expect(c.name).toBe('Картофель')
+    expect(c.attributes).toEqual({})
+    expect(r.stats.rejectedName).toBe(1)
+  })
+  it('accepts a displayName size when a non-weighted source has none', () => {
+    const it1 = item(8, 'Соль', [], ['Бакалея'])
+    const r = applyDecisions(base, 'MAGNUM', [it1], [dec(8, null, 0.1, 'milk', 'Соль 1 кг')])
+    expect(r.dict.canonicals[canonicalKey(['MAGNUM:m_8'])]!.name).toBe('Соль 1 кг')
+    expect(r.stats.rejectedName).toBe(0)
+  })
+  it('does not rename an existing card when attaching', () => {
+    const r = applyDecisions(base, 'MAGNUM', [i1], [dec(1, 'c_milk1', 0.99, 'milk', 'Другое имя', 'Другой')])
+    expect(r.dict.canonicals['c_milk1']).toEqual(base.canonicals['c_milk1'])
   })
   it('rejects a match outside the item candidates', () => {
     const r = applyDecisions(base, 'MAGNUM', [i1], [dec(1, 'c_soap', 0.99)])

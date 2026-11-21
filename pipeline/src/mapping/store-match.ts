@@ -12,16 +12,19 @@ import { canonicalKey, DictionarySchema, storeCategoryKey, type Dictionary, type
  */
 
 export type MatchCandidate = { key: string; name: string; brand: string | null; category: CategorySlug; attributes: Attributes }
-export type MatchItem = { id: string; name: string; sourceCategoryPath: string[]; candidates: MatchCandidate[] }
+export type MatchItem = { id: string; name: string; sourceCategoryPath: string[]; candidates: MatchCandidate[]; weighted: boolean }
 
 export const MatchDecisionSchema = z.object({
   id: z.string(), category: z.string().refine(isCategorySlug), match: z.string().nullable(), confidence: z.number().min(0).max(1),
+  displayName: z.string().trim().min(1),
+  // пустая строка/пробелы — бренда нет
+  brand: z.string().trim().nullable().transform((b) => (b === '' ? null : b)),
 })
 export type MatchDecision = z.infer<typeof MatchDecisionSchema>
 
 export type ApplyStats = {
   attached: number; created: number; pendingSingletons: number
-  rejectedOutsideCandidates: number; rejectedSize: number; sameStoreConflicts: number
+  rejectedOutsideCandidates: number; rejectedSize: number; sameStoreConflicts: number; rejectedName: number
 }
 
 const SIZE_KEYS = ['weightGrams', 'volumeMl', 'packageCount', 'fatPercent'] as const
@@ -37,6 +40,17 @@ export function itemAttributes(name: string): Attributes {
 /** Один и тот же ключ размера/жирности с разными значениями — это разные товары */
 function sizeConflict(a: Attributes, b: Record<string, number>): boolean {
   return SIZE_KEYS.some((k) => a[k] !== undefined && b[k] !== undefined && Math.abs(a[k]! - b[k]!) > 1e-9)
+}
+
+/**
+ * Название новой карточки от субагента допустимо, если не противоречит исходному:
+ * размер/жирность из displayName не должны расходиться с исходными, а у весового товара размера в названии быть не должно.
+ * Размер и жирность карточки при этом всегда берутся только из исходного названия.
+ */
+function displayNameOk(displayName: string, sourceAttrs: Attributes, weighted: boolean): boolean {
+  const own = itemAttributes(displayName)
+  if (sizeConflict(sourceAttrs, own as Record<string, number>)) return false
+  return !(weighted && Object.keys(extractSize(displayName)).length > 0)
 }
 
 const tokens = (s: string) => new Set(normalizeText(s).split(' ').filter((t) => t.length >= 2))
@@ -120,7 +134,7 @@ export function applyDecisions(base: Dictionary, store: StoreCode, items: MatchI
   const problem = coverageProblem(items, decisions)
   if (problem) throw new Error(`applyDecisions: ${problem}`)
   const byId = new Map(decisions.map((d) => [d.id, d]))
-  const stats: ApplyStats = { attached: 0, created: 0, pendingSingletons: 0, rejectedOutsideCandidates: 0, rejectedSize: 0, sameStoreConflicts: 0 }
+  const stats: ApplyStats = { attached: 0, created: 0, pendingSingletons: 0, rejectedOutsideCandidates: 0, rejectedSize: 0, sameStoreConflicts: 0, rejectedName: 0 }
   const canonicals: Record<string, DictionaryCanonical> = { ...base.canonicals }
   const products: Record<string, string> = { ...base.products }
   const storeCategories: Record<string, CategorySlug> = { ...base.storeCategories }
@@ -167,8 +181,10 @@ export function applyDecisions(base: Dictionary, store: StoreCode, items: MatchI
     }
     const key = canonicalKey([item.id])
     if (canonicals[key]) throw new Error(`applyDecisions: canonical key collision ${key} for ${item.id}`)
+    const nameOk = displayNameOk(d.displayName, attrs, item.weighted)
+    if (!nameOk) stats.rejectedName++
     canonicals[key] = {
-      name: item.name, brand: null, category, attributes: attrs as Record<string, number>,
+      name: nameOk ? d.displayName : item.name, brand: d.brand, category, attributes: attrs as Record<string, number>,
       ...(pending
         ? { method: 'ai' as const, confidence: d.confidence, review: 'pending' as const }
         : { method: 'deterministic' as const, confidence: 1, review: 'approved' as const }),
