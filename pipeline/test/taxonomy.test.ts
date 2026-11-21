@@ -1,50 +1,57 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CATEGORIES, isCategorySlug } from '../src/agent/taxonomy.js'
-import { readDictionary } from '../src/mapping/dictionary.js'
-import { MILK_FAT_OPTIONS, refineCategory } from '../src/mapping/milk.js'
+import { DictionarySchema, readDictionary, type Dictionary } from '../src/mapping/dictionary.js'
+import { MILK_FAT_OPTIONS } from '../src/mapping/milk.js'
 import { DEFAULT_PUBLISH_CATEGORIES, publishCategories } from '../src/mapping/scope.js'
-import { assertServableSchema, buildTaxonomyMigration, filterSchemaFor, TAXONOMY_MIGRATION } from '../src/mapping/taxonomy-sql.js'
+import {
+  assertServableSchema, buildTaxonomyMigration, filterSchemaFor, latestTaxonomyMigration, newTaxonomyMigrationPath,
+} from '../src/mapping/taxonomy-sql.js'
 
-const APPLIED_SCRUM7 = 'backend/prisma/migrations/20261006000000_catalog_taxonomy/migration.sql'
-const APPLIED_ANVAR = 'backend/prisma/migrations/20261102000200_anvar_taxonomy/migration.sql'
-const sql = readFileSync(new URL(`../../${TAXONOMY_MIGRATION}`, import.meta.url), 'utf8')
-const oldSql = readFileSync(new URL(`../../${APPLIED_SCRUM7}`, import.meta.url), 'utf8')
-const anvarSql = readFileSync(new URL(`../../${APPLIED_ANVAR}`, import.meta.url), 'utf8')
-const dict = readDictionary(fileURLToPath(new URL('../../data/mapping/dictionary.json', import.meta.url)))
+const ROOT = resolve(import.meta.dirname, '../..')
+const MIGRATIONS = join(ROOT, 'backend/prisma/migrations')
+const dict = readDictionary(join(ROOT, 'data/mapping/dictionary.json'))
 
 type Row = { id: string; slug: string; name: string; schema: { filters: { key: string; label: string; type: string; options?: (string | number)[] }[] } }
 const unquote = (s: string) => s.replaceAll("''", "'")
 const parseRows = (text: string): Row[] => [...text.matchAll(/^ \('((?:[^']|'')*)','((?:[^']|'')*)','((?:[^']|'')*)','((?:[^']|'')*)'\),?$/gm)]
   .map((m) => ({ id: unquote(m[1]!), slug: unquote(m[2]!), name: unquote(m[3]!), schema: JSON.parse(unquote(m[4]!)) }))
+
+const latest = latestTaxonomyMigration(MIGRATIONS)
+const sql = latest ? readFileSync(latest, 'utf8') : ''
 const rows = parseRows(sql)
 
-describe('taxonomy', () => {
-  it('keeps legacy slugs used by dashboard baskets', () => {
-    for (const s of ['milk', 'bread', 'eggs', 'sugar', 'oil', 'other']) expect(isCategorySlug(s)).toBe(true)
+const card = (category: string, name: string, brand: string | null, attributes: Record<string, number> = {}) =>
+  ({ name, brand, category, attributes, method: 'deterministic', confidence: 1, review: 'approved' })
+const withCards = (canonicals: Record<string, unknown>): Dictionary =>
+  DictionarySchema.parse({ version: 1, generatedAt: '2026-11-21T00:00:00.000Z', canonicals, products: {}, storeCategories: {} })
+
+describe('taxonomy migration (append-only)', () => {
+  it('a taxonomy migration exists and the latest one is exactly what `pnpm taxonomy:sql` generates from the dictionary', () => {
+    expect(latest).not.toBeNull()
+    expect(sql).toBe(buildTaxonomyMigration(dict))
   })
-  it('migration contains exactly the 12 published categories, no legacy other', () => {
+  it('contains exactly the published categories, no legacy other', () => {
     expect(rows.map((r) => r.slug).sort()).toEqual([...DEFAULT_PUBLISH_CATEGORIES].sort())
-    expect(rows).toHaveLength(12)
-    for (const s of ['salt', 'tea-coffee', 'fish']) expect(rows.map((r) => r.slug)).toContain(s)
     expect(rows.map((r) => r.id).sort()).toEqual(rows.map((r) => `cat-${r.slug}`).sort())
     expect(sql).not.toContain("'other'")
     for (const r of rows) expect(r.name).toBe(CATEGORIES.find((c) => c.slug === r.slug)!.name)
   })
-  it('migration updates name and filterSchema of existing rows and keeps their ids (no DO NOTHING)', () => {
+  it('updates name and filterSchema of existing rows and keeps their ids (no DO NOTHING)', () => {
     expect(sql).toContain('ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, "filterSchema" = EXCLUDED."filterSchema";')
     expect(sql).not.toMatch(/DO NOTHING/i)
     expect(sql).not.toMatch(/SET[^;]*\bid\s*=/i)
     expect(sql).not.toMatch(/DELETE|DROP|TRUNCATE/i)
   })
-  it('every multi-select in the migration has non-empty primitive options (the API drops it otherwise)', () => {
-    for (const r of rows) {
-      assertServableSchema(r.slug, r.schema)
-      for (const f of r.schema.filters) expect(f.type).toBe('multi-select')
-    }
+  it('a dictionary without cards yields categories without filters', () => {
+    for (const r of rows) expect(r.schema, r.slug).toEqual({ filters: [] })
   })
-  it('the guard really catches multi-select without options, with empty options and with non-primitive options', () => {
+  it('every multi-select in the migration has non-empty primitive options (the API drops it otherwise)', () => {
+    for (const r of rows) assertServableSchema(r.slug, r.schema)
+  })
+  it('the guard catches multi-select without options, with empty options and with non-primitive options', () => {
     const f = (options?: unknown) => ({ filters: [{ key: 'volumeMl', type: 'multi-select', options }] })
     expect(() => assertServableSchema('x', f())).toThrow(/without options/)
     expect(() => assertServableSchema('x', f([]))).toThrow(/without options/)
@@ -52,84 +59,66 @@ describe('taxonomy', () => {
     expect(() => assertServableSchema('x', f([1, 1]))).toThrow(/duplicate/)
     expect(() => assertServableSchema('x', { filters: [{ key: 'flag', type: 'boolean' }] })).not.toThrow()
   })
-  it('migration filters are the taxonomy filters for which the reviewed dictionary has values, options come from the dictionary', () => {
-    for (const r of rows) {
-      const expected = filterSchemaFor(dict, r.slug as (typeof DEFAULT_PUBLISH_CATEGORIES)[number])
-      expect(r.schema).toEqual(expected)
-      const declared = CATEGORIES.find((c) => c.slug === r.slug)!.filters.map((f) => f.key)
-      for (const f of r.schema.filters) expect(declared).toContain(f.key)
+})
+
+describe('newTaxonomyMigrationPath / latestTaxonomyMigration', () => {
+  const dirWith = (...names: string[]) => {
+    const d = mkdtempSync(join(tmpdir(), 'mig-'))
+    for (const n of names) {
+      mkdirSync(join(d, n))
+      writeFileSync(join(d, n, 'migration.sql'), `-- ${n}\n`)
     }
-    expect(rows.find((r) => r.slug === 'vegetables')!.schema.filters).toEqual([])
-    for (const slug of ['dairy', 'meat', 'groats']) expect(rows.find((r) => r.slug === slug)!.schema.filters.length).toBeGreaterThan(0)
+    writeFileSync(join(d, 'migration_lock.toml'), 'provider = "postgresql"\n')
+    return d
+  }
+  it('uses the current UTC time when it sorts after every existing migration', () => {
+    const d = dirWith('20261122000000_shymkent_baseline')
+    expect(newTaxonomyMigrationPath(d, new Date('2026-11-22T10:11:12Z'))).toBe(join(d, '20261122101112_shymkent_taxonomy', 'migration.sql'))
   })
-  it('committed migration is exactly what `pnpm taxonomy:sql` generates from the committed dictionary', () => {
-    expect(sql).toBe(buildTaxonomyMigration(dict))
+  it('never sorts before the latest existing migration: picks the later of now and latest + 1s', () => {
+    const d = dirWith('20261122000000_shymkent_baseline')
+    expect(newTaxonomyMigrationPath(d, new Date('2026-11-21T10:00:00Z'))).toBe(join(d, '20261122000001_shymkent_taxonomy', 'migration.sql'))
+    const e = dirWith('20261122000000_shymkent_baseline', '20261122235959_other')
+    expect(newTaxonomyMigrationPath(e, new Date('2026-11-21T10:00:00Z'))).toBe(join(e, '20261123000000_shymkent_taxonomy', 'migration.sql'))
   })
-  it('committed dictionary has no non-positive size/fat attributes, and no filter option is 0', () => {
-    for (const [id, c] of Object.entries(dict.canonicals as Record<string, { attributes: Record<string, number> }>))
-      for (const k of ['volumeMl', 'weightGrams', 'packageCount', 'fatPercent'])
-        if (c.attributes[k] !== undefined) expect(c.attributes[k], `${id}.${k}`).toBeGreaterThan(0)
-    for (const r of rows) for (const f of r.schema.filters) expect((f.options ?? []) as unknown[], `${r.slug}.${f.key}`).not.toContain(0)
+  it('finds the latest taxonomy migration only among *_shymkent_taxonomy, or null', () => {
+    const none = dirWith('20261122000000_shymkent_baseline')
+    expect(latestTaxonomyMigration(none)).toBeNull()
+    const d = dirWith('20261122000000_shymkent_baseline', '20261122000001_shymkent_taxonomy', '20261201000000_shymkent_taxonomy', '20261202000000_other')
+    expect(latestTaxonomyMigration(d)).toBe(join(d, '20261201000000_shymkent_taxonomy', 'migration.sql'))
   })
-  it('milk is drinking milk with a curated fat allowlist', () => {
-    const milk = rows.find((r) => r.slug === 'milk')!
-    expect(milk.name).toBe('Молоко')
-    expect(milk.schema.filters.find((f) => f.key === 'fatPercent')!.options).toEqual([1.5, 2.5, 3.2, 6])
+  it('the real migrations directory has the taxonomy after the baseline', () => {
+    const names = readdirSync(MIGRATIONS).filter((n) => /^\d{14}_/.test(n)).sort()
+    expect(names[0]).toBe('20261122000000_shymkent_baseline')
+    expect(names.some((n) => n.endsWith('_shymkent_taxonomy'))).toBe(true)
+  })
+})
+
+describe('filterSchemaFor', () => {
+  const d = withCards({
+    m1: card('milk', 'Молоко 2.5% 1 л', 'Бренд А', { volumeMl: 1000, fatPercent: 2.5 }),
+    m2: card('milk', 'Молоко 9% 1 л', 'Бренд Б', { volumeMl: 1000, fatPercent: 9 }),
+    m3: card('milk', 'Сливки 10% 200 мл', 'Бренд В', { volumeMl: 200, fatPercent: 10 }),
+  })
+  it('milk keeps only allowlisted fat options and drops brands of cards refined into dairy', () => {
+    const milk = filterSchemaFor(d, 'milk').filters
+    expect(milk.find((f) => f.key === 'fatPercent')!.options).toEqual([2.5])
+    expect(milk.find((f) => f.key === 'brand')!.options).toEqual(['Бренд А'])
     expect([...MILK_FAT_OPTIONS]).toEqual([1.5, 2.5, 3.2, 6])
   })
-  it('dairy has no fat filter', () => {
-    const keys = rows.find((r) => r.slug === 'dairy')!.schema.filters.map((f) => f.key)
-    expect(keys).not.toContain('fatPercent')
-    expect(keys).toContain('brand')
+  it('dairy has no fat filter but takes brands of refined cards', () => {
+    const dairy = filterSchemaFor(d, 'dairy').filters
+    expect(dairy.map((f) => f.key)).toEqual(['brand'])
+    expect(dairy[0]!.options).toEqual(['Бренд Б', 'Бренд В'])
   })
-  it('only milk and dairy rows differ in shape from the applied SCRUM-7 migration', () => {
-    // Значения опций (бренды, веса) растут вместе со словарём (в т.ч. товары Анвара), поэтому сравниваем форму фильтров без options
-    const shape = (schema: { filters: { options?: unknown }[] }) => schema.filters.map(({ options: _options, ...rest }) => rest)
-    const old = parseRows(oldSql)
-    for (const r of rows) {
-      const prev = old.find((o) => o.slug === r.slug)
-      if (!prev) continue // категории фазы 3 СЗПТ (salt, tea-coffee, fish) в SCRUM-7 не было
-      if (r.slug === 'milk' || r.slug === 'dairy') {
-        expect([r.name, r.schema], r.slug).not.toEqual([prev.name, prev.schema])
-      } else {
-        expect([r.name, shape(r.schema)], r.slug).toEqual([prev.name, shape(prev.schema)])
-      }
-    }
+  it('categories without cards have no filters', () => {
+    expect(filterSchemaFor(d, 'eggs')).toEqual({ filters: [] })
   })
-  it('phase 3 migration keeps the 9 old rows of the applied anvar migration (options only grow)', () => {
-    // Новые товары Анвара в старых разделах (2026-11-16) добавили опции: яйца 30 шт, хлеб 140 г. Убывать опции не должны
-    const anvarRows = parseRows(anvarSql)
-    expect(anvarRows).toHaveLength(9)
-    for (const prev of anvarRows) {
-      const r = rows.find((x) => x.slug === prev.slug)!
-      expect([r.id, r.name, r.schema.filters.map((f) => f.key)], prev.slug).toEqual([prev.id, prev.name, prev.schema.filters.map((f) => f.key)])
-      for (const f of prev.schema.filters) expect(r.schema.filters.find((x) => x.key === f.key)!.options, `${prev.slug}.${f.key}`).toEqual(expect.arrayContaining(f.options!))
-    }
-  })
-  it('new categories have servable filters', () => {
-    const keys = (slug: string) => rows.find((r) => r.slug === slug)!.schema.filters.map((f) => f.key)
-    expect(keys('salt')).toEqual(['weightGrams'])
-    expect(keys('tea-coffee')).toEqual(['brand'])
-    expect(keys('fish')).toEqual(['brand'])
-    for (const slug of ['salt', 'tea-coffee', 'fish'])
-      for (const f of rows.find((r) => r.slug === slug)!.schema.filters) expect(f.options!.length, `${slug}.${f.key}`).toBeGreaterThan(0)
-  })
-  it('applied SCRUM-7 migration is left untouched', () => {
-    expect(oldSql).toContain('Молоко и сливки')
-    expect(oldSql).toContain('Catalog taxonomy for SCRUM-7')
-  })
-  it('filter options use the refined category', () => {
-    const milkCards = Object.values(dict.canonicals).filter((c) => c.category === 'milk')
-    const refined = (c: (typeof milkCards)[number]) => refineCategory(c.category, c.name, c.attributes.fatPercent)
-    const brands = (cs: typeof milkCards) => new Set(cs.map((c) => c.brand).filter((b): b is string => !!b))
-    const stayed = brands(milkCards.filter((c) => refined(c) === 'milk'))
-    const moved = milkCards.filter((c) => refined(c) !== 'milk')
-    const movedOnly = [...brands(moved)].filter((b) => !stayed.has(b))
-    const options = (slug: 'milk' | 'dairy') =>
-      new Set(filterSchemaFor(dict, slug).filters.find((f) => f.key === 'brand')!.options)
-    expect(movedOnly.length).toBeGreaterThan(0)
-    for (const b of movedOnly) expect(options('milk').has(b), b).toBe(false)
-    for (const b of brands(moved.filter((c) => refined(c) === 'dairy'))) expect(options('dairy').has(b), b).toBe(true)
+})
+
+describe('misc', () => {
+  it('keeps legacy slugs used by dashboard baskets', () => {
+    for (const s of ['milk', 'bread', 'eggs', 'sugar', 'oil', 'other']) expect(isCategorySlug(s)).toBe(true)
   })
   it('slugs are unique and kebab-case', () => {
     const slugs = CATEGORIES.map((c) => c.slug)
