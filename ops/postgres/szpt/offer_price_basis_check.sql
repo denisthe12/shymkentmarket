@@ -1,17 +1,17 @@
--- Read-only check for the offer_price_basis migration (SCRUM-25 SZPT weighted goods).
+-- Read-only check for the offer_price_basis view (SZPT weighted goods), created by the Shymkent baseline migration.
 -- Run BEFORE and AFTER the migration (never during the 01:00 / 13:00 UTC sync):
 --   node ops/postgres/psql-run.mjs offer-price-basis-check
 -- One file, two parts:
 --   PRE  works at any time; uses the inline weighted rule.
 --        The rule (weighted CASE, defined ONCE in the :basis_cte variable below) must equal the CASE in
---        backend/prisma/migrations/20261114000000_offer_price_basis/migration.sql and
+--        backend/prisma/migrations/20261122000000_shymkent_baseline/migration.sql and
 --        pipeline/src/mapping/weight.ts.
 --   POST runs only if public.offer_price_basis exists (to_regclass + \if); before the migration
 --        it prints a notice and is skipped.
 -- The whole script is one REPEATABLE READ READ ONLY transaction ending in ROLLBACK: SELECT only, nothing
 -- is written, every block sees the same data, and statement_timeout (60 s) keeps it from hanging on prod.
 -- Needs a role that can read raw_products (owner / migration role), not aktau_api_reader.
--- The last line is GO or STOP. STOP if there is no published snapshot, or DINA, ANVAR or DANA has 0 weighted
+-- The last line is GO or STOP. STOP if there is no published snapshot, or MAGNUM has 0 weighted
 -- offers in the latest published snapshot, or (after the migration) the view's rows for that snapshot differ
 -- from its offers (view_rows <> offers) or the view disagrees with the inline rule (view_mismatch > 0).
 --
@@ -20,7 +20,7 @@
 
 \pset null '(null)'
 -- The ONLY copy of the weighted rule and of the latest-snapshot filter: CTEs snap and basis.
--- Columns of basis: offer_id, pid, store_id, store, in_stock, price, weighted, by_name_only, basis_grams.
+-- Columns of basis: offer_id, pid, store_id, store, in_stock, price, weighted, basis_grams (1000 for a weighted offer).
 \set basis_cte 'WITH snap AS (SELECT id FROM public.snapshots WHERE status = ''published'' AND "publishedAt" IS NOT NULL ORDER BY "publishedAt" DESC, id DESC LIMIT 1), basis AS (SELECT o.id AS offer_id, o."canonicalProductId" AS pid, o."storeId" AS store_id, s.code::text AS store, o."inStock" AS in_stock, o.price, w.weighted, (s.code::text = ''DANA'' AND w.weighted AND NOT coalesce(r."rawPayload"->>''priceUnit'' = ''kg'', false)) AS by_name_only, CASE WHEN w.weighted THEN CASE WHEN jsonb_typeof(r."rawPayload"->''pricePerUnitMultiplier'') = ''number'' AND (r."rawPayload"->>''pricePerUnitMultiplier'')::numeric > 0 THEN (r."rawPayload"->>''pricePerUnitMultiplier'')::numeric ELSE 1000 END END AS basis_grams FROM public.offers o JOIN snap ON snap.id = o."snapshotId" JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId" JOIN public.stores s ON s.id = o."storeId" CROSS JOIN LATERAL (SELECT CASE s.code::text WHEN ''DINA'' THEN coalesce(r."rawPayload"->>''price_type'' = ''weight'', false) OR coalesce(r."rawPayload"->>''isWeightProduct'' = ''true'', false) WHEN ''ANVAR'' THEN coalesce(r."rawPayload"->>''priceUnit'' = ''kg'', false) WHEN ''DANA'' THEN coalesce(r."rawPayload"->>''priceUnit'' = ''kg'', false) OR r."rawName" ~* ''(^|[^а-яa-z])вес(ов(ой|ая|ое|ые))?([^а-яa-z]|$)|(^|[^a-z0-9_])PLU\\s*[:;]\\s*[0-9]+'' ELSE false END AS weighted) w)'
 
 BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
@@ -38,16 +38,14 @@ ORDER BY "publishedAt" DESC, id DESC LIMIT 1;
 
 \echo
 \echo '=== PRE 1. Per store: offers and weighted offers (inline rule) ==='
-\echo '(dana_by_name_only = DANA weighted only by the name, no priceUnit = kg)'
 :basis_cte
 SELECT store, count(*) AS offers, count(*) FILTER (WHERE in_stock) AS in_stock,
        count(*) FILTER (WHERE weighted) AS weighted,
-       count(*) FILTER (WHERE weighted AND in_stock) AS weighted_in_stock,
-       count(*) FILTER (WHERE by_name_only) AS dana_by_name_only
+       count(*) FILTER (WHERE weighted AND in_stock) AS weighted_in_stock
 FROM basis GROUP BY store ORDER BY store;
 
 \echo
-\echo '=== PRE 2. Weighted offers by pricePerUnitMultiplier (basis_grams; 1000 = missing/invalid) ==='
+\echo '=== PRE 2. Weighted offers by basis_grams (always 1000: Magnum prices are per 1 kg) ==='
 :basis_cte
 SELECT store, basis_grams, count(*) AS weighted_offers
 FROM basis WHERE weighted GROUP BY 1, 2 ORDER BY 1, 2;
@@ -121,10 +119,10 @@ GROUP BY b.store ORDER BY b.store;
 \endif
 
 \echo
-\echo '=== VERDICT (STOP: no published snapshot; DINA, ANVAR or DANA with 0 weighted offers; POST post_stop) ==='
+\echo '=== VERDICT (STOP: no published snapshot; MAGNUM with 0 weighted offers; POST post_stop) ==='
 :basis_cte
 SELECT CASE WHEN (SELECT count(*) FROM snap) = 0 THEN 'STOP'
-            WHEN EXISTS (SELECT 1 FROM (VALUES ('DINA'),('ANVAR'),('DANA')) v(store)
+            WHEN EXISTS (SELECT 1 FROM (VALUES ('MAGNUM')) v(store)
                          WHERE (SELECT count(*) FROM basis WHERE basis.store = v.store AND weighted) = 0)
             THEN 'STOP'
             WHEN :'post_stop'::boolean THEN 'STOP'

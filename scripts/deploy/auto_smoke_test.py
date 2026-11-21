@@ -9,11 +9,11 @@ class SmokeTests(unittest.TestCase):
         self.smoke = Smoke('http://127.0.0.1:8080', {})
         self.smoke.lat, self.smoke.lon = 0, 0
         self.products = [dict(name='synthetic', imageUrl=None, minPrice=100,
-                              offers=[dict(price=100, storeName='DINA', storeCode='DINA')])]
-        self.locations = [dict(storeCode='DINA', address='synthetic_address', latitude=0, longitude=0)]
+                              offers=[dict(price=100, storeName='MAGNUM', storeCode='MAGNUM')])]
+        self.locations = [dict(storeCode='MAGNUM', address='synthetic_address', latitude=0, longitude=0)]
         self.result = dict(status='result', mode='single', items=[dict(name='synthetic', imageUrl=None,
-                           price=100, store='DINA', address='synthetic_address', distanceMeters=0)],
-                           speech='Самое выгодное предложение: synthetic за 100 тенге в DINA. Ближайшая точка — synthetic_address, примерно 0 метров.')
+                           price=100, store='MAGNUM', address='synthetic_address', distanceMeters=0)],
+                           speech='Самое выгодное предложение: synthetic за 100 тенге в MAGNUM. Ближайшая точка — synthetic_address, примерно 0 метров.')
 
     def test_exact_result_against_catalog_truth(self):
         self.smoke.result(self.result, 'single', self.products, self.locations)

@@ -170,7 +170,7 @@ try {
   create(fake, ['--network', net, '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges',
     '-e', 'PART13_FAKE_CONTAINER=1', '-v', `${join(root, 'scripts/perf/fake-upstash.mjs')}:/work/fake.mjs:ro`, '--user', 'node', 'node:20-alpine', 'node', '/work/fake.mjs']);
   tier = 'fixture'; await startDB(true);
-  for (const file of ['20260923000000_init','20261004000000_rls_runtime_access','20261005000000_snapshot_history']) sql(readFileSync(join(root, `backend/prisma/migrations/${file}/migration.sql`)));
+  for (const file of ['20261122000000_shymkent_baseline']) sql(readFileSync(join(root, `backend/prisma/migrations/${file}/migration.sql`)));
   sql(readFileSync(join(root, 'backend-go/tests/fixtures/catalog.sql'))); sql(readFileSync(join(root, 'scripts/ci/fixtures/voice-parity-overlay.sql')));
   reader(); sql('CREATE EXTENSION pg_stat_statements;'); await startAPI();
   await profile('mixed', 1, '30s', 'fixture-smoke'); await direct(await voiceInputs()); await clarify(await voiceInputs()); pass('fixture_smoke');

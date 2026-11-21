@@ -1,7 +1,7 @@
 -- Operator artifact, not a Prisma migration and NOT applied by runtime.
 -- Gives the ingestion group access to public.product_identities: SELECT+INSERT+UPDATE only.
 -- No DELETE or TRUNCATE; no other role gets access here.
--- Apply AFTER migration 20261107000100_product_identities and AFTER aktau_ingest_writer_role.sql
+-- Apply AFTER migration 20261122000000_shymkent_baseline and AFTER aktau_ingest_writer_role.sql
 -- in the same database. Rollback: rollback_aktau_ingest_product_identities_access.sql, which must
 -- run BEFORE rollback_aktau_ingest_writer_access.sql.
 BEGIN;
