@@ -21,23 +21,22 @@ test('Tuesday example', () => {
     ['Отчёт Aktau Market · 10 ноября', '✅ 06:00 — опубликовано, 4/4 сети', '✅ 18:00 — опубликовано, 4/4 сети',
       '✅ Монитор API: OK, проверка в 18:27'].join('\n'));
 });
-test('Monday example with weekly', () => {
-  const runs = [weekly(D(15, 22)), daily(D(16, 1), { exitCode: 3, stores: { dina: 0, dana: 1, fixprice: 0, anvar: 0 }, stale: ['dana'] }),
+test('Monday example', () => {
+  const runs = [daily(D(16, 1), { exitCode: 3, stores: { dina: 0, dana: 1, fixprice: 0, anvar: 0 }, stale: ['dana'] }),
     daily(D(16, 13), { exitCode: 1, published: false, retention: null })];
   const st = { version: 2, phase: 'OK', failures: 0, lastUTC: Date.UTC(2026, 10, 16, 13, 27), queue: q(2) };
   assert.equal(buildReport({ now: MON, runs, monitorState: st }),
     ['Отчёт Aktau Market · 16 ноября', '⚠️ 06:00 — опубликовано, dana из прошлого файла (скрапер упал)',
-      '❌ 18:00 — не опубликовано: сбой публикации (код 1)', '✅ Полный скрап (вс 22:00 UTC): 3/3 сети',
+      '❌ 18:00 — не опубликовано: сбой публикации (код 1)',
       '⚠️ Монитор API: 2 неотправленные тревоги, проверка в 18:27'].join('\n'));
 });
 test('late report next day uses slots relative to now', () => {
   assert.deepEqual(expectedSlots(Date.UTC(2026, 10, 11, 2, 0)),
     [{ kind: 'daily', slotUTC: Date.UTC(2026, 10, 10, 13) }, { kind: 'daily', slotUTC: Date.UTC(2026, 10, 11, 1) }]);
 });
-test('expectedSlots includes weekly Sunday 22:00 inside window', () => {
-  assert.equal(expectedSlots(MON).filter(s => s.kind === 'weekly').length, 1);
-  assert.equal(expectedSlots(TUE).filter(s => s.kind === 'weekly').length, 0);
-  assert.deepEqual(expectedSlots(MON).map(s => s.slotUTC), [D(15, 22, 0, 0), D(16, 1, 0, 0), D(16, 13, 0, 0)]);
+test('expectedSlots has only daily slots (no weekly full scrape)', () => {
+  assert.equal(expectedSlots(MON).filter(s => s.kind !== 'daily').length, 0);
+  assert.deepEqual(expectedSlots(MON).map(s => s.slotUTC), [D(16, 1, 0, 0), D(16, 13, 0, 0)]);
 });
 test('daily rows', () => {
   assert.equal(slot13(), '✅ 18:00 — опубликовано, 4/4 сети');
@@ -54,13 +53,6 @@ test('running rows', () => {
 });
 test('missing row', () => {
   assert.equal(one(TUE, [daily(D(10, 1))])[2], '❌ 18:00 — прогон не найден');
-});
-test('weekly rows', () => {
-  const w = over => one(MON, [weekly(D(15, 22), over)]).find(l => l.includes('Полный скрап'));
-  assert.equal(w({}), '✅ Полный скрап (вс 22:00 UTC): 3/3 сети');
-  assert.equal(w({ exitCode: 1, stores: { dina: 0, dana: 1, fixprice: 0 }, scopeFailed: ['scope:dina'] }), '❌ Полный скрап (вс 22:00 UTC): упали dana, scope:dina');
-  assert.equal(one(MON, []).find(l => l.includes('Полный скрап')), '❌ Полный скрап (вс 22:00 UTC): не найден');
-  assert.equal(w({ status: 'running', finishedAt: null, exitCode: null }), '❌ Полный скрап (вс 22:00 UTC): не завершился');
 });
 test('monitor rows and plurals', () => {
   const last = l => l.at(-1), fresh = TUE - 3 * 60000;

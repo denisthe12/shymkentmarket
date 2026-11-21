@@ -199,6 +199,7 @@ try {
   assert.deepEqual(auditA, auditB, 'product_mappings_double_restore_mismatch');
   remove(second); pass('product_mappings_field_complete_binary_safe_double_restore');
   securityAudit();
+  // The list below describes the restored inherited backup, not this repo's migration chain.
   assert.equal(sql('SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name;'), '20260923000000_init\n20261004000000_rls_runtime_access\n20261005000000_snapshot_history');
   reader(); pass('representative_integrity_history_RLS_restricted_role');
   // Profiling is enabled only after the plain restore and integrity proof.
