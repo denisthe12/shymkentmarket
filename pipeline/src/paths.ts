@@ -19,7 +19,12 @@ export function syncOutDir(env: string | undefined = process.env.SYNC_OUT_DIR): 
   return dirFromEnv(env, 'data/sync')
 }
 
-/** Каталог словаря соответствий */
-export function mappingDir(): string {
-  return resolve(REPO_ROOT, 'data/mapping')
+/** Каталог словаря соответствий: MAPPING_DIR или data/mapping */
+export function mappingDir(env: string | undefined = process.env.MAPPING_DIR): string {
+  return dirFromEnv(env, 'data/mapping')
+}
+
+/** Каталог заданий для субагентов (batch-NNN.json): AGENT_DIR или data/agent */
+export function agentDir(env: string | undefined = process.env.AGENT_DIR): string {
+  return dirFromEnv(env, 'data/agent')
 }
