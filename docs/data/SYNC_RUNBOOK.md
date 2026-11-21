@@ -45,6 +45,11 @@ go run ./cmd/ingest -bundle data/sync/bundle.json [-apply]  →  новый snap
 | `canonical_merge_conflict` | словарь менялся (карточки объединены) — разово `cmd/ingest -recluster -apply`, затем `ANALYZE` |
 | `canonical_split_conflict` | карточка разделена, две группы претендуют на один прежний ID — разово `cmd/ingest -recluster -apply` |
 | `... source file missing` / `... source file is stale` | файла источника нет или он старше лимита — перезапустить скрап (по разрешению Owner) или поднять лимит локально |
+
+Коды выхода 3 и 4 выдаёт обёртка `pipeline/scripts/daily-sync.sh` (см. `ops/sync/README.md`); в локальном потоке из §1 их нет.
+
+| Код / симптом | Что значит и что делать |
+|---|---|
 | ошибка `sync` или ingest (exit 1) | snapshot не публикуется |
 | exit 3 — stale stores | snapshot опубликован, но часть сетей взята из прошлого удачного файла (строка `[sync] stale stores: <список>`) |
 | exit 4 — retention failed | snapshot опубликован, очистка старых snapshot или запись месячной истории цен (`public.price_history`) упала: строка `[sync] retention failed`; чаще всего причина в правах роли на `price_history` |

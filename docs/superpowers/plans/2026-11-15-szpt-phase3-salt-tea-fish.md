@@ -94,7 +94,7 @@ git commit -m "feat(pipeline): publish salt, tea-coffee and fish; scrape Anvar t
 
 - [ ] **Step 1: Скрап Анвара** — `cd pipeline && pnpm scrape:anvar`. Expected: в логе товары разделов «Чай» (~166) и «Свежая рыба, морепродукты» (~16), файл `data/sources/anvar.json`.
 - [ ] **Step 2: Задания** — `pnpm exec tsx src/cli/anvar-prepare.ts`. Expected: `data/agent/anvar-match/batch-NNN.json` + `prompt.md` только для товаров, которых нет в словаре.
-- [ ] **Step 3: Решения** — для каждого batch субагент (модель haiku) по `prompt.md` пишет `batch-NNN.decisions.json`, как при подключении Анвара (`docs/data/ANVAR_SOURCE.md`).
+- [ ] **Step 3: Решения** — для каждого batch субагент (модель haiku) по `prompt.md` пишет `batch-NNN.decisions.json`, как при подключении Анвара (`docs/data/ANVAR_SOURCE.md`)  (удалён).
 - [ ] **Step 4: Проверка и применение** — `pnpm exec tsx src/cli/anvar-apply.ts --check`, затем без `--check`. Expected: ошибок нет, словарь обновлён.
 - [ ] **Step 5: Проверить `storeCategories`** — `node -e` по `data/mapping/dictionary.json`: все ключи `ANVAR|…` с «/ Чай» дают `tea-coffee`, с «/ Свежая рыба, морепродукты» — `fish`; у «Сазан потрошенный вес» категория `fish`. Неверные — правка через `data/mapping/overrides.json` (`moveCategory`) и повтор Step 4.
 - [ ] **Step 6: Перегенерировать таксономию** — `pnpm taxonomy:sql`; `git diff` миграции: меняются только options новых категорий и, возможно, бренды старых. Если тест «keeps the 9 old rows» падает — разобрать: изменение опций старой категории от новых товаров Анвара принимается только если оно ожидаемо (новый бренд в `groats`/`sugar`), и тогда тест сравнивает форму без options, как соседний тест; иначе исправить решения.

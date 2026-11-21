@@ -33,7 +33,7 @@ sudo journalctl -u aktau-sync.service --since "-1 day" --no-pager -o short-iso |
 sudo ls -lt /var/lib/aktau-sync/runs | head
 ```
 
-Exit codes (full table: `docs/data/SYNC_RUNBOOK.md` §4):
+Exit codes (full table: `docs/data/SYNC_RUNBOOK.md` §2):
 
 - `0` — published, all stores fresh.
 - `1` — sync/ingest failed or all scrapers failed: **nothing published**, the site
