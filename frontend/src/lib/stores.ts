@@ -1,21 +1,18 @@
 import type { StoreCode, StoreLocationDto } from '../api/types'
 
 /**
- * Цвета сетей на карте. Категориальная палитра (синий, оранжевый, фиолетовый, золотистый) проверена
- * на различимость при дальтонизме; зелёный не используем — он в UI значит «здесь дешевле».
+ * Цвета сетей на карте. Свой цвет пока только у Magnum; остальные сети — нейтральный серый.
+ * Зелёный не используем — он в UI значит «здесь дешевле».
  */
-const STORE_COLORS: Record<StoreCode, string> = {
-  DINA: '#2a78d6',
-  DANA: '#eb6834',
-  FIX_PRICE: '#4a3aa7',
-  ANVAR: '#b8860b',
+const STORE_COLORS: Record<string, string> = {
+  MAGNUM: '#2a78d6',
 }
 
-/** Сеть, которую бэк добавит позже, без своего цвета — нейтральный серый */
+/** Любая сеть без своего цвета — нейтральный серый */
 const FALLBACK_COLOR = '#697178'
 
 export function storeColor(code: string): string {
-  return STORE_COLORS[code as StoreCode] ?? FALLBACK_COLOR
+  return STORE_COLORS[code] ?? FALLBACK_COLOR
 }
 
 /** У точки пока нет id в контракте — ключ из сети и адреса */

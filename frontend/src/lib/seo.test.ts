@@ -11,8 +11,8 @@ const product: ProductCardDto = {
   attributes: {},
   minPrice: 570,
   offers: [
-    { storeCode: 'DINA', storeName: 'DINA', price: 570, oldPrice: null },
-    { storeCode: 'DANA', storeName: 'DANA', price: 650, oldPrice: null },
+    { storeCode: 'MAGNUM', storeName: 'MAGNUM', price: 570, oldPrice: null },
+    { storeCode: 'STORE_A', storeName: 'STORE_A', price: 650, oldPrice: null },
   ],
   snapshotAt: '2026-09-24T06:00:00Z',
 }
@@ -63,10 +63,10 @@ describe('seo', () => {
 
   it('describes a product by its lowest price, store and snapshot date', () => {
     expect(productDescription('ru', product)).toBe(
-      'Молоко 3,2% 1 л — от 570 ₸ в DINA. Сравнение цен в магазинах Актау на 24.09.2026.',
+      'Молоко 3,2% 1 л — от 570 ₸ в MAGNUM. Сравнение цен в магазинах Актау на 24.09.2026.',
     )
     expect(productDescription('ru', { ...product, offers: product.offers.slice(0, 1) })).toBe(
-      'Молоко 3,2% 1 л — 570 ₸ в DINA. Цена в магазинах Актау на 24.09.2026.',
+      'Молоко 3,2% 1 л — 570 ₸ в MAGNUM. Цена в магазинах Актау на 24.09.2026.',
     )
   })
 })

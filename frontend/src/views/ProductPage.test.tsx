@@ -35,13 +35,13 @@ describe('ProductPage', () => {
     renderPage(<ProductPage id={MILK_ID} />, `/ru/products/${MILK_ID}`)
     expect(await screen.findByRole('heading', { level: 1, name: 'Молоко FoodMaster 3,2% 1 л' })).toBeInTheDocument()
     expect(screen.getByTestId('min-price')).toHaveTextContent('570')
-    expect(screen.getByText(/дешевле, чем в Fix Price/)).toHaveTextContent(/^На 150\s₸ дешевле, чем в Fix Price$/)
+    expect(screen.getByText(/дешевле, чем в Store B/)).toHaveTextContent(/^На 150\s₸ дешевле, чем в Store B$/)
 
     const offers = within(screen.getByTestId('offer-list')).getAllByRole('listitem')
     expect(offers.map((li) => li.textContent)).toEqual([
-      expect.stringMatching(/^Dina Market.*570/),
-      expect.stringMatching(/^Dana Market.*дороже на 90.*660/),
-      expect.stringMatching(/^Fix Price.*дороже на 150.*720/),
+      expect.stringMatching(/^Magnum.*570/),
+      expect.stringMatching(/^Store A.*дороже на 90.*660/),
+      expect.stringMatching(/^Store B.*дороже на 150.*720/),
     ])
     expect(offers[0]).toHaveAttribute('data-best')
     expect(offers[1]).not.toHaveAttribute('data-best')

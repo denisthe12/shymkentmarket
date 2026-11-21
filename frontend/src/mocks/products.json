@@ -16,20 +16,20 @@
     "minPrice": 570,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 570,
         "oldPrice": 660
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 660,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 720,
         "oldPrice": null
       }
@@ -53,20 +53,20 @@
     "minPrice": 545,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 545,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 630,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 680,
         "oldPrice": null
       }
@@ -90,14 +90,14 @@
     "minPrice": 690,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 690,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 770,
         "oldPrice": null
       }
@@ -121,14 +121,14 @@
     "minPrice": 620,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 620,
         "oldPrice": null
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 740,
         "oldPrice": null
       }
@@ -152,20 +152,20 @@
     "minPrice": 880,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 880,
         "oldPrice": null
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 940,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 1180,
         "oldPrice": null
       }
@@ -189,20 +189,20 @@
     "minPrice": 510,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 510,
         "oldPrice": 590
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 540,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 670,
         "oldPrice": null
       }
@@ -226,14 +226,14 @@
     "minPrice": 980,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 980,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 1010,
         "oldPrice": null
       }
@@ -257,14 +257,14 @@
     "minPrice": 290,
     "offers": [
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 290,
         "oldPrice": null
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 320,
         "oldPrice": null
       }
@@ -288,8 +288,8 @@
     "minPrice": 320,
     "offers": [
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 320,
         "oldPrice": null
       }
@@ -313,14 +313,14 @@
     "minPrice": 560,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 560,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 690,
         "oldPrice": null
       }
@@ -344,20 +344,20 @@
     "minPrice": 150,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 150,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 170,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 180,
         "oldPrice": null
       }
@@ -381,14 +381,14 @@
     "minPrice": 175,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 175,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 210,
         "oldPrice": null
       }
@@ -412,14 +412,14 @@
     "minPrice": 190,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 190,
         "oldPrice": null
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 200,
         "oldPrice": null
       }
@@ -443,20 +443,20 @@
     "minPrice": 260,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 260,
         "oldPrice": 300
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 280,
         "oldPrice": null
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 340,
         "oldPrice": null
       }
@@ -480,14 +480,14 @@
     "minPrice": 230,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 230,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 240,
         "oldPrice": null
       }
@@ -511,8 +511,8 @@
     "minPrice": 240,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 240,
         "oldPrice": null
       }
@@ -535,20 +535,20 @@
     "minPrice": 620,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 620,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 720,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 790,
         "oldPrice": null
       }
@@ -571,14 +571,14 @@
     "minPrice": 720,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 720,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 890,
         "oldPrice": null
       }
@@ -601,14 +601,14 @@
     "minPrice": 1590,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 1590,
         "oldPrice": 1830
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 1780,
         "oldPrice": null
       }
@@ -631,14 +631,14 @@
     "minPrice": 1190,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 1190,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 1430,
         "oldPrice": null
       }
@@ -661,8 +661,8 @@
     "minPrice": 2150,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 2150,
         "oldPrice": null
       }
@@ -685,20 +685,20 @@
     "minPrice": 480,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 480,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 510,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 630,
         "oldPrice": null
       }
@@ -721,14 +721,14 @@
     "minPrice": 2250,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 2250,
         "oldPrice": 2590
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 2320,
         "oldPrice": null
       }
@@ -751,14 +751,14 @@
     "minPrice": 930,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 930,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 1010,
         "oldPrice": null
       }
@@ -781,20 +781,20 @@
     "minPrice": 690,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 690,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 800,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 880,
         "oldPrice": null
       }
@@ -818,20 +818,20 @@
     "minPrice": 890,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 890,
         "oldPrice": 1020
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 1020,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 1100,
         "oldPrice": null
       }
@@ -855,14 +855,14 @@
     "minPrice": 4150,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 4150,
         "oldPrice": null
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 4650,
         "oldPrice": null
       }
@@ -886,14 +886,14 @@
     "minPrice": 820,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 820,
         "oldPrice": null
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 980,
         "oldPrice": null
       }
@@ -917,14 +917,14 @@
     "minPrice": 2390,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 2390,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 2560,
         "oldPrice": null
       }
@@ -948,20 +948,20 @@
     "minPrice": 3490,
     "offers": [
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 3490,
         "oldPrice": null
       },
       {
-        "storeCode": "FIX_PRICE",
-        "storeName": "Fix Price",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 3700,
         "oldPrice": null
       },
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 4570,
         "oldPrice": null
       }

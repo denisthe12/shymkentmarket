@@ -71,12 +71,12 @@ describe('DashboardPage', () => {
     renderPage(<DashboardPage />, '/ru/dashboard')
     const groups = await screen.findAllByTestId('store-group')
     expect(groups.map((g) => g.querySelector('p')?.textContent)).toEqual([
-      'Dina Market· 3 точки',
-      'Dana Market· 3 точки',
-      'Fix Price· 2 точки',
+      'Magnum· 3 точки',
+      'Store A· 3 точки',
+      'Store B· 2 точки',
     ])
     expect(within(groups[2]).getByText('15-й микрорайон, 21')).toBeInTheDocument()
-    expect(await screen.findByTestId('store-map')).toHaveTextContent('DINA,DINA,DINA,DANA,DANA,DANA,FIX_PRICE,FIX_PRICE')
+    expect(await screen.findByTestId('store-map')).toHaveTextContent('MAGNUM,MAGNUM,MAGNUM,STORE_A,STORE_A,STORE_A,STORE_B,STORE_B')
   })
 
   it('shows the basket price per chain, the best complete one first', async () => {
@@ -85,10 +85,10 @@ describe('DashboardPage', () => {
     const text = (el: HTMLElement) => el.textContent?.replace(/\s/g, ' ')
     expect(baskets.map((b) => text(within(b).getByTestId('basket-total')))).toEqual(['2 750 ₸', '3 170 ₸', '2 250 ₸'])
     expect(baskets[0]).toHaveAttribute('data-best', 'true')
-    expect(baskets[0]).toHaveTextContent('Dina Market')
+    expect(baskets[0]).toHaveTextContent('Magnum')
     expect(baskets[0]).toHaveTextContent('Выгоднее всего')
     expect(text(baskets[1])).toContain('дороже на 420 ₸')
-    // Fix Price дешевле, но без яиц — выгоднейшей не считается
+    // Store B дешевле, но без яиц — выгоднейшей не считается
     expect(baskets[2]).not.toHaveAttribute('data-best')
     expect(baskets[2]).toHaveTextContent('Нет 1 из 5 позиций')
     expect(within(baskets[2]).getByTestId('basket-total')).toHaveClass('text-muted')
@@ -115,7 +115,7 @@ describe('DashboardPage', () => {
   })
 
   it('shows "no data" instead of 0 ₸ when nothing was found in a chain', async () => {
-    // Реальный ответ бэка (PART_05_REPORT.md): у DINA нет ни одной позиции, total = 0
+    // Реальный ответ бэка (PART_05_REPORT.md): у MAGNUM нет ни одной позиции, total = 0
     const item = (categorySlug: string, price: number | null) => ({
       categorySlug,
       categoryName: categorySlug,
@@ -126,9 +126,9 @@ describe('DashboardPage', () => {
     vi.spyOn(catalogApi, 'getDashboard').mockResolvedValue({
       ...dashboardMock,
       baskets: [
-        { storeCode: 'DINA', storeName: 'Dina Market', total: 0, items: [item('milk', null), item('sugar', null), item('oil', null)] },
-        { storeCode: 'DANA', storeName: 'Dana Market', total: 2155, items: [item('milk', 752), item('sugar', 483), item('oil', 920)] },
-        { storeCode: 'FIX_PRICE', storeName: 'Fix Price', total: 2050, items: [item('milk', 650), item('sugar', 580), item('oil', 820)] },
+        { storeCode: 'MAGNUM', storeName: 'Magnum', total: 0, items: [item('milk', null), item('sugar', null), item('oil', null)] },
+        { storeCode: 'STORE_A', storeName: 'Store A', total: 2155, items: [item('milk', 752), item('sugar', 483), item('oil', 920)] },
+        { storeCode: 'STORE_B', storeName: 'Store B', total: 2050, items: [item('milk', 650), item('sugar', 580), item('oil', 820)] },
       ],
     } as never)
     renderPage(<DashboardPage />, '/ru/dashboard')

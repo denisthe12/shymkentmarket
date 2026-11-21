@@ -72,8 +72,8 @@
         },
         "offers": [
           {
-            "storeCode": "DINA",
-            "storeName": "Dina Market",
+            "storeCode": "MAGNUM",
+            "storeName": "Magnum",
             "price": 420,
             "oldPrice": null,
             "unitPrice": {
@@ -82,8 +82,8 @@
             }
           },
           {
-            "storeCode": "DANA",
-            "storeName": "Dana Market",
+            "storeCode": "STORE_A",
+            "storeName": "Store A",
             "price": 455,
             "oldPrice": null,
             "unitPrice": {
@@ -113,8 +113,8 @@
         },
         "offers": [
           {
-            "storeCode": "ANVAR",
-            "storeName": "Анвар",
+            "storeCode": "STORE_B",
+            "storeName": "Store B",
             "price": 710,
             "oldPrice": null,
             "unitPrice": {
@@ -144,8 +144,8 @@
         },
         "offers": [
           {
-            "storeCode": "DINA",
-            "storeName": "Dina Market",
+            "storeCode": "MAGNUM",
+            "storeName": "Magnum",
             "price": 600,
             "oldPrice": null,
             "unitPrice": {
@@ -154,8 +154,8 @@
             }
           },
           {
-            "storeCode": "DANA",
-            "storeName": "Dana Market",
+            "storeCode": "STORE_A",
+            "storeName": "Store A",
             "price": 640,
             "oldPrice": null,
             "unitPrice": {
@@ -188,8 +188,8 @@
         },
         "offers": [
           {
-            "storeCode": "DINA",
-            "storeName": "Dina Market",
+            "storeCode": "MAGNUM",
+            "storeName": "Magnum",
             "price": 520,
             "oldPrice": null,
             "unitPrice": {
@@ -220,8 +220,8 @@
         },
         "offers": [
           {
-            "storeCode": "DANA",
-            "storeName": "Dana Market",
+            "storeCode": "STORE_A",
+            "storeName": "Store A",
             "price": 478,
             "oldPrice": null,
             "unitPrice": {
@@ -253,8 +253,8 @@
         },
         "offers": [
           {
-            "storeCode": "ANVAR",
-            "storeName": "Анвар",
+            "storeCode": "STORE_B",
+            "storeName": "Store B",
             "price": 759,
             "oldPrice": null,
             "unitPrice": {
@@ -284,8 +284,8 @@
         },
         "offers": [
           {
-            "storeCode": "ANVAR",
-            "storeName": "Анвар",
+            "storeCode": "STORE_B",
+            "storeName": "Store B",
             "price": 2249,
             "oldPrice": null,
             "unitPrice": {
@@ -316,8 +316,8 @@
         "soldByWeight": true,
         "offers": [
           {
-            "storeCode": "DINA",
-            "storeName": "Dina Market",
+            "storeCode": "MAGNUM",
+            "storeName": "Magnum",
             "price": 1480,
             "oldPrice": 1600,
             "unitPrice": {
@@ -327,8 +327,8 @@
             "soldByWeight": true
           },
           {
-            "storeCode": "ANVAR",
-            "storeName": "Анвар",
+            "storeCode": "STORE_B",
+            "storeName": "Store B",
             "price": 299,
             "oldPrice": null,
             "unitPrice": {
@@ -358,8 +358,8 @@
         "soldByWeight": true,
         "offers": [
           {
-            "storeCode": "DANA",
-            "storeName": "Dana Market",
+            "storeCode": "STORE_A",
+            "storeName": "Store A",
             "price": 389,
             "oldPrice": null,
             "unitPrice": {
@@ -392,8 +392,8 @@
         },
         "offers": [
           {
-            "storeCode": "DINA",
-            "storeName": "Dina Market",
+            "storeCode": "MAGNUM",
+            "storeName": "Magnum",
             "price": 1098,
             "oldPrice": null,
             "unitPrice": {
@@ -423,8 +423,8 @@
         },
         "offers": [
           {
-            "storeCode": "DANA",
-            "storeName": "Dana Market",
+            "storeCode": "STORE_A",
+            "storeName": "Store A",
             "price": 1750,
             "oldPrice": null,
             "unitPrice": {
@@ -453,8 +453,8 @@
         "soldByWeight": true,
         "offers": [
           {
-            "storeCode": "ANVAR",
-            "storeName": "Анвар",
+            "storeCode": "STORE_B",
+            "storeName": "Store B",
             "price": 1500,
             "oldPrice": null,
             "unitPrice": {

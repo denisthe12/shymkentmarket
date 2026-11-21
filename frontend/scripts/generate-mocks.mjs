@@ -11,9 +11,9 @@ const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'mocks
 const SNAPSHOT_AT = '2026-09-24T00:00:00.000Z'
 
 const STORES = {
-  DINA: 'Dina Market',
-  DANA: 'Dana Market',
-  FIX_PRICE: 'Fix Price',
+  MAGNUM: 'Magnum',
+  STORE_A: 'Store A',
+  STORE_B: 'Store B',
 }
 
 const categories = [
@@ -54,44 +54,44 @@ const filters = {
 // [name, brand, attributes, базовая цена, магазины, скидка у первого магазина]
 const raw = {
   milk: [
-    ['Молоко FoodMaster 3,2% 1 л', 'FoodMaster', { volumeMl: 1000, fatPercent: 3.2, lactoseFree: false }, 570, ['DINA', 'DANA', 'FIX_PRICE'], true],
-    ['Молоко FoodMaster 2,5% 1 л', 'FoodMaster', { volumeMl: 1000, fatPercent: 2.5, lactoseFree: false }, 545, ['DINA', 'DANA', 'FIX_PRICE']],
-    ['Молоко FoodMaster 6% 1 л', 'FoodMaster', { volumeMl: 1000, fatPercent: 6, lactoseFree: false }, 690, ['DINA', 'DANA']],
-    ['Молоко Lactel 3,2% 900 мл', 'Lactel', { volumeMl: 900, fatPercent: 3.2, lactoseFree: false }, 620, ['DANA', 'DINA']],
-    ['Молоко Lactel безлактозное 1% 900 мл', 'Lactel', { volumeMl: 900, fatPercent: 1, lactoseFree: true }, 880, ['DANA', 'DINA', 'FIX_PRICE']],
-    ['Молоко Адал 2,5% 1 л', 'Адал', { volumeMl: 1000, fatPercent: 2.5, lactoseFree: false }, 510, ['DINA', 'DANA', 'FIX_PRICE'], true],
-    ['Молоко Адал 3,2% 2 л', 'Адал', { volumeMl: 2000, fatPercent: 3.2, lactoseFree: false }, 980, ['DINA', 'DANA']],
-    ['Молоко Emil 1% 500 мл', 'Emil', { volumeMl: 500, fatPercent: 1, lactoseFree: false }, 290, ['FIX_PRICE', 'DINA']],
-    ['Молоко Emil 3,2% 500 мл', 'Emil', { volumeMl: 500, fatPercent: 3.2, lactoseFree: false }, 320, ['FIX_PRICE']],
-    ['Молоко Моё 2,5% 900 мл', 'Моё', { volumeMl: 900, fatPercent: 2.5, lactoseFree: false }, 560, ['DANA', 'FIX_PRICE']],
+    ['Молоко FoodMaster 3,2% 1 л', 'FoodMaster', { volumeMl: 1000, fatPercent: 3.2, lactoseFree: false }, 570, ['MAGNUM', 'STORE_A', 'STORE_B'], true],
+    ['Молоко FoodMaster 2,5% 1 л', 'FoodMaster', { volumeMl: 1000, fatPercent: 2.5, lactoseFree: false }, 545, ['MAGNUM', 'STORE_A', 'STORE_B']],
+    ['Молоко FoodMaster 6% 1 л', 'FoodMaster', { volumeMl: 1000, fatPercent: 6, lactoseFree: false }, 690, ['MAGNUM', 'STORE_A']],
+    ['Молоко Lactel 3,2% 900 мл', 'Lactel', { volumeMl: 900, fatPercent: 3.2, lactoseFree: false }, 620, ['STORE_A', 'MAGNUM']],
+    ['Молоко Lactel безлактозное 1% 900 мл', 'Lactel', { volumeMl: 900, fatPercent: 1, lactoseFree: true }, 880, ['STORE_A', 'MAGNUM', 'STORE_B']],
+    ['Молоко Адал 2,5% 1 л', 'Адал', { volumeMl: 1000, fatPercent: 2.5, lactoseFree: false }, 510, ['MAGNUM', 'STORE_A', 'STORE_B'], true],
+    ['Молоко Адал 3,2% 2 л', 'Адал', { volumeMl: 2000, fatPercent: 3.2, lactoseFree: false }, 980, ['MAGNUM', 'STORE_A']],
+    ['Молоко Emil 1% 500 мл', 'Emil', { volumeMl: 500, fatPercent: 1, lactoseFree: false }, 290, ['STORE_B', 'MAGNUM']],
+    ['Молоко Emil 3,2% 500 мл', 'Emil', { volumeMl: 500, fatPercent: 3.2, lactoseFree: false }, 320, ['STORE_B']],
+    ['Молоко Моё 2,5% 900 мл', 'Моё', { volumeMl: 900, fatPercent: 2.5, lactoseFree: false }, 560, ['STORE_A', 'STORE_B']],
   ],
   bread: [
-    ['Хлеб пшеничный формовой 450 г', 'Актау нан', { weightGrams: 450, breadType: 'Пшеничный', sliced: false }, 150, ['DINA', 'DANA', 'FIX_PRICE']],
-    ['Хлеб пшеничный нарезной 450 г', 'Актау нан', { weightGrams: 450, breadType: 'Пшеничный', sliced: true }, 175, ['DINA', 'DANA']],
-    ['Хлеб ржаной 300 г', 'Каспий нан', { weightGrams: 300, breadType: 'Ржаной', sliced: false }, 190, ['DANA', 'DINA']],
-    ['Хлеб Бородинский нарезка 300 г', 'Каспий нан', { weightGrams: 300, breadType: 'Бородинский', sliced: true }, 260, ['DANA', 'DINA', 'FIX_PRICE'], true],
-    ['Батон нарезной 600 г', 'Актау нан', { weightGrams: 600, breadType: 'Пшеничный', sliced: true }, 230, ['DINA', 'FIX_PRICE']],
-    ['Хлеб ржано-пшеничный 600 г', 'Мангистау нан', { weightGrams: 600, breadType: 'Ржаной', sliced: false }, 240, ['DINA']],
+    ['Хлеб пшеничный формовой 450 г', 'Актау нан', { weightGrams: 450, breadType: 'Пшеничный', sliced: false }, 150, ['MAGNUM', 'STORE_A', 'STORE_B']],
+    ['Хлеб пшеничный нарезной 450 г', 'Актау нан', { weightGrams: 450, breadType: 'Пшеничный', sliced: true }, 175, ['MAGNUM', 'STORE_A']],
+    ['Хлеб ржаной 300 г', 'Каспий нан', { weightGrams: 300, breadType: 'Ржаной', sliced: false }, 190, ['STORE_A', 'MAGNUM']],
+    ['Хлеб Бородинский нарезка 300 г', 'Каспий нан', { weightGrams: 300, breadType: 'Бородинский', sliced: true }, 260, ['STORE_A', 'MAGNUM', 'STORE_B'], true],
+    ['Батон нарезной 600 г', 'Актау нан', { weightGrams: 600, breadType: 'Пшеничный', sliced: true }, 230, ['MAGNUM', 'STORE_B']],
+    ['Хлеб ржано-пшеничный 600 г', 'Мангистау нан', { weightGrams: 600, breadType: 'Ржаной', sliced: false }, 240, ['MAGNUM']],
   ],
   eggs: [
-    ['Яйца куриные С1 10 шт', 'Айс', { count: 10, grade: 'C1' }, 620, ['DINA', 'DANA', 'FIX_PRICE']],
-    ['Яйца куриные С0 10 шт', 'Айс', { count: 10, grade: 'C0' }, 720, ['DINA', 'DANA']],
-    ['Яйца куриные С2 30 шт', 'Жас Канат', { count: 30, grade: 'C2' }, 1590, ['DANA', 'DINA'], true],
-    ['Яйца куриные С1 20 шт', 'Жас Канат', { count: 20, grade: 'C1' }, 1190, ['DINA', 'FIX_PRICE']],
-    ['Яйца куриные С0 30 шт', 'Айс', { count: 30, grade: 'C0' }, 2150, ['DANA']],
+    ['Яйца куриные С1 10 шт', 'Айс', { count: 10, grade: 'C1' }, 620, ['MAGNUM', 'STORE_A', 'STORE_B']],
+    ['Яйца куриные С0 10 шт', 'Айс', { count: 10, grade: 'C0' }, 720, ['MAGNUM', 'STORE_A']],
+    ['Яйца куриные С2 30 шт', 'Жас Канат', { count: 30, grade: 'C2' }, 1590, ['STORE_A', 'MAGNUM'], true],
+    ['Яйца куриные С1 20 шт', 'Жас Канат', { count: 20, grade: 'C1' }, 1190, ['MAGNUM', 'STORE_B']],
+    ['Яйца куриные С0 30 шт', 'Айс', { count: 30, grade: 'C0' }, 2150, ['STORE_A']],
   ],
   sugar: [
-    ['Сахар-песок 1 кг', 'Коксу', { weightGrams: 1000, form: 'Песок' }, 480, ['DINA', 'DANA', 'FIX_PRICE']],
-    ['Сахар-песок 5 кг', 'Коксу', { weightGrams: 5000, form: 'Песок' }, 2250, ['DINA', 'DANA'], true],
-    ['Сахар-песок 2 кг', 'Тараз', { weightGrams: 2000, form: 'Песок' }, 930, ['DANA', 'FIX_PRICE']],
-    ['Сахар рафинад 1 кг', 'Тараз', { weightGrams: 1000, form: 'Рафинад' }, 690, ['DINA', 'DANA', 'FIX_PRICE']],
+    ['Сахар-песок 1 кг', 'Коксу', { weightGrams: 1000, form: 'Песок' }, 480, ['MAGNUM', 'STORE_A', 'STORE_B']],
+    ['Сахар-песок 5 кг', 'Коксу', { weightGrams: 5000, form: 'Песок' }, 2250, ['MAGNUM', 'STORE_A'], true],
+    ['Сахар-песок 2 кг', 'Тараз', { weightGrams: 2000, form: 'Песок' }, 930, ['STORE_A', 'STORE_B']],
+    ['Сахар рафинад 1 кг', 'Тараз', { weightGrams: 1000, form: 'Рафинад' }, 690, ['MAGNUM', 'STORE_A', 'STORE_B']],
   ],
   oil: [
-    ['Масло подсолнечное рафинированное Шедевр 1 л', 'Шедевр', { volumeMl: 1000, oilType: 'Подсолнечное', refined: true }, 890, ['DINA', 'DANA', 'FIX_PRICE'], true],
-    ['Масло подсолнечное рафинированное Шедевр 5 л', 'Шедевр', { volumeMl: 5000, oilType: 'Подсолнечное', refined: true }, 4150, ['DINA', 'DANA']],
-    ['Масло подсолнечное нерафинированное Алтын 1 л', 'Алтын', { volumeMl: 1000, oilType: 'Подсолнечное', refined: false }, 820, ['DANA', 'DINA']],
-    ['Масло подсолнечное Алтын 3 л', 'Алтын', { volumeMl: 3000, oilType: 'Подсолнечное', refined: true }, 2390, ['DINA', 'FIX_PRICE']],
-    ['Масло оливковое Borges Extra Virgin 500 мл', 'Borges', { volumeMl: 500, oilType: 'Оливковое', refined: false }, 3490, ['DANA', 'DINA', 'FIX_PRICE']],
+    ['Масло подсолнечное рафинированное Шедевр 1 л', 'Шедевр', { volumeMl: 1000, oilType: 'Подсолнечное', refined: true }, 890, ['MAGNUM', 'STORE_A', 'STORE_B'], true],
+    ['Масло подсолнечное рафинированное Шедевр 5 л', 'Шедевр', { volumeMl: 5000, oilType: 'Подсолнечное', refined: true }, 4150, ['MAGNUM', 'STORE_A']],
+    ['Масло подсолнечное нерафинированное Алтын 1 л', 'Алтын', { volumeMl: 1000, oilType: 'Подсолнечное', refined: false }, 820, ['STORE_A', 'MAGNUM']],
+    ['Масло подсолнечное Алтын 3 л', 'Алтын', { volumeMl: 3000, oilType: 'Подсолнечное', refined: true }, 2390, ['MAGNUM', 'STORE_B']],
+    ['Масло оливковое Borges Extra Virgin 500 мл', 'Borges', { volumeMl: 500, oilType: 'Оливковое', refined: false }, 3490, ['STORE_A', 'MAGNUM', 'STORE_B']],
   ],
 }
 
@@ -149,14 +149,14 @@ const priceSpreads = products
   .slice(0, 10)
 
 const locations = [
-  ['DINA', 'Dina Market 5 мкр', '5-й микрорайон, 30', 43.6555, 51.1603],
-  ['DINA', 'Dina Market 12 мкр', '12-й микрорайон, 7', 43.6703, 51.1745],
-  ['DINA', 'Dina Market 27 мкр', '27-й микрорайон, 1А', 43.6862, 51.1561],
-  ['DANA', 'Dana Market 3 мкр', '3-й микрорайон, 4', 43.6441, 51.1552],
-  ['DANA', 'Dana Market 14 мкр', '14-й микрорайон, 55', 43.6612, 51.1839],
-  ['DANA', 'Dana Market 32Б мкр', '32Б микрорайон, 12', 43.6958, 51.1702],
-  ['FIX_PRICE', 'Fix Price Актау Сити', 'ТРЦ «Актау Сити», 9-й микрорайон', 43.6508, 51.1681],
-  ['FIX_PRICE', 'Fix Price 15 мкр', '15-й микрорайон, 21', 43.6687, 51.1602],
+  ['MAGNUM', 'Magnum 5 мкр', '5-й микрорайон, 30', 43.6555, 51.1603],
+  ['MAGNUM', 'Magnum 12 мкр', '12-й микрорайон, 7', 43.6703, 51.1745],
+  ['MAGNUM', 'Magnum 27 мкр', '27-й микрорайон, 1А', 43.6862, 51.1561],
+  ['STORE_A', 'Store A 3 мкр', '3-й микрорайон, 4', 43.6441, 51.1552],
+  ['STORE_A', 'Store A 14 мкр', '14-й микрорайон, 55', 43.6612, 51.1839],
+  ['STORE_A', 'Store A 32Б мкр', '32Б микрорайон, 12', 43.6958, 51.1702],
+  ['STORE_B', 'Store B Сити', 'ТРЦ «Актау Сити», 9-й микрорайон', 43.6508, 51.1681],
+  ['STORE_B', 'Store B 15 мкр', '15-й микрорайон, 21', 43.6687, 51.1602],
 ].map(([storeCode, name, address, latitude, longitude]) => ({
   storeCode,
   storeName: STORES[storeCode],
@@ -168,7 +168,7 @@ const locations = [
 
 // Продуктовая корзина: в каждой позиции — самый дешёвый подходящий товар сети.
 // Состав в проде задаёт бэк (docs/context/07_FRONTEND_QUESTIONS_BASKET.md).
-// Яйца C0 есть не во всех сетях — у Fix Price корзина неполная, проверяем этот случай.
+// Яйца C0 есть не во всех сетях — у Store B корзина неполная, проверяем этот случай.
 const basketRules = [
   ['milk', (a) => a.volumeMl === 1000],
   ['bread', () => true],

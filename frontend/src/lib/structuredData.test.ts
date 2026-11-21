@@ -12,8 +12,8 @@ const product: ProductCardDto = {
   attributes: {},
   minPrice: 570,
   offers: [
-    { storeCode: 'DINA', storeName: 'DINA', price: 570, oldPrice: null },
-    { storeCode: 'DANA', storeName: 'DANA', price: 650, oldPrice: 700, inStock: false },
+    { storeCode: 'MAGNUM', storeName: 'MAGNUM', price: 570, oldPrice: null },
+    { storeCode: 'STORE_A', storeName: 'STORE_A', price: 650, oldPrice: 700, inStock: false },
   ],
   snapshotAt: '2026-09-24T06:00:00Z',
 }
@@ -57,12 +57,12 @@ describe('structuredData', () => {
       offers: { '@type': 'AggregateOffer', priceCurrency: 'KZT', lowPrice: 570, highPrice: 650, offerCount: 2 },
     })
     expect(data.offers.offers).toEqual([
-      { '@type': 'Offer', price: 570, priceCurrency: 'KZT', seller: { '@type': 'Organization', name: 'DINA' } },
+      { '@type': 'Offer', price: 570, priceCurrency: 'KZT', seller: { '@type': 'Organization', name: 'MAGNUM' } },
       {
         '@type': 'Offer',
         price: 650,
         priceCurrency: 'KZT',
-        seller: { '@type': 'Organization', name: 'DANA' },
+        seller: { '@type': 'Organization', name: 'STORE_A' },
         availability: 'https://schema.org/OutOfStock',
       },
     ])

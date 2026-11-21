@@ -68,8 +68,8 @@ describe('toPerKgCard', () => {
     unitPrice: { value: 822.22, unit: 'kg' },
     soldByWeight: true,
     offers: [
-      { storeCode: 'DINA', storeName: 'Dina', price: 1480, oldPrice: 1600, unitPrice: { value: 822.22, unit: 'kg' }, soldByWeight: true },
-      { storeCode: 'ANVAR', storeName: 'Анвар', price: 299, oldPrice: null, unitPrice: { value: 299, unit: 'kg' }, soldByWeight: true },
+      { storeCode: 'MAGNUM', storeName: 'Magnum', price: 1480, oldPrice: 1600, unitPrice: { value: 822.22, unit: 'kg' }, soldByWeight: true },
+      { storeCode: 'STORE_B', storeName: 'Store B', price: 299, oldPrice: null, unitPrice: { value: 299, unit: 'kg' }, soldByWeight: true },
     ],
     snapshotAt: '2026-11-11T01:00:51.947Z',
   }

@@ -79,65 +79,65 @@
   ],
   "locations": [
     {
-      "storeCode": "DINA",
-      "storeName": "Dina Market",
-      "name": "Dina Market 5 мкр",
+      "storeCode": "MAGNUM",
+      "storeName": "Magnum",
+      "name": "Magnum 5 мкр",
       "address": "5-й микрорайон, 30",
       "latitude": 43.6555,
       "longitude": 51.1603
     },
     {
-      "storeCode": "DINA",
-      "storeName": "Dina Market",
-      "name": "Dina Market 12 мкр",
+      "storeCode": "MAGNUM",
+      "storeName": "Magnum",
+      "name": "Magnum 12 мкр",
       "address": "12-й микрорайон, 7",
       "latitude": 43.6703,
       "longitude": 51.1745
     },
     {
-      "storeCode": "DINA",
-      "storeName": "Dina Market",
-      "name": "Dina Market 27 мкр",
+      "storeCode": "MAGNUM",
+      "storeName": "Magnum",
+      "name": "Magnum 27 мкр",
       "address": "27-й микрорайон, 1А",
       "latitude": 43.6862,
       "longitude": 51.1561
     },
     {
-      "storeCode": "DANA",
-      "storeName": "Dana Market",
-      "name": "Dana Market 3 мкр",
+      "storeCode": "STORE_A",
+      "storeName": "Store A",
+      "name": "Store A 3 мкр",
       "address": "3-й микрорайон, 4",
       "latitude": 43.6441,
       "longitude": 51.1552
     },
     {
-      "storeCode": "DANA",
-      "storeName": "Dana Market",
-      "name": "Dana Market 14 мкр",
+      "storeCode": "STORE_A",
+      "storeName": "Store A",
+      "name": "Store A 14 мкр",
       "address": "14-й микрорайон, 55",
       "latitude": 43.6612,
       "longitude": 51.1839
     },
     {
-      "storeCode": "DANA",
-      "storeName": "Dana Market",
-      "name": "Dana Market 32Б мкр",
+      "storeCode": "STORE_A",
+      "storeName": "Store A",
+      "name": "Store A 32Б мкр",
       "address": "32Б микрорайон, 12",
       "latitude": 43.6958,
       "longitude": 51.1702
     },
     {
-      "storeCode": "FIX_PRICE",
-      "storeName": "Fix Price",
-      "name": "Fix Price Актау Сити",
+      "storeCode": "STORE_B",
+      "storeName": "Store B",
+      "name": "Store B Сити",
       "address": "ТРЦ «Актау Сити», 9-й микрорайон",
       "latitude": 43.6508,
       "longitude": 51.1681
     },
     {
-      "storeCode": "FIX_PRICE",
-      "storeName": "Fix Price",
-      "name": "Fix Price 15 мкр",
+      "storeCode": "STORE_B",
+      "storeName": "Store B",
+      "name": "Store B 15 мкр",
       "address": "15-й микрорайон, 21",
       "latitude": 43.6687,
       "longitude": 51.1602
@@ -145,8 +145,8 @@
   ],
   "baskets": [
     {
-      "storeCode": "DINA",
-      "storeName": "Dina Market",
+      "storeCode": "MAGNUM",
+      "storeName": "Magnum",
       "total": 2750,
       "items": [
         {
@@ -187,8 +187,8 @@
       ]
     },
     {
-      "storeCode": "DANA",
-      "storeName": "Dana Market",
+      "storeCode": "STORE_A",
+      "storeName": "Store A",
       "total": 3170,
       "items": [
         {
@@ -229,8 +229,8 @@
       ]
     },
     {
-      "storeCode": "FIX_PRICE",
-      "storeName": "Fix Price",
+      "storeCode": "STORE_B",
+      "storeName": "Store B",
       "total": 2250,
       "items": [
         {
