@@ -16,16 +16,16 @@
     "soldByWeight": false,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 420,
         "oldPrice": null,
         "unitPrice": { "value": 840, "unit": "kg" },
         "soldByWeight": false
       },
       {
-        "storeCode": "DANA",
-        "storeName": "Dana Market",
+        "storeCode": "STORE_A",
+        "storeName": "Store A",
         "price": 455,
         "oldPrice": 490,
         "unitPrice": { "value": 910, "unit": "kg" },
@@ -51,8 +51,8 @@
     "soldByWeight": false,
     "offers": [
       {
-        "storeCode": "ANVAR",
-        "storeName": "Анвар",
+        "storeCode": "STORE_B",
+        "storeName": "Store B",
         "price": 710,
         "oldPrice": null,
         "unitPrice": { "value": 710, "unit": "kg" },
@@ -76,8 +76,8 @@
     "soldByWeight": true,
     "offers": [
       {
-        "storeCode": "DINA",
-        "storeName": "Dina Market",
+        "storeCode": "MAGNUM",
+        "storeName": "Magnum",
         "price": 260,
         "oldPrice": null,
         "unitPrice": { "value": 260, "unit": "kg" },

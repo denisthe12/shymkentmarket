@@ -30,11 +30,15 @@ UUID-shaped. No speculative fields or new search/voice text length limits.
 ProductCard: id/name/brand/category{slug,name}/imageUrl/attributes/minPrice/offers/
 snapshotAt. brand and imageUrl are nullable. Attributes hold string/number/boolean/
 null. Each offer has storeCode/storeName/price/oldPrice; oldPrice nullable;
-storeCode enum `DINA | DANA | FIX_PRICE | ANVAR`. Only usable in-stock positive-price
+storeCode is a string matching `^[A-Z][A-Z0-9_]{1,31}$`. Only usable in-stock positive-price
 offers are exposed, ordered price ASC; minPrice equals their minimum. snapshotAt
 is max usable offer snapshotAt (UTC ISO datetime), not request time. RawProduct
 fields and Offer.inStock are NOT part of v1. Images are nullable strings, without
 a newly invented URL validation requirement.
+
+Store code compatibility: store code values are no longer enumerated in the contract.
+`StoreCode` is a string matching `^[A-Z][A-Z0-9_]{1,31}$`, and a client must accept any
+code that matches this pattern rather than a fixed list of networks.
 
 ## Product queries
 

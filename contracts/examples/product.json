@@ -14,14 +14,14 @@
   "minPrice": 570,
   "offers": [
     {
-      "storeCode": "DINA",
-      "storeName": "Dina",
+      "storeCode": "MAGNUM",
+      "storeName": "Magnum",
       "price": 570,
       "oldPrice": null
     },
     {
-      "storeCode": "DANA",
-      "storeName": "Dana",
+      "storeCode": "STORE_A",
+      "storeName": "Store A",
       "price": 620,
       "oldPrice": 650
     }

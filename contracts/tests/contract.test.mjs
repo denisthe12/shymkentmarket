@@ -70,7 +70,7 @@ test('schema rejects missing baskets, invalid stores and oversized voice results
   delete dashboard.baskets;
   assert.throws(() => validate(ref('Dashboard'), dashboard));
   const product = example('product');
-  product.offers[0].storeCode = 'UNKNOWN';
+  product.offers[0].storeCode = 'unknown-store';
   assert.throws(() => validate(ref('ProductCard'), product));
   const result = example('voice-start-result');
   result.items = Array(2).fill(result.items[0]);
@@ -322,4 +322,30 @@ fixtureVoice('invalid DTOs preserve compatible 400 envelope', async () => {
     { text: 'молоко', latitude: 43.6, longitude: 51.1, unknown: true },
   ]) await voice('start', body, 400);
   await voice('continue', { sessionId: ' ', text: 'литр' }, 400);
+});
+
+test('store code is a patterned string, not a closed enum', () => {
+  const storeCode = spec.components.schemas.StoreCode;
+  assert.equal(storeCode.type, 'string');
+  assert.equal(storeCode.pattern, '^[A-Z][A-Z0-9_]{1,31}$');
+  assert.equal('enum' in storeCode, false);
+  const pattern = new RegExp(storeCode.pattern);
+  const legacy = ['DINA', 'DANA', 'FIX_PRICE', 'ANVAR'];
+  const codes = [];
+  const walk = (value) => {
+    if (Array.isArray(value)) return value.forEach(walk);
+    if (value && typeof value === 'object') {
+      if (typeof value.storeCode === 'string') codes.push(value.storeCode);
+      Object.values(value).forEach(walk);
+    }
+  };
+  for (const name of Object.keys(examples)) walk(example(name));
+  assert.ok(codes.length > 0);
+  for (const code of codes) {
+    assert.match(code, pattern);
+    assert.equal(legacy.includes(code), false);
+  }
+  for (const bad of ['m', 'magnum', '1ABC', 'A'.repeat(33), 'A-B']) {
+    assert.throws(() => validate(ref('StoreCode'), bad));
+  }
 });
