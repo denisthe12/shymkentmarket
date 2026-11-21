@@ -17,6 +17,8 @@ export const REPLACED_MIGRATIONS = Object.freeze([
 ]);
 
 const PROBLEM = 'existing migration modified/deleted';
+// Rename detection would turn the baseline into `R<score>` lines the guard rejects.
+export const migrationDiffArgs = base => ['diff', '--name-status', '--no-renames', base, '--', 'backend/prisma/migrations'];
 const migrationDir = /^backend\/prisma\/migrations\/([^/]+)\/[^/]+$/;
 
 // Takes `git diff --name-status` lines; returns a problem description or null.
@@ -26,7 +28,7 @@ export function migrationDiffProblem(nameStatusLines) {
   for (const line of nameStatusLines.filter(Boolean)) {
     const [status, path] = line.split('\t');
     const dir = migrationDir.exec(path ?? '')?.[1];
-    if (status === 'A') { if (dir) added.add(dir); continue; }
+    if (status === 'A') { if (dir && path === `backend/prisma/migrations/${dir}/migration.sql`) added.add(dir); continue; }
     if (status === 'D' && dir && REPLACED_MIGRATIONS.includes(dir)) { deleted.add(dir); continue; }
     return PROBLEM;
   }

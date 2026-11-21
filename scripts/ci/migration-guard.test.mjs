@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { REPLACED_MIGRATIONS, SHYMKENT_BASELINE, migrationDiffProblem } from './migration-guard.mjs';
+import { REPLACED_MIGRATIONS, SHYMKENT_BASELINE, migrationDiffArgs, migrationDiffProblem } from './migration-guard.mjs';
 
 const dir = 'backend/prisma/migrations';
 const added = name => `A\t${dir}/${name}/migration.sql`;
@@ -44,4 +44,14 @@ test('renames fail', () => {
 
 test('deleting the lock file fails', () => {
   assert.notEqual(migrationDiffProblem([...allDeleted, added(SHYMKENT_BASELINE), `D\t${dir}/migration_lock.toml`]), null);
+});
+
+test('a stray file under the baseline dir does not count as the baseline', () => {
+  assert.match(migrationDiffProblem([...allDeleted, `A	${dir}/${SHYMKENT_BASELINE}/notes.txt`]), /baseline/);
+});
+
+test('the git diff disables rename detection', () => {
+  const args = migrationDiffArgs('a'.repeat(40));
+  assert.ok(args.includes('--no-renames'));
+  assert.ok(args.indexOf('--no-renames') < args.indexOf('--'));
 });
