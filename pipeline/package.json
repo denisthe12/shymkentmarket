@@ -6,6 +6,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "scrape:magnum": "tsx src/cli/scrape.ts MAGNUM",
+    "scrape:gramad": "tsx src/cli/scrape.ts GRAMAD",
     "sync": "tsx src/cli/sync.ts",
     "dict:apply": "tsx src/cli/dict-apply.ts",
     "dict:prepare": "tsx src/cli/dict-prepare.ts",

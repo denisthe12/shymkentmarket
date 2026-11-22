@@ -1,0 +1,108 @@
+{
+  "type": "GRID_VIEW_LAYOUT",
+  "data": {
+    "title": "Тестовая секция",
+    "body": [
+      {
+        "id": "test-s.1",
+        "type": "GRID",
+        "data": {
+          "title": "Тестовая секция",
+          "columns": 2,
+          "elements": [
+            {
+              "type": "PRODUCT_TILE",
+              "data": {
+                "id": 9000000000000000000,
+                "storeProductId": "2700001",
+                "name": "КАРТОФЕЛЬ ТЕСТ КГ",
+                "price": 210,
+                "imageUrl": "https://img.example.com/p/2700001.png",
+                "promotions": [],
+                "outOfStock": false
+              },
+              "actions": []
+            },
+            {
+              "type": "PRODUCT_TILE",
+              "data": {
+                "id": 9000000000000000000,
+                "storeProductId": "4870000000017",
+                "name": "Молоко Тест 2,5% 1Л",
+                "price": 1273,
+                "imageUrl": "https://img.example.com/p/4870000000017.png",
+                "promotions": [
+                  {
+                    "price": 855,
+                    "type": "FLAT_PRODUCT"
+                  }
+                ],
+                "outOfStock": false
+              },
+              "actions": []
+            },
+            {
+              "type": "PRODUCT_TILE",
+              "data": {
+                "id": 9000000000000000000,
+                "storeProductId": "4870000000024",
+                "name": "Кефир Тест 1Л",
+                "price": 700,
+                "imageUrl": "https://img.example.com/p/4870000000024.png",
+                "promotions": [
+                  {
+                    "price": 700
+                  },
+                  {
+                    "price": 800
+                  }
+                ],
+                "outOfStock": false
+              },
+              "actions": []
+            },
+            {
+              "type": "PRODUCT_TILE",
+              "data": {
+                "id": 9000000000000000000,
+                "storeProductId": "2900000000011",
+                "name": "Яйцо Тест 1 категория шт",
+                "price": 51.4,
+                "imageUrl": "https://img.example.com/p/2900000000011.png",
+                "promotions": [],
+                "outOfStock": false
+              },
+              "actions": []
+            },
+            {
+              "type": "PRODUCT_TILE",
+              "data": {
+                "id": 9000000000000000000,
+                "storeProductId": "4870000000031",
+                "name": "Сыр Тест 200Г",
+                "price": 999,
+                "imageUrl": "https://img.example.com/p/4870000000031.png",
+                "promotions": [],
+                "outOfStock": true
+              },
+              "actions": []
+            },
+            {
+              "type": "PRODUCT_TILE",
+              "data": {
+                "id": 9000000000000000000,
+                "storeProductId": "2700002",
+                "name": "Груша Тест",
+                "price": 640,
+                "imageUrl": "",
+                "promotions": [],
+                "outOfStock": false
+              },
+              "actions": []
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

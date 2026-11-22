@@ -9,7 +9,7 @@ export type Bundle = { version: '1.0'; generatedAt: string; rawProducts: BundleR
     attributes: Record<string, number | string | boolean>; members: { rawProduct: BundleRaw; matchMethod: string; matchConfidence: number; reviewStatus: string }[] }[]
   sourceRuns: { storeCode: StoreCode; capturedAt: string; productCount: number; errorCount: number }[] }
 
-const IMAGE_ORDER: StoreCode[] = ['MAGNUM']
+const IMAGE_ORDER: StoreCode[] = ['MAGNUM', 'GRAMAD']
 // Сеть вне IMAGE_ORDER идёт после всех известных (indexOf = -1 поставил бы её первой)
 const imageRank = (s: StoreCode) => { const i = IMAGE_ORDER.indexOf(s); return i === -1 ? IMAGE_ORDER.length : i }
 

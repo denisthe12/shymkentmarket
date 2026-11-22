@@ -7,14 +7,43 @@ import { assertNoErrors, resolveStoreLimits, runStore } from '../scrape/core/ind
 import { magnumModule } from '../scrape/stores/magnum/index.js'
 import { assertMagnumCoverage } from '../scrape/stores/magnum/coverage.js'
 import { MAGNUM_SCOPE } from '../scrape/stores/magnum/scope.js'
+import { GRAMAD_SECTION_CAP, createGramadModule } from '../scrape/stores/gramad/index.js'
+import { assertGramadCoverage } from '../scrape/stores/gramad/coverage.js'
+import { GRAMAD_SCOPE } from '../scrape/stores/gramad/scope.js'
+import { summarizeGramad } from '../scrape/stores/gramad/stats.js'
 
-export type Scraper = () => Promise<SourceFile>
+export type Scraper = {
+  run: () => Promise<SourceFile>
+  assertCoverage: (file: SourceFile) => void
+}
 const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
   // Скрап Magnum ограничен MAGNUM_SCOPE
-  MAGNUM: () => {
-    const { concurrency, rps } = resolveStoreLimits(magnumModule.storeCode, magnumModule.limits, process.env)
-    console.log(`[MAGNUM] mode: core (${MAGNUM_SCOPE.length} categories, concurrency ${concurrency}, rps ${rps})`)
-    return runStore(magnumModule)
+  MAGNUM: {
+    run: () => {
+      const { concurrency, rps } = resolveStoreLimits(magnumModule.storeCode, magnumModule.limits, process.env)
+      console.log(`[MAGNUM] mode: core (${MAGNUM_SCOPE.length} categories, concurrency ${concurrency}, rps ${rps})`)
+      return runStore(magnumModule)
+    },
+    assertCoverage: assertMagnumCoverage,
+  },
+  // Модуль Gramad создаётся при запуске: ему нужна переменная GRAMAD_REQUEST_HEADERS
+  GRAMAD: {
+    run: async () => {
+      const module = createGramadModule(process.env)
+      const { concurrency, rps } = resolveStoreLimits(module.storeCode, module.limits, process.env)
+      console.log(`[GRAMAD] mode: core (${GRAMAD_SCOPE.length} sections, concurrency ${concurrency}, rps ${rps})`)
+      const file = await runStore(module)
+      const { weighted, weightAmbiguous, cappedSections } = summarizeGramad(file)
+      file.sourceStats.weighted = weighted
+      file.sourceStats.weightAmbiguous = weightAmbiguous
+      file.sourceStats.cappedSections = cappedSections.length
+      console.log(`[GRAMAD] weighted ${weighted}, ambiguous weight ${weightAmbiguous}`)
+      if (cappedSections.length > 0) {
+        console.warn(`[GRAMAD] warning: ${cappedSections.length} section(s) reached the ${GRAMAD_SECTION_CAP}-product cap: ${cappedSections.join(', ')}`)
+      }
+      return file
+    },
+    assertCoverage: assertGramadCoverage,
   },
 }
 
@@ -23,7 +52,7 @@ const scraper = STORE_CODES.includes(code) ? SCRAPERS[code] : undefined
 if (!scraper) { console.error(`usage: scrape <${Object.keys(SCRAPERS).join('|')}>`); process.exit(2) }
 let file: SourceFile
 try {
-  file = await scraper()
+  file = await scraper.run()
 } catch (err) {
   console.error(`[${code}] ${(err as Error).message}`)
   process.exit(1)
@@ -32,7 +61,7 @@ const out = resolve(sourcesDir(), `${code.toLowerCase()}.json`)
 // Любая ошибка запроса — отказ, прежний файл сохраняется
 try {
   assertNoErrors(file)
-  assertMagnumCoverage(file)
+  scraper.assertCoverage(file)
 } catch (err) {
   console.error(`[${code}] ${(err as Error).message}`)
   process.exit(1)

@@ -16,10 +16,10 @@ function importSpecs(text: string): string[] {
 }
 
 const BANNED: Array<[string, RegExp]> = [
-  ...['aktau', 'shymkent', 'magnum', 'dana', 'anvar', 'fix_price', 'fix price', 'fixprice'].map(w => [w, new RegExp(w)] as [string, RegExp]),
+  ...['aktau', 'shymkent', 'magnum', 'dana', 'anvar', 'fix_price', 'fix price', 'fixprice', 'gramad', 'glovo'].map(w => [w, new RegExp(w)] as [string, RegExp]),
   // "dina" is a substring of ordinary words (e.g. "ordinal"), so only as a whole word.
   ['dina', /(?<![a-z])dina(?![a-z])/],
-  ...['актау', 'шымкент', 'магнум', 'дина', 'дана', 'анвар', 'фикс прайс'].map(w => [w, new RegExp(`(?<![а-яё])${w}(?![а-яё])`)] as [string, RegExp]),
+  ...['актау', 'шымкент', 'магнум', 'дина', 'дана', 'анвар', 'фикс прайс', 'грамад'].map(w => [w, new RegExp(`(?<![а-яё])${w}(?![а-яё])`)] as [string, RegExp]),
 ]
 
 const bannedIn = (text: string) => BANNED.filter(([, re]) => re.test(text.toLowerCase())).map(([w]) => w)
@@ -53,6 +53,8 @@ describe('scrape core boundary', () => {
     expect(bannedIn('// Шымкент')).toEqual(['шымкент'])
     expect(bannedIn('магазин Фикс Прайс')).toEqual(['фикс прайс'])
     expect(bannedIn('Магнум')).toEqual(['магнум'])
+    expect(bannedIn('Грамад')).toEqual(['грамад'])
+    expect(bannedIn('Glovo GraMad')).toEqual(['gramad', 'glovo'])
   })
 
   it('has no city or store names', () => {
