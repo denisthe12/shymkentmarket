@@ -36,7 +36,7 @@ case "$SYNC_OUT" in
 esac
 BUNDLE="$SYNC_OUT/bundle.json"
 
-STORES=(magnum)
+STORES=(magnum gramad)
 started=$SECONDS
 failed=()
 

@@ -18,9 +18,9 @@ const base: Dictionary = DictionarySchema.parse({
   storeCategories: { 'STORE_B|Молоко': 'milk', 'MAGNUM|Старая категория': 'dairy' },
 })
 
-const cand = (key: string): MatchCandidate => {
+const cand = (key: string, weighted = false): MatchCandidate => {
   const c = base.canonicals[key]!
-  return { key, name: c.name, brand: c.brand, category: c.category, attributes: c.attributes }
+  return { key, name: c.name, brand: c.brand, category: c.category, attributes: c.attributes, weighted }
 }
 const item = (n: number, name: string, candidates: MatchCandidate[], path = ['Молочные продукты', 'Молоко'], weighted = false): MatchItem =>
   ({ id: `MAGNUM:m_${n}`, name, sourceCategoryPath: path, candidates, weighted })
@@ -37,6 +37,32 @@ describe('buildCandidates', () => {
   it('ranks by token overlap and caps at k', () => {
     const c = buildCandidates(base, 'Молоко Лактель 2,5% 1 л', new Set<CategorySlug>(['milk']), 1)
     expect(c.map((x) => x.key)).toEqual(['c_milk1'])
+  })
+})
+
+describe('buildCandidates weighted flag', () => {
+  it('takes weighted from the set of weighted cards, false by default', () => {
+    const scope = new Set<CategorySlug>(['milk'])
+    expect(buildCandidates(base, 'Молоко Лактель 2,5% 1 л', scope).every((c) => c.weighted === false)).toBe(true)
+    const c = buildCandidates(base, 'Молоко Лактель 2,5% 1 л', scope, 8, new Set(['c_milk1']))
+    expect(c.find((x) => x.key === 'c_milk1')!.weighted).toBe(true)
+  })
+})
+
+describe('applyDecisions weight mismatch', () => {
+  it('loose item does not attach to a packaged card', () => {
+    const r = applyDecisions(base, 'MAGNUM', [item(1, 'Молоко Лактель', [cand('c_milk1', false)], undefined, true)], [dec(1, 'c_milk1', 0.98)])
+    expect(r.stats).toMatchObject({ rejectedWeight: 1, attached: 0, created: 1 })
+    expect(r.dict.products['MAGNUM:m_1']).not.toBe('c_milk1')
+  })
+  it('packaged item does not attach to a loose card', () => {
+    const r = applyDecisions(base, 'MAGNUM', [item(1, 'Молоко Лактель', [cand('c_milk1', true)], undefined, false)], [dec(1, 'c_milk1', 0.98)])
+    expect(r.stats).toMatchObject({ rejectedWeight: 1, attached: 0, created: 1 })
+  })
+  it('matching weight flag attaches as before', () => {
+    const r = applyDecisions(base, 'MAGNUM', [item(1, 'Молоко Лактель', [cand('c_milk1', true)], undefined, true)], [dec(1, 'c_milk1', 0.98)])
+    expect(r.stats).toMatchObject({ rejectedWeight: 0, attached: 1 })
+    expect(r.dict.products['MAGNUM:m_1']).toBe('c_milk1')
   })
 })
 

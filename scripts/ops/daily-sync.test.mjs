@@ -14,7 +14,7 @@ test('actual scheduled shell preserves success/all-failed/dry-run/apply failure 
     const RET='postgres://retention.invalid/db';
     for(const [name,failed,dry,apply,expected,count,o={}] of [
       ['success','',0,0,0,2],
-      ['all-failed','scrape:magnum',0,0,1,0],
+      ['all-failed','scrape:magnum,scrape:gramad',0,0,1,0],['one-chain-failed','scrape:gramad',0,0,3,2],
       ['sync-failed','sync',0,0,1,0],['dry-failed','',23,0,1,1],['apply-failed','',0,17,1,2],
       ['prune-success','',0,0,0,3,{ret:RET,prune:0}],['prune-failed','',0,0,4,3,{ret:RET,prune:9}],
       ['prune-skipped-on-apply-failure','',0,17,1,2,{ret:RET,prune:0}],
@@ -27,7 +27,7 @@ test('actual scheduled shell preserves success/all-failed/dry-run/apply failure 
           RETENTION_DATABASE_URL:o.ret??'',RETENTION_KEEP_SNAPSHOTS:o.keep??'',RUN_STATUS_DIR:runDir}});
       assert.equal(r.status,expected,name);
       const steps=fs.readFileSync(pnpmLog,'utf8').trim().split('\n');
-      for(const store of ['magnum']) assert.equal(steps.filter(x=>x==='scrape:'+store).length,1,name);
+      for(const store of ['magnum','gramad']) assert.equal(steps.filter(x=>x==='scrape:'+store).length,1,name);
       assert.equal(steps.filter(x=>x==='sync').length,name==='all-failed'?0:1,name);
       const lines=fs.existsSync(log)?fs.readFileSync(log,'utf8').trim().split('\n'):[];
       assert.equal(lines.length,count,name);assert.ok(lines.every(v=>v.endsWith('|local')),name);
@@ -48,7 +48,7 @@ test('actual scheduled shell preserves success/all-failed/dry-run/apply failure 
       assert.equal(fs.statSync(path.join(runDir,files[0])).mode&0o777,0o644,name);
       const st=JSON.parse(fs.readFileSync(path.join(runDir,files[0]),'utf8'));
       assert.deepEqual(Object.keys(st),['version','kind','startedAt','finishedAt','status','exitCode','published','stores','stale','retention'],name);
-      const ALL=['magnum'];
+      const ALL=['magnum','gramad'];
       const failedStores=failed.split(',').filter(x=>x.startsWith('scrape:')).map(x=>x.slice(7));
       const published=count>=2&&apply===0;
       const ISO=/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/;
@@ -58,7 +58,8 @@ test('actual scheduled shell preserves success/all-failed/dry-run/apply failure 
       assert.deepEqual(st.stores,Object.fromEntries(ALL.map(s=>[s,failedStores.includes(s)?1:0])),name);
       assert.deepEqual(st.stale,published?ALL.filter(s=>failedStores.includes(s)):[],name);
       assert.equal(st.retention,!published?null:!o.ret?'skipped':o.prune?'failed':'ok',name);
-      if(name==='success') assert.deepEqual({...st,startedAt:0,finishedAt:0},{version:1,kind:'daily',startedAt:0,finishedAt:0,status:'finished',exitCode:0,published:true,stores:{magnum:0},stale:[],retention:'skipped'});
+      if(name==='success') assert.deepEqual({...st,startedAt:0,finishedAt:0},{version:1,kind:'daily',startedAt:0,finishedAt:0,status:'finished',exitCode:0,published:true,stores:{magnum:0,gramad:0},stale:[],retention:'skipped'});
+      if(name==='one-chain-failed') assert.deepEqual([st.exitCode,st.published,st.stale,st.stores],[3,true,['gramad'],{magnum:0,gramad:1}]);
       if(name==='all-failed') assert.deepEqual([st.exitCode,st.published,st.stale,st.retention],[1,false,[],null]);
       if(name==='apply-failed') assert.deepEqual([st.exitCode,st.published,st.retention],[1,false,null]);
       if(name==='prune-failed') assert.deepEqual([st.exitCode,st.retention],[4,'failed']);
@@ -128,7 +129,7 @@ test('killed run leaves status running',async()=>{
     await new Promise(r=>setTimeout(r,300));
     const st=JSON.parse(read());
     assert.equal(st.status,'running');assert.equal(st.finishedAt,null);assert.equal(st.exitCode,null);
-    assert.deepEqual(st.stores,{magnum:null});
+    assert.deepEqual(st.stores,{magnum:null,gramad:null});
   }finally{try{process.kill(-child.pid,'SIGKILL')}catch{}fs.rmSync(dir,{recursive:true,force:true})}
 });
 

@@ -1,10 +1,10 @@
--- Read-only check for the offer_price_basis view (SZPT weighted goods), created by the Shymkent baseline migration.
+-- Read-only check for the offer_price_basis view (SZPT weighted goods), created by the Shymkent baseline migration, recreated by the Gramad store migration.
 -- Run BEFORE and AFTER the migration (never during the 01:00 / 13:00 UTC sync):
 --   node ops/postgres/psql-run.mjs offer-price-basis-check
 -- One file, two parts:
 --   PRE  works at any time; uses the inline weighted rule.
 --        The rule (weighted CASE, defined ONCE in the :basis_cte variable below) must equal the CASE in
---        the latest migration that defines offer_price_basis (currently the Shymkent baseline; a rule change =
+--        the latest migration that defines offer_price_basis (currently *_shymkent_gramad_store; a rule change =
 --        a new migration recreating the view, existing migrations are never edited) and
 --        pipeline/src/mapping/weight.ts.
 --   POST runs only if public.offer_price_basis exists (to_regclass + \if); before the migration
@@ -12,8 +12,8 @@
 -- The whole script is one REPEATABLE READ READ ONLY transaction ending in ROLLBACK: SELECT only, nothing
 -- is written, every block sees the same data, and statement_timeout (60 s) keeps it from hanging on prod.
 -- Needs a role that can read raw_products (owner / migration role), not aktau_api_reader.
--- The last line is GO or STOP. STOP if there is no published snapshot, or MAGNUM has 0 weighted
--- offers in the latest published snapshot, or (after the migration) the view's rows for that snapshot differ
+-- The last line is GO or STOP. STOP if there is no published snapshot, or MAGNUM, or GRAMAD (when the
+-- snapshot has offers of that chain), has 0 weighted offers in the latest published snapshot, or (after the migration) the view's rows for that snapshot differ
 -- from its offers (view_rows <> offers) or the view disagrees with the inline rule (view_mismatch > 0).
 --
 -- Query timing of the SZPT queries is NOT measured here. After the migration, run the release gate
@@ -22,7 +22,7 @@
 \pset null '(null)'
 -- The ONLY copy of the weighted rule and of the latest-snapshot filter: CTEs snap and basis.
 -- Columns of basis: offer_id, pid, store_id, store, in_stock, price, weighted, basis_grams (1000 for a weighted offer).
-\set basis_cte 'WITH snap AS (SELECT id FROM public.snapshots WHERE status = ''published'' AND "publishedAt" IS NOT NULL ORDER BY "publishedAt" DESC, id DESC LIMIT 1), basis AS (SELECT o.id AS offer_id, o."canonicalProductId" AS pid, o."storeId" AS store_id, s.code::text AS store, o."inStock" AS in_stock, o.price, w.weighted, CASE WHEN w.weighted THEN 1000::numeric END AS basis_grams FROM public.offers o JOIN snap ON snap.id = o."snapshotId" JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId" JOIN public.stores s ON s.id = o."storeId" CROSS JOIN LATERAL (SELECT CASE s.code::text WHEN ''MAGNUM'' THEN coalesce(r."rawPayload"->>''isWeighted'' = ''true'', false) ELSE false END AS weighted) w)'
+\set basis_cte 'WITH snap AS (SELECT id FROM public.snapshots WHERE status = ''published'' AND "publishedAt" IS NOT NULL ORDER BY "publishedAt" DESC, id DESC LIMIT 1), basis AS (SELECT o.id AS offer_id, o."canonicalProductId" AS pid, o."storeId" AS store_id, s.code::text AS store, o."inStock" AS in_stock, o.price, w.weighted, CASE WHEN w.weighted THEN 1000::numeric END AS basis_grams FROM public.offers o JOIN snap ON snap.id = o."snapshotId" JOIN public.raw_products r ON r.id = o."rawProductId" AND r."snapshotId" = o."snapshotId" JOIN public.stores s ON s.id = o."storeId" CROSS JOIN LATERAL (SELECT CASE WHEN s.code::text IN (''MAGNUM'', ''GRAMAD'') THEN coalesce(r."rawPayload"->>''isWeighted'' = ''true'', false) ELSE false END AS weighted) w)'
 
 BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL statement_timeout = '60s';
@@ -120,11 +120,12 @@ GROUP BY b.store ORDER BY b.store;
 \endif
 
 \echo
-\echo '=== VERDICT (STOP: no published snapshot; MAGNUM with 0 weighted offers; POST post_stop) ==='
+\echo '=== VERDICT (STOP: no published snapshot; MAGNUM or GRAMAD with offers but 0 weighted; POST post_stop) ==='
 :basis_cte
 SELECT CASE WHEN (SELECT count(*) FROM snap) = 0 THEN 'STOP'
-            WHEN EXISTS (SELECT 1 FROM (VALUES ('MAGNUM')) v(store)
-                         WHERE (SELECT count(*) FROM basis WHERE basis.store = v.store AND weighted) = 0)
+            WHEN EXISTS (SELECT 1 FROM (VALUES ('MAGNUM', true), ('GRAMAD', false)) v(store, required)
+                         WHERE (v.required OR EXISTS (SELECT 1 FROM basis WHERE basis.store = v.store))
+                           AND (SELECT count(*) FROM basis WHERE basis.store = v.store AND weighted) = 0)
             THEN 'STOP'
             WHEN :'post_stop'::boolean THEN 'STOP'
             ELSE 'GO' END AS verdict;

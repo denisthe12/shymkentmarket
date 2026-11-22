@@ -11,7 +11,7 @@ import { canonicalKey, DictionarySchema, storeCategoryKey, type Dictionary, type
  * applyDecisions проверяет решение и добавляет записи, не меняя существующих.
  */
 
-export type MatchCandidate = { key: string; name: string; brand: string | null; category: CategorySlug; attributes: Attributes }
+export type MatchCandidate = { key: string; name: string; brand: string | null; category: CategorySlug; attributes: Attributes; weighted: boolean }
 export type MatchItem = { id: string; name: string; sourceCategoryPath: string[]; candidates: MatchCandidate[]; weighted: boolean }
 
 export const MatchDecisionSchema = z.object({
@@ -24,7 +24,7 @@ export type MatchDecision = z.infer<typeof MatchDecisionSchema>
 
 export type ApplyStats = {
   attached: number; created: number; pendingSingletons: number
-  rejectedOutsideCandidates: number; rejectedSize: number; sameStoreConflicts: number; rejectedName: number
+  rejectedOutsideCandidates: number; rejectedSize: number; rejectedWeight: number; sameStoreConflicts: number; rejectedName: number
 }
 
 const SIZE_KEYS = ['weightGrams', 'volumeMl', 'packageCount', 'fatPercent'] as const
@@ -38,7 +38,7 @@ export function itemAttributes(name: string): Attributes {
 }
 
 /** Один и тот же ключ размера/жирности с разными значениями — это разные товары */
-function sizeConflict(a: Attributes, b: Record<string, number>): boolean {
+export function sizeConflict(a: Attributes, b: Record<string, number>): boolean {
   return SIZE_KEYS.some((k) => a[k] !== undefined && b[k] !== undefined && Math.abs(a[k]! - b[k]!) > 1e-9)
 }
 
@@ -80,7 +80,7 @@ function indexFor(dict: Dictionary, scope: ReadonlySet<CategorySlug>): Index {
   return idx
 }
 
-export function buildCandidates(dict: Dictionary, name: string, scope: ReadonlySet<CategorySlug>, k = 8): MatchCandidate[] {
+export function buildCandidates(dict: Dictionary, name: string, scope: ReadonlySet<CategorySlug>, k = 8, weightedCards: ReadonlySet<string> = new Set()): MatchCandidate[] {
   const idx = indexFor(dict, scope)
   const own = tokens(name)
   const attrs = itemAttributes(name)
@@ -96,7 +96,7 @@ export function buildCandidates(dict: Dictionary, name: string, scope: ReadonlyS
   scored.sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
   return scored.slice(0, k).map(({ key }) => {
     const c = dict.canonicals[key]!
-    return { key, name: c.name, brand: c.brand, category: c.category, attributes: c.attributes as Attributes }
+    return { key, name: c.name, brand: c.brand, category: c.category, attributes: c.attributes as Attributes, weighted: weightedCards.has(key) }
   })
 }
 
@@ -134,7 +134,7 @@ export function applyDecisions(base: Dictionary, store: StoreCode, items: MatchI
   const problem = coverageProblem(items, decisions)
   if (problem) throw new Error(`applyDecisions: ${problem}`)
   const byId = new Map(decisions.map((d) => [d.id, d]))
-  const stats: ApplyStats = { attached: 0, created: 0, pendingSingletons: 0, rejectedOutsideCandidates: 0, rejectedSize: 0, sameStoreConflicts: 0, rejectedName: 0 }
+  const stats: ApplyStats = { attached: 0, created: 0, pendingSingletons: 0, rejectedOutsideCandidates: 0, rejectedSize: 0, rejectedWeight: 0, sameStoreConflicts: 0, rejectedName: 0 }
   const canonicals: Record<string, DictionaryCanonical> = { ...base.canonicals }
   const products: Record<string, string> = { ...base.products }
   const storeCategories: Record<string, CategorySlug> = { ...base.storeCategories }
@@ -165,6 +165,7 @@ export function applyDecisions(base: Dictionary, store: StoreCode, items: MatchI
     if (d.match !== null) {
       const card = canonicals[d.match]
       if (!item.candidates.some((c) => c.key === d.match) || !card) stats.rejectedOutsideCandidates++
+      else if (item.candidates.find((c) => c.key === d.match)!.weighted !== item.weighted) stats.rejectedWeight++
       else if (sizeConflict(attrs, card.attributes)) stats.rejectedSize++
       else if (d.confidence >= 0.95) {
         if (withStore.has(d.match)) stats.sameStoreConflicts++

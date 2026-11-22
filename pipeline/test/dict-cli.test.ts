@@ -156,4 +156,122 @@ describe('dict:prepare / dict:apply-decisions', () => {
       expect(r.out).toContain('decision #1 is malformed')
     })
   })
+
+  describe('GRAMAD with barcode pairs', () => {
+    const CARD = 'c_milk'
+    const gp = (id: string, name: string, barcode: string | null) => ({ ...product(id, name), rawPayload: { barcode } })
+    const read = (p: string) => JSON.parse(readFileSync(p, 'utf8'))
+    const pairsPath = () => resolve(dirs().agent, 'gramad-match', 'barcode-pairs.json')
+    const dictPath = () => resolve(dirs().mapping, 'dictionary.json')
+    const decision = (id: string) => ({ id, category: 'dairy', match: null, confidence: 0.5, displayName: 'Кефир Тест 1% 900 мл', brand: null })
+    const gramadFile = (products: unknown[]) => JSON.stringify({
+      storeCode: 'GRAMAD', city: 'Test', capturedAt: '2026-01-01T00:00:00.000Z', errorCount: 0, sourceStats: {}, products,
+    })
+
+    beforeEach(() => {
+      const d = dirs()
+      writeFileSync(resolve(d.sources, 'magnum.json'), JSON.stringify({
+        storeCode: 'MAGNUM', city: 'Test', capturedAt: '2026-01-01T00:00:00.000Z', errorCount: 0, sourceStats: {},
+        products: [{ ...product('1', 'Молоко Тест 3,2% 1 л'), rawPayload: { barcodes: ['4870000000011'] } }],
+      }))
+      writeFileSync(resolve(d.sources, 'gramad.json'), gramadFile([gp('g1', 'Молоко Тест 3,2% 1 л', '4870000000011'), gp('g2', 'Кефир Тест 1% 900 мл', null)]))
+      writeFileSync(dictPath(), JSON.stringify({
+        version: 1, generatedAt: '2026-01-01T00:00:00.000Z',
+        canonicals: { [CARD]: { name: 'Молоко Тест 3,2% 1 л', brand: null, category: 'milk', attributes: { volumeMl: 1000, fatPercent: 3.2 }, method: 'deterministic', confidence: 1, review: 'approved' } },
+        products: { 'MAGNUM:1': CARD }, storeCategories: {},
+      }))
+    })
+
+    it('prepare puts a shared-barcode product into barcode-pairs.json, not into a batch', () => {
+      const r = run('dict-prepare.ts', ['GRAMAD'])
+      expect(r.code).toBe(0)
+      expect(read(pairsPath())).toEqual([{ id: 'GRAMAD:g1', name: 'Молоко Тест 3,2% 1 л', barcode: '4870000000011', card: CARD }])
+      const batch = read(resolve(dirs().agent, 'gramad-match', 'batch-001.json'))
+      expect(batch.map((i: { id: string }) => i.id)).toEqual(['GRAMAD:g2'])
+      expect(r.out).toContain('barcodeAttached')
+    })
+
+    it('prepare marks candidates as weighted from the other chain source files', () => {
+      const m = read(resolve(dirs().sources, 'magnum.json'))
+      m.products[0].rawPayload.isWeighted = true
+      writeFileSync(resolve(dirs().sources, 'magnum.json'), JSON.stringify(m))
+      writeFileSync(resolve(dirs().sources, 'gramad.json'), gramadFile([gp('g2', 'Молоко Тест', null)]))
+      run('dict-prepare.ts', ['GRAMAD'])
+      const batch = read(resolve(dirs().agent, 'gramad-match', 'batch-001.json'))
+      expect(batch[0].candidates[0].weighted).toBe(true)
+    })
+
+    it('prepare exits with 2 naming the missing source file of another chain', () => {
+      rmSync(resolve(dirs().sources, 'magnum.json'))
+      const r = run('dict-prepare.ts', ['GRAMAD'])
+      expect(r.code).toBe(2)
+      expect(r.out).toContain('magnum.json')
+    })
+
+    it('--force removes barcode-pairs.json before re-preparing', () => {
+      run('dict-prepare.ts', ['GRAMAD'])
+      writeFileSync(pairsPath(), '[{"stale":true}]')
+      expect(run('dict-prepare.ts', ['GRAMAD', '--force']).code).toBe(0)
+      expect(read(pairsPath())).toHaveLength(1)
+      expect(read(pairsPath())[0].id).toBe('GRAMAD:g1')
+    })
+
+    it('apply --check validates pairs too', () => {
+      run('dict-prepare.ts', ['GRAMAD'])
+      writeFileSync(resolve(dirs().agent, 'gramad-match', 'batch-001.decisions.json'), JSON.stringify([decision('GRAMAD:g2')]))
+      expect(run('dict-apply-decisions.ts', ['GRAMAD', '--check']).code).toBe(0)
+      const pairs = read(pairsPath())
+      writeFileSync(pairsPath(), JSON.stringify([{ ...pairs[0], card: 'c_nope' }]))
+      const r = run('dict-apply-decisions.ts', ['GRAMAD', '--check'])
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('barcode-pairs.json')
+      writeFileSync(pairsPath(), JSON.stringify([{ ...pairs[0], id: 'GRAMAD:ghost' }]))
+      expect(run('dict-apply-decisions.ts', ['GRAMAD', '--check']).code).toBe(1)
+    })
+
+    it('apply writes pairs and decisions, then prepare finds 0 items and 0 pairs', () => {
+      run('dict-prepare.ts', ['GRAMAD'])
+      writeFileSync(resolve(dirs().agent, 'gramad-match', 'batch-001.decisions.json'), JSON.stringify([decision('GRAMAD:g2')]))
+      const r = run('dict-apply-decisions.ts', ['GRAMAD'])
+      expect(r.code).toBe(0)
+      expect(r.out).toContain('barcodeAttached')
+      const dict = read(dictPath())
+      expect(dict.products['GRAMAD:g1']).toBe(CARD)
+      expect(dict.products['GRAMAD:g2']).toBeDefined()
+      const again = run('dict-prepare.ts', ['GRAMAD', '--force'])
+      expect(again.code).toBe(0)
+      expect(again.out).toMatch(/\b0 items\b/)
+      expect(read(pairsPath())).toEqual([])
+      expect(again.out).toMatch(/\b0 barcode pairs\b/)
+    })
+
+    it('apply works when everything is paired and there are no batches', () => {
+      writeFileSync(resolve(dirs().sources, 'gramad.json'), gramadFile([gp('g1', 'Молоко Тест 3,2% 1 л', '4870000000011')]))
+      run('dict-prepare.ts', ['GRAMAD'])
+      expect(run('dict-apply-decisions.ts', ['GRAMAD']).code).toBe(0)
+      expect(read(dictPath()).products['GRAMAD:g1']).toBe(CARD)
+    })
+  })
+
+  describe('dict:seed-categories', () => {
+    it('adds GRAMAD keys from GRAMAD_SCOPE and keeps existing ones', () => {
+      const p = resolve(dirs().mapping, 'dictionary.json')
+      expect(run('dict-seed-categories.ts', ['GRAMAD']).code).toBe(0)
+      const dict = JSON.parse(readFileSync(p, 'utf8'))
+      const keys = Object.keys(dict.storeCategories)
+      expect(keys.length).toBeGreaterThan(0)
+      expect(keys.every((k) => k.startsWith('GRAMAD|'))).toBe(true)
+      dict.storeCategories[keys[0]!] = 'other'
+      writeFileSync(p, JSON.stringify(dict))
+      run('dict-seed-categories.ts', ['GRAMAD'])
+      expect(JSON.parse(readFileSync(p, 'utf8')).storeCategories[keys[0]!]).toBe('other')
+    })
+    it('adds MAGNUM keys and rejects an unknown or missing store', () => {
+      expect(run('dict-seed-categories.ts', ['MAGNUM']).code).toBe(0)
+      const keys = Object.keys(JSON.parse(readFileSync(resolve(dirs().mapping, 'dictionary.json'), 'utf8')).storeCategories)
+      expect(keys.every((k) => k.startsWith('MAGNUM|'))).toBe(true)
+      expect(run('dict-seed-categories.ts', ['FOO']).code).toBe(2)
+      expect(run('dict-seed-categories.ts', []).code).toBe(2)
+    })
+  })
 })

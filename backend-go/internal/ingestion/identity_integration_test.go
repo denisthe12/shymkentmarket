@@ -57,6 +57,10 @@ func TestLocalIdentityStoreSet(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	admin, writer := identityConn(t, ctx, adminURL), identityConn(t, ctx, writerURL)
+	// The test defines its own set of stores: drop the chain the migrations add.
+	if _, err := admin.Exec(ctx, `DELETE FROM stores WHERE code='GRAMAD'`); err != nil {
+		t.Fatal("stores unavailable")
+	}
 	seedStores(t, ctx, admin, "STORE_A", "STORE_B")
 	var registered []string
 	rows, err := admin.Query(ctx, `SELECT code FROM stores ORDER BY code`)
