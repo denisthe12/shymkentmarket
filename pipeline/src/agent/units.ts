@@ -14,7 +14,7 @@ export function extractSize(name: string): Size {
   const l = t.match(/(\d+(?:\.\d+)?)\s*(?:л|l|литр\w*)(?![а-яa-z])/)
   const ml = t.match(/(\d+(?:\.\d+)?)\s*(?:мл|ml)(?![а-яa-z])/)
   const kg = t.match(/(\d+(?:\.\d+)?)\s*(?:кг|kg)(?![а-яa-z])/)
-  const g = t.match(/(\d+(?:\.\d+)?)\s*(?:г|гр|g)(?![а-я])/)
+  const g = t.match(/(\d+(?:\.\d+)?)\s*(?:г|гр|g)(?![а-яa-z])/)
   const pcs = t.match(/(\d+)\s*(?:шт|штук)/)
   if (ml) size.volumeMl = Math.round(num(ml[1]!))
   else if (l && num(l[1]!) > 0 && num(l[1]!) < 50) size.volumeMl = Math.round(num(l[1]!) * 1000)
@@ -26,9 +26,15 @@ export function extractSize(name: string): Size {
   return size
 }
 
+// Проценты состава («10% мяса 90% кости», «70% какао») — не жирность
+const NOT_FAT = /^\s*(?:мяс|кост|какао)/
+
 export function extractFat(name: string): number | null {
-  const m = normalizeText(name).match(/(\d+(?:\.\d+)?)\s*%/)
-  if (!m) return null
-  const v = num(m[1]!)
-  return v >= 0.1 && v < 100 ? v : null
+  const t = normalizeText(name)
+  for (const m of t.matchAll(/(\d+(?:\.\d+)?)\s*%/g)) {
+    if (NOT_FAT.test(t.slice(m.index + m[0].length))) continue
+    const v = num(m[1]!)
+    return v >= 0.1 && v < 100 ? v : null
+  }
+  return null
 }

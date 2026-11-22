@@ -20,6 +20,8 @@ describe('units', () => {
     ['Вода 1 литр', { volumeMl: 1000 }],
     ['Вода 0,5 л', { volumeMl: 500 }],
     ['Вода 1.5L', { volumeMl: 1500 }],
+    ['Сыр 5gold 200 г', { weightGrams: 200 }],
+    ['Печенье 300g', { weightGrams: 300 }],
   ])('%s', (name, size) => expect(extractSize(name)).toEqual(size))
   it('never yields a zero size after integer normalization', () => {
     expect(extractSize('Сахар порционный 0.3 г 10 шт')).not.toHaveProperty('weightGrams')
@@ -28,6 +30,12 @@ describe('units', () => {
   it('fat percent with comma decimals', () => {
     expect(extractFat('Кефир 2,5%')).toBe(2.5)
     expect(extractFat('Сок 100%')).toBeNull()
+  })
+  it('ignores composition percentages that are not fat', () => {
+    expect(extractFat('Говядина суп набор 10% мяса 90% кости')).toBeNull()
+    expect(extractFat('Шоколад горький 70% какао 100 г')).toBeNull()
+    expect(extractFat('Сметана 20% жирности 300 г')).toBe(20)
+    expect(extractFat('Масло сливочное 82,5% 180 г')).toBe(82.5)
   })
   it('normalizes ё, quotes and spaces', () => {
     expect(normalizeText('  Сахар «ЛИДЕР»  ёлка ')).toBe('сахар лидер елка')
