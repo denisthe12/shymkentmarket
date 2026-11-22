@@ -8,6 +8,8 @@
     "scrape:magnum": "tsx src/cli/scrape.ts MAGNUM",
     "sync": "tsx src/cli/sync.ts",
     "dict:apply": "tsx src/cli/dict-apply.ts",
+    "dict:prepare": "tsx src/cli/dict-prepare.ts",
+    "dict:apply-decisions": "tsx src/cli/dict-apply-decisions.ts",
     "dict:seed-categories": "tsx src/cli/dict-seed-categories.ts",
     "taxonomy:sql": "tsx src/cli/taxonomy-sql.ts",
     "sync:compare": "tsx src/cli/compare.ts"

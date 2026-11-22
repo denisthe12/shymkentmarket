@@ -46,7 +46,7 @@ describe('taxonomy migration (append-only)', () => {
     expect(sql).not.toMatch(/DELETE|DROP|TRUNCATE/i)
   })
   it('a dictionary without cards yields categories without filters', () => {
-    for (const r of rows) expect(r.schema, r.slug).toEqual({ filters: [] })
+    for (const r of parseRows(buildTaxonomyMigration(withCards({})))) expect(r.schema, r.slug).toEqual({ filters: [] })
   })
   it('every multi-select in the migration has non-empty primitive options (the API drops it otherwise)', () => {
     for (const r of rows) assertServableSchema(r.slug, r.schema)
