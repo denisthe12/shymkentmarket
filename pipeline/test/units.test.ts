@@ -13,6 +13,13 @@ describe('units', () => {
     ['Хлеб Бородинский', {}],
     ['Сахар Чайкофский порционный в стиках 0.3 г 10 шт', { packageCount: 10 }],
     ['Сметана 18% жирности 0.380г', {}],
+    ['Соль 4Life крупная йодированная морская 1 кг', { weightGrams: 1000 }],
+    ['Соль 4Life гималайская розовая пищевая крупная 500 гр', { weightGrams: 500 }],
+    ['Вода 1 л', { volumeMl: 1000 }],
+    ['Вода 1l', { volumeMl: 1000 }],
+    ['Вода 1 литр', { volumeMl: 1000 }],
+    ['Вода 0,5 л', { volumeMl: 500 }],
+    ['Вода 1.5L', { volumeMl: 1500 }],
   ])('%s', (name, size) => expect(extractSize(name)).toEqual(size))
   it('never yields a zero size after integer normalization', () => {
     expect(extractSize('Сахар порционный 0.3 г 10 шт')).not.toHaveProperty('weightGrams')
