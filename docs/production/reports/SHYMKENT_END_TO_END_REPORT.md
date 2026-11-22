@@ -227,7 +227,7 @@ postgres, staging) на коммите `79f1ca0` — PASS. Коммит с от�
 | `pnpm sync` и `cmd/ingest` (dry run, `-apply`) на одноразовой БД | PASS |
 | API на одноразовой БД (29 групп СЗПТ, dashboard, categories, каталог) | PASS |
 | Локальный CI, все 10 групп, `79f1ca0` | PASS (postgres — цепочка из 4 миграций, staging) |
-| Локальный CI guard, security на итоговом HEAD | PASS (guard 1 с, security 7 с; прогон по рабочему дереву с финальным текстом отчёта) |
+| Локальный CI-раннер, группы `guard,security`, по рабочему дереву с текстом отчёта перед его последним коммитом | PASS (guard 1 с, security 7 с) |
 | Voice, Redis | NOT_RUN |
 | GitHub CI | NOT_RUN (push ещё не выполнен) |
 
