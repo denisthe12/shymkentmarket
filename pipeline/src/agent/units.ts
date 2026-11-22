@@ -11,7 +11,7 @@ export function extractSize(name: string): Size {
   const size: Size = {}
   const multi = t.match(/(\d+)\s*[xх×*]\s*(\d+(?:\.\d+)?)\s*(л|мл|кг|г)(?![а-яa-z])/)
   if (multi) size.packageCount = parseInt(multi[1]!, 10)
-  const l = t.match(/(\d+(?:\.\d+)?)\s*(?:л|l|литр\w*)(?![а-я])/)
+  const l = t.match(/(\d+(?:\.\d+)?)\s*(?:л|l|литр\w*)(?![а-яa-z])/)
   const ml = t.match(/(\d+(?:\.\d+)?)\s*(?:мл|ml)(?![а-яa-z])/)
   const kg = t.match(/(\d+(?:\.\d+)?)\s*(?:кг|kg)(?![а-яa-z])/)
   const g = t.match(/(\d+(?:\.\d+)?)\s*(?:г|гр|g)(?![а-я])/)
