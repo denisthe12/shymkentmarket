@@ -66,7 +66,7 @@ export function findBarcodePairs(
     const card = cards[0]!
     const canonical = dict.canonicals[card]
     if (!canonical) continue
-    if (weightedCards.has(card) !== isVariableWeight(store, p)) stats.barcodeRejectedWeight++
+    if (weightedCards.has(card) || isVariableWeight(store, p)) stats.barcodeRejectedWeight++
     else if (sizeConflict(itemAttributes(p.name), canonical.attributes)) stats.barcodeRejectedSize++
     else if (taken.has(card)) stats.barcodeSameStore++
     else {

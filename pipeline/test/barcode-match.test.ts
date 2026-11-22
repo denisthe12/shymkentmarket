@@ -65,13 +65,16 @@ describe('findBarcodePairs', () => {
     expect(r.pairs).toEqual([])
     expect(r.stats.barcodeRejectedSize).toBe(1)
   })
-  it('rejects a weight mismatch in both directions', () => {
+  it('rejects a packaged product for a weighted card and a weighted product for a packaged card', () => {
     const r = find([gp('g1', 'Яблоки', '4870000000042', false), gp('g2', 'Кефир', '4870000000028', true)])
     expect(r.pairs).toEqual([])
     expect(r.stats.barcodeRejectedWeight).toBe(2)
   })
-  it('pairs weighted with weighted', () => {
-    expect(find([gp('g1', 'Яблоки', '4870000000042', true)]).stats.barcodeAttached).toBe(1)
+  it('rejects weighted with weighted', () => {
+    const r = find([gp('g1', 'Яблоки', '4870000000042', true)])
+    expect(r.pairs).toEqual([])
+    expect(r.stats.barcodeRejectedWeight).toBe(1)
+    expect(r.stats.barcodeAttached).toBe(0)
   })
   it('counts a card that already has a product of this store', () => {
     const r = find([gp('g1', 'Сок', '4870000000059')])
