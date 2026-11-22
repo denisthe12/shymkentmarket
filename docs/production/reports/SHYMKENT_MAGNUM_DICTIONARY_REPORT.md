@@ -149,19 +149,21 @@ sausages 5 (5). Итого 1403.
 ## Проверки
 
 Локальный CI — `локальный CI-раннер вне репозитория` (Linux-контейнер), на итоговом HEAD (после правок ревью), группы
-`pipeline,schema,security,guard,postgres,staging`; результат — TBD, заполняется после запуска.
+`pipeline,schema,security,guard,ops,postgres,staging` на `ce4d338`: ALL PASSED за 103 с. Группы `postgres`
+и `staging` применяют всю цепочку миграций, включая новую миграцию таксономии, на одноразовых
+PostgreSQL в контейнере. Коммит с этим отчётом меняет только документ.
 
 | Проверка | Результат |
 | --- | --- |
 | `pnpm test` (pipeline) | PASS, 30 файлов / 294 теста |
 | `pnpm typecheck` (pipeline) | PASS |
-| Локальный CI, `pipeline,schema,security,guard,postgres,staging` | TBD |
+| Локальный CI, `pipeline,schema,security,guard,ops,postgres,staging` (`ce4d338`) | PASS: schema 5 с, pipeline 9 с, guard 1 с, security 8 с, ops 12 с, postgres 25 с, staging 43 с |
 | `node --test scripts/deploy/auto-gate.test.mjs` | PASS, 84 теста |
 | Приближённая проверка групп СЗПТ | выполнена (таблица выше), не результат Go API |
 | go | NOT_RUN (часть не трогает Go; `groups.go` не менялся) |
 | frontend | NOT_RUN (не затронут) |
 | contracts | NOT_RUN (не затронуты) |
-| DB integration, staging | NOT_RUN (запись в БД в этой части не выполнялась) |
+| DB integration, staging | PASS в локальном CI (группы `postgres`, `staging`, строка выше); сквозной прогон sync → ingest → `/api/szpt` — часть 3 |
 | GitHub CI | NOT_RUN (push ещё не выполнен) |
 
 В процессе первый запуск `pnpm test` дал одно падение `taxonomy.test.ts` (см. решения); после
