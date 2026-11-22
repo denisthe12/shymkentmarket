@@ -223,8 +223,8 @@ HEAD записываются отдельно от этого отчёта, п�
 | `pnpm vitest run test/weight.test.ts test/daily-sync-stores.test.ts` (до кода задачи 1) | FAIL, как и ожидалось |
 | `pnpm vitest run test/store-match.test.ts test/card-weight.test.ts` (до кода задачи 2) | FAIL, как и ожидалось |
 | `pnpm vitest run test/barcode-match.test.ts test/dict-cli.test.ts` (до кода задачи 3) | FAIL, как и ожидалось |
-| `pnpm test` (`pipeline/`, на `d748cc1`) | PASS — 36 файлов, 376 тестов |
-| `pnpm typecheck` (`pipeline/`, на `d748cc1`) | PASS |
+| `pnpm test` (`pipeline/`, на `d748cc1` и на `2f054fc`) | PASS — 36 файлов, 376 тестов |
+| `pnpm typecheck` (`pipeline/`, на `d748cc1` и на `33719df`) | PASS |
 | `node --test scripts/deploy/auto-gate.test.mjs` (на `d748cc1`) | PASS — 87 тестов |
 | `node --test scripts/ops/daily-sync.test.mjs` | PASS в Docker (`node:24-bookworm-slim`), 7 тестов; в Git Bash на Windows не запускается корректно (пути, группы процессов) |
 | `pnpm dict:apply-decisions GRAMAD --check` | PASS — 10 батчей, 366 товаров, 233 пары |
@@ -233,6 +233,7 @@ HEAD записываются отдельно от этого отчёта, п�
 | `MSYS_NO_PATHCONV=1 node <локальный CI>/run-local.mjs go,schema,ops,postgres,staging` на `ef4025c` | go PASS, schema PASS; ops FAIL (тест daily-sync ждал одну сеть — исправлено в `b96799f`); postgres, staging FAIL (сломанная строка цепочки — исправлено в `5b6a5af`) |
 | То же `ops,postgres,staging` на `b96799f` | PASS (ops, postgres, staging) |
 | `MSYS_NO_PATHCONV=1 node <локальный CI>/run-local.mjs pipeline,schema,security,guard,ops,go,postgres,staging` на `d748cc1` | PASS (go, schema, pipeline, guard, security, ops, postgres, staging) |
+| `MSYS_NO_PATHCONV=1 node <локальный CI>/run-local.mjs pipeline,guard,security` на `2f054fc` (после исправлений финального ревью; после него менялся только этот отчёт) | PASS (pipeline, guard, security) |
 | `cmd/ingest` с двумя сетями, `/api/szpt`, `/api/dashboard` | NOT_RUN — часть 3 |
 | Живые `pnpm scrape:gramad`, `pnpm scrape:magnum` | NOT_RUN — в этой части не нужны |
 | `contracts`, `frontend` | SKIP — не затронуты |
