@@ -32,6 +32,7 @@ run $M/20261122000000_shymkent_baseline/migration.sql
 run $SEC/aktau_ingest_writer_role.sql     # после базовой миграции, до LOGIN
 if [ "${SKIP_DUMP:-0}" != "1" ]; then run "$DUMP"; fi
 for taxonomy in $M/*_shymkent_taxonomy/migration.sql; do run "$taxonomy"; done
+for store in $M/*_shymkent_gramad_store/migration.sql; do run "$store"; done
 run ops/postgres/security/aktau_ingest_product_identities_access.sql
 docker exec "$NAME" psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q \
   -c "CREATE ROLE ingest_local LOGIN PASSWORD '$PW'"   -c "GRANT aktau_ingest_writer TO ingest_local WITH INHERIT TRUE, SET FALSE" >/dev/null  # cmd/ingest отвергает логин с правом SET ROLE

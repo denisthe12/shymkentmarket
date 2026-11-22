@@ -7,14 +7,15 @@
 
 ```text
 pnpm scrape:magnum  →  data/sources/magnum.json
-SYNC_STORES=MAGNUM pnpm sync  →  data/sync/bundle.json + data/sync/unmapped.json
+pnpm scrape:gramad  →  data/sources/gramad.json
+SYNC_STORES=MAGNUM,GRAMAD pnpm sync  →  data/sync/bundle.json + data/sync/unmapped.json
 go run ./cmd/ingest -bundle data/sync/bundle.json [-apply]  →  новый snapshot
 проверка: /api/szpt
 ```
 
-1. Живой скрап (`pnpm scrape:magnum`, из `pipeline/`) запускается только по явному «да» Owner.
-   Для проверок без сети используйте синтетический или уже имеющийся локальный `magnum.json`.
-2. `SYNC_STORES=MAGNUM pnpm sync` собирает бандл по словарю `data/mapping/dictionary.json`.
+1. Живой скрап (`pnpm scrape:magnum`, `pnpm scrape:gramad`, из `pipeline/`) запускается только по явному «да» Owner.
+   Для проверок без сети используйте синтетический или уже имеющийся локальный `magnum.json` и `gramad.json`.
+2. `SYNC_STORES=MAGNUM,GRAMAD pnpm sync` собирает бандл по словарю `data/mapping/dictionary.json`.
    `sync` отказывается работать с отсутствующим файлом источника или файлом старше
    `SYNC_MAX_SOURCE_AGE_HOURS` (по умолчанию 36 ч); для локальной проверки на старом файле
    задайте это значение с запасом, значение по умолчанию в коде не меняется.

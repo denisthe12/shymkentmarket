@@ -10,7 +10,7 @@ import { assertFresh, buildSyncBundle } from '../sync/sync.js'
 import { STORE_CODES, type StoreCode } from '../types.js'
 
 // Обязательные сети; список меняется через env без правки кода
-const required = (process.env.SYNC_STORES ?? 'MAGNUM').split(',').map((s) => s.trim()) as StoreCode[]
+const required = (process.env.SYNC_STORES ?? 'MAGNUM,GRAMAD').split(',').map((s) => s.trim()) as StoreCode[]
 if (!required.every((s) => STORE_CODES.includes(s))) throw new Error(`SYNC_STORES invalid: ${required.join(',')}`)
 const maxAge = Number(process.env.SYNC_MAX_SOURCE_AGE_HOURS ?? 36)
 
