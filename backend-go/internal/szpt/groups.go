@@ -32,7 +32,8 @@ const (
 	weighted = `(^|[^а-яё])вес([^а-яё]|$)|весов`
 	lactose  = `безлакт|низколакт`
 	// Phase 3 moves raw lamb and horse meat into meat; their cuts («ножка», «тушка») must not reach the poultry groups.
-	notPoultry = `баран|конин`
+	// Beef, veal and turkey cuts («тазобедренный», «мякоть бедра», «голень индейки») are not chicken either.
+	notPoultry = `баран|конин|говяд|телят|индейк`
 )
 
 func fat(lo, hi float64) (*float64, *float64) { return &lo, &hi }

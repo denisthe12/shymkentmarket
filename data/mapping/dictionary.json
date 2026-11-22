@@ -553,7 +553,7 @@
     "c_6643d74c97cdec86": {"name":"Сметана President домашняя 25% 385 гр","brand":"President","category":"dairy","attributes":{"weightGrams":385,"fatPercent":25},"method":"deterministic","confidence":1,"review":"approved"},
     "c_669e0b386929d2cf": {"name":"Сыр Белорусские Сыры Российский молодой полутвердый 50% 300 гр","brand":"Белорусские Сыры","category":"dairy","attributes":{"weightGrams":300,"fatPercent":50},"method":"deterministic","confidence":1,"review":"approved"},
     "c_66baf1ad0f28ad8d": {"name":"Сыр President плавленый с копчеными колбасками 45% 400 гр","brand":"President","category":"dairy","attributes":{"weightGrams":400,"fatPercent":45},"method":"deterministic","confidence":1,"review":"approved"},
-    "c_66e65043d3e1752a": {"name":"Мякоть бедра Kazbeef Round замороженная","brand":"Kazbeef","category":"meat","attributes":{},"method":"deterministic","confidence":1,"review":"approved"},
+    "c_66e65043d3e1752a": {"name":"Говядина мякоть бедра Kazbeef Round замороженная","brand":"Kazbeef","category":"meat","attributes":{},"method":"deterministic","confidence":1,"review":"approved"},
     "c_6712d5b34f1ae52a": {"name":"Молоко Молочный мир 3,2% 1 л","brand":"Молочный Мир","category":"milk","attributes":{"volumeMl":1000,"fatPercent":3.2},"method":"deterministic","confidence":1,"review":"approved"},
     "c_673772ad89a0d427": {"name":"Сметана President 10% 200 гр","brand":"President","category":"dairy","attributes":{"weightGrams":200,"fatPercent":10},"method":"deterministic","confidence":1,"review":"approved"},
     "c_6757b05e761a934f": {"name":"Айва Узбекистан","brand":null,"category":"vegetables","attributes":{},"method":"deterministic","confidence":1,"review":"approved"},
