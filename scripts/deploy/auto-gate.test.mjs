@@ -302,7 +302,7 @@ test('active 1cbd535 delta (seed removal + contracts README) requires every exac
 
 // Shymkent baseline: no migration is admitted by auto-transport. A migration reaches a database only through
 // the reviewed manual process, so every protected delta that contains one must be refused.
-for(const migration of ['20261122000000_shymkent_baseline','20261122000001_shymkent_taxonomy','20261122000002_shymkent_taxonomy','20261122105543_shymkent_taxonomy','20261122210000_shymkent_gramad_store']) {
+for(const migration of ['20261122000000_shymkent_baseline','20261122000001_shymkent_taxonomy','20261122000002_shymkent_taxonomy','20261122105543_shymkent_taxonomy','20261122210000_shymkent_gramad_store','20261122210001_shymkent_taxonomy']) {
   const path=`backend/prisma/migrations/${migration}/migration.sql`;
   test(`${migration}/migration.sql is not allowed by auto-transport`,()=>{
     for(const old of [active,'a'.repeat(40)])
