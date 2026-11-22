@@ -38,7 +38,7 @@ export function itemAttributes(name: string): Attributes {
 }
 
 /** Один и тот же ключ размера/жирности с разными значениями — это разные товары */
-function sizeConflict(a: Attributes, b: Record<string, number>): boolean {
+export function sizeConflict(a: Attributes, b: Record<string, number>): boolean {
   return SIZE_KEYS.some((k) => a[k] !== undefined && b[k] !== undefined && Math.abs(a[k]! - b[k]!) > 1e-9)
 }
 
