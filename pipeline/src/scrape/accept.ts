@@ -21,7 +21,7 @@ function readPrevious(path: string, storeCode: string): SourceFile | null {
   } catch (err) {
     if (typeof (err as NodeJS.ErrnoException).code === 'string') throw err // ошибка чтения, а не содержимого
     // Битый прежний файл не должен навсегда блокировать исправный скрап
-    console.warn(`[${storeCode}] warning: previous file is unreadable, previous file is not compared`)
+    console.warn(`[${storeCode}] warning: previous file is unreadable and is not compared`)
     return null
   }
 }

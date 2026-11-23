@@ -138,6 +138,21 @@ describe('acceptScrape', () => {
       expect(spy).not.toHaveBeenCalled()
     })
 
+    it('is not called when coverage fails', () => {
+      writeSourceFile(path, file(10))
+      const spy = vi.fn()
+      const uncovered = () => {
+        throw new Error('uncovered')
+      }
+      expect(() => acceptScrape(path, file(10), uncovered, { compareWithPrevious: spy })).toThrow('uncovered')
+      expect(spy).not.toHaveBeenCalled()
+    })
+
+    it('runs before the drop check', () => {
+      writeSourceFile(path, file(100))
+      expect(() => acceptScrape(path, file(50), noCoverage, { compareWithPrevious: refuse })).toThrow('unit changed')
+    })
+
     it('still checks the 10% drop after a passing comparison', () => {
       writeSourceFile(path, file(100))
       expect(() => acceptScrape(path, file(50), noCoverage, { compareWithPrevious: () => {} })).toThrow(/50 products/)

@@ -49,6 +49,17 @@ describe('assertFmartFreshPrices', () => {
   it('accepts 4 common when one side has 10', () => {
     assertFmartFreshPrices(file(set(10, 100)), file(set(15, 100, 6)))
   })
+  it('accepts 4 common when previous has 14 and now 15', () => {
+    assertFmartFreshPrices(file(set(14, 100)), file(set(15, 100, 10)))
+  })
+  it('accepts 5 common with 15 on each side', () => {
+    assertFmartFreshPrices(file(set(15, 100)), file(set(15, 100, 10)))
+  })
+  it('averages the two middle ratios for an even count', () => {
+    const prev = file(set(20, 100))
+    const now = file([...set(10, 100), ...set(10, 200, 10)])
+    assertFmartFreshPrices(prev, now) // median (1 + 2) / 2 = 1.5, upper middle alone would be 2
+  })
   it('does not check the ratio without common products', () => {
     assertFmartFreshPrices(file(set(10, 100)), file(set(10, 900, 50)))
   })
