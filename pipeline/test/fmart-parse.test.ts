@@ -189,7 +189,20 @@ describe('parseFmartPage leaves, order and page shape', () => {
   })
   it('keeps the regular price as the sort key', () => {
     const r = run([item({ price: 120, on_sale: true, sale_price: 85 }), item({ id: 2, in_stock: false, price: 7 })])
-    expect(r.rows.map((x) => x.sortPrice)).toEqual([120, 7])
+    expect(r.rows.map((x) => [x.sortLow, x.sortHigh])).toEqual([[120, 120], [7, 7]])
+  })
+  it('gives weighted rows a per-kg interval, skipped ones too', () => {
+    const w = { price: 475, unit_g: 250, price_per_kg: 1900 }
+    const r = run([weighted(w), weighted({ ...w, id: 2, in_stock: false }), weighted({ ...w, id: 3, category_id: 12 })])
+    expect(r.rows.map((x) => [x.sortLow, x.sortHigh])).toEqual([[1895, 1905], [1895, 1905], [1895, 1905]])
+  })
+  it('rejects a weighted row without a unit even when it is skipped', () => {
+    for (const unit_g of [null, undefined, 0, -5, '250']) {
+      expect(() => run([weighted({ id: 9, in_stock: false, unit_g })])).toThrow(/product 9.*unit_g/)
+      expect(() => run([weighted({ id: 9, category_id: 12, unit_g })])).toThrow(/product 9.*unit_g/)
+      expect(() => run([weighted({ id: 9, category_id: 99, unit_g })])).toThrow(/product 9.*unit_g/)
+    }
+    expect(one(item({ in_stock: false, unit_g: null })).skip).toBe('unavailable')
   })
   it('rejects pages that are not the ones asked for', () => {
     expect(() => run([], section(), { page: 2 })).toThrow(/sec-1/)

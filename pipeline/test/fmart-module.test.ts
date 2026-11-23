@@ -191,8 +191,11 @@ describe('createFmartModule', () => {
 })
 
 describe('walkFmartSection', () => {
-  const row = (id: string, sortPrice: number): FmartRow => ({ itemId: id, sortPrice, product: null, skip: 'unavailable', unknownLeaf: null })
-  const rows = (prices: number[]) => prices.map((p, i) => row(`i${i}`, p))
+  const row = (id: string, sortLow: number, sortHigh = sortLow): FmartRow => ({ itemId: id, sortLow, sortHigh, product: null, skip: 'unavailable', unknownLeaf: null })
+  type Key = number | readonly [low: number, high: number]
+  const rows = (keys: Key[]) => keys.map((k, i) => (typeof k === 'number' ? row(`i${i}`, k) : row(`i${i}`, k[0], k[1])))
+  /** Price per unit of a weighted item as an interval per kg. */
+  const kg = (price: number, unit: number): Key => [(price * 1000) / unit - (1000 / unit + 1), (price * 1000) / unit + 1000 / unit + 1]
   function server(list: FmartRow[], full = list, tweak: (p: FmartPage, perPage: number) => FmartPage = p => p) {
     const calls: string[] = []
     const walk = () => walkFmartSection(async (page, perPage) => {
@@ -248,7 +251,7 @@ describe('walkFmartSection', () => {
     await expect(broken(p => ({ ...p, total: 151 }))).rejects.toThrow(/total/)
     await expect(broken(p => ({ ...p, rows: p.rows.slice(1) }))).rejects.toThrow(/rows/)
     await expect(broken(p => ({ ...p, totalPages: 9 }))).rejects.toThrow(/pages/)
-    await expect(broken(p => ({ ...p, rows: p.rows.map((r, i) => (i === 5 ? { ...r, sortPrice: 1 } : r)) }))).rejects.toThrow(/price/)
+    await expect(broken(p => ({ ...p, rows: p.rows.map((r, i) => (i === 5 ? { ...r, sortLow: 1, sortHigh: 1 } : r)) }))).rejects.toThrow(/price/)
   })
 
   it('keeps the first occurrence and refuses one item at two prices', async () => {
@@ -263,6 +266,40 @@ describe('walkFmartSection', () => {
     await expect(server(swapped, list).walk()).rejects.toThrow(/151 distinct products of total 150/)
     const moved = list.map((r, i) => (i === 120 ? { ...r, itemId: 'i3' } : r))
     await expect(server(moved).walk()).rejects.toThrow(/i3.*two prices/)
+  })
+
+  it('orders weighted rows by the price per kg', async () => {
+    const { calls, walk } = server(rows([...seq(99), 1790, kg(475, 250), kg(482, 250), 1995, kg(210, 100), kg(2500, 1000), kg(150, 50), ...seq(20, 4000)]))
+    expect((await walk()).rows).toHaveLength(126)
+    expect(calls).toEqual(['1/100', '2/100'])
+  })
+
+  it('fetches a window for overlapping weighted intervals on the boundary', async () => {
+    const list = rows([...seq(99), kg(475, 250), kg(476, 250), ...seq(20, 3000)])
+    const { calls, walk } = server(list, list.map((r, i) => (i === 100 ? list[99]! : r)))
+    expect((await walk()).rows).toHaveLength(121)
+    expect(calls).toEqual(['1/100', '2/100', '2/99'])
+  })
+
+  it('never splits overlapping intervals that are not adjacent', async () => {
+    // the wide interval at 98 overlaps the piece at 100; the pieces at 99 and 100 differ
+    const { calls, walk } = server(rows([...seq(98), kg(95, 50), 1900, 1910, ...seq(20, 3000)]))
+    await walk()
+    expect(calls).toEqual(['1/100', '2/100', '2/98'])
+  })
+
+  it('checks window rows by overlapping intervals', async () => {
+    const list = rows([...seq(99), kg(475, 250), kg(476, 250), ...seq(20, 3000)])
+    const swap = (rs: FmartRow[]) => [rs[1]!, rs[0]!, ...rs.slice(2)]
+    await expect(server(list, list, (p, per) => (per === 100 ? p : { ...p, rows: swap(p.rows) })).walk()).resolves.toMatchObject({ total: 121 })
+  })
+
+  it('refuses a falling price on many pages, also after a weighted row; any order is fine on one page', async () => {
+    await expect(server(rows([...seq(99), 1790, 1700, ...seq(20, 3000)])).walk()).rejects.toThrow(/price falls/)
+    await expect(server(rows([...seq(99), kg(475, 250), 1890, ...seq(20, 3000)])).walk()).rejects.toThrow(/price falls/)
+    const one = server(rows([9, 3, kg(475, 250), 1]))
+    expect((await one.walk()).rows).toHaveLength(4)
+    expect(one.calls).toEqual(['1/100'])
   })
 
   it('refuses more than 100 pages before reading on', async () => {
