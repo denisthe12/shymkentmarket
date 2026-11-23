@@ -28,6 +28,11 @@ describe('FMART_SECTIONS', () => {
 })
 
 describe('FMART_SCOPE', () => {
+  it('takes loose flour and leaves out drinking straws', () => {
+    expect(FMART_SCOPE.find(l => l.id === '4272')).toMatchObject({ slug: 'groats', path: ['Бакалея', 'Мука', 'Мука весовая'] })
+    expect(FMART_SECTIONS.find(s => s.excluded.has('4169'))?.id).toBe('3352')
+  })
+
   it('covers exactly the published slugs', () => {
     expect([...new Set(FMART_SCOPE.map(l => l.slug))].sort()).toEqual([...DEFAULT_PUBLISH_CATEGORIES].sort())
   })

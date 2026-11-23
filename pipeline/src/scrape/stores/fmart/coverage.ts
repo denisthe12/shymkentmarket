@@ -4,7 +4,7 @@ import { FMART_SCOPE, FMART_SECTIONS, fmartSectionName } from './scope.js'
 const SLUG_BY_LEAF = new Map(FMART_SCOPE.map(l => [l.id, l.slug]))
 
 /** Falling below these means the source returned a partial catalogue without weighted or fresh goods. */
-export const MIN_WEIGHTED_FLAG = 50
+export const MIN_WEIGHTED_FLAG = 62
 export const MIN_FRESH_KG = 15
 
 /**
@@ -12,27 +12,27 @@ export const MIN_FRESH_KG = 15
  * the others are covered by the slug check only.
  */
 export const MIN_BY_SECTION: Readonly<Record<string, number>> = {
-  '3352': 25,
-  '3339': 22,
-  '3098': 30,
-  '3096': 20,
+  '3352': 36,
+  '3339': 32,
+  '3098': 33,
+  '3096': 21,
   '3268': 9,
-  '3314': 50,
-  '3249': 18,
-  '3269': 165,
+  '3314': 56,
+  '3249': 19,
+  '3269': 169,
   '100014': 13,
-  '3136': 15,
+  '3136': 16,
   '3421': 13,
-  '3816': 20,
+  '3816': 21,
   '4293': 15,
-  '3150': 80,
+  '3150': 84,
   '3116': 30,
-  '3094': 150,
-  '3374': 20,
+  '3094': 152,
+  '3374': 30,
   '3076': 38,
-  '3091': 33,
+  '3091': 82,
   '3618': 17,
-  '3709': 25,
+  '3709': 55,
 }
 
 function stat(file: SourceFile, key: string): number {
