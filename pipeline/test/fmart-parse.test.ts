@@ -69,6 +69,7 @@ describe('parseFmartPage explicit weighted goods', () => {
   it('rejects a zero per-kg price', () => {
     expect(() => run([weighted({ price: 0, price_per_kg: 0 })])).toThrow()
     expect(() => run([weighted({ price_per_kg: 0, price: 0.1 })])).toThrow()
+    expect(() => run([weighted({ price: 256, price_per_kg: 0 })])).toThrow(/price_per_kg/)
   })
 })
 

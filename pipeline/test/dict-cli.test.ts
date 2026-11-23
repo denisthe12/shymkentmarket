@@ -266,6 +266,11 @@ describe('dict:prepare / dict:apply-decisions', () => {
       run('dict-seed-categories.ts', ['GRAMAD'])
       expect(JSON.parse(readFileSync(p, 'utf8')).storeCategories[keys[0]!]).toBe('other')
     })
+    it('adds FMART keys', () => {
+      expect(run('dict-seed-categories.ts', ['FMART']).code).toBe(0)
+      const keys = Object.keys(JSON.parse(readFileSync(resolve(dirs().mapping, 'dictionary.json'), 'utf8')).storeCategories)
+      expect(keys).toContain('FMART|Молочные продукты / Сметана / Сметана')
+    })
     it('adds MAGNUM keys and rejects an unknown or missing store', () => {
       expect(run('dict-seed-categories.ts', ['MAGNUM']).code).toBe(0)
       const keys = Object.keys(JSON.parse(readFileSync(resolve(dirs().mapping, 'dictionary.json'), 'utf8')).storeCategories)

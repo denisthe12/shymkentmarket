@@ -64,6 +64,9 @@ const THIRTEEN_DIGITS = /^\d{13}$/
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit' })
 
+/** Calendar date in Asia/Almaty, YYYY-MM-DD. */
+export const almatyDay = (date: Date): string => DAY.format(date)
+
 export function fmartFreshId(name: string): string {
   return `fmart_fresh_${name.trim().toLowerCase().replaceAll('ё', 'е').replace(/\s+/g, '-')}`
 }
@@ -85,7 +88,7 @@ function almatyDate(value: string | null | undefined): string | null {
   if (DATE_ONLY.test(text)) return text
   const time = Date.parse(text)
   if (Number.isNaN(time)) throw new Error(`unparseable date ${JSON.stringify(text)}`)
-  return DAY.format(new Date(time))
+  return almatyDay(new Date(time))
 }
 
 type Promo = { price: number; active: boolean; dated: boolean }
