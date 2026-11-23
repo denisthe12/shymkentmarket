@@ -1,9 +1,9 @@
 import 'dotenv/config'
 import { resolve } from 'node:path'
 import { sourcesDir } from '../paths.js'
-import { writeSourceFile } from '../source-file.js'
 import { STORE_CODES, type SourceFile, type StoreCode } from '../types.js'
-import { assertNoErrors, resolveStoreLimits, runStore } from '../scrape/core/index.js'
+import { acceptScrape, parseScrapeArgs } from '../scrape/accept.js'
+import { resolveStoreLimits, runStore } from '../scrape/core/index.js'
 import { magnumModule } from '../scrape/stores/magnum/index.js'
 import { assertMagnumCoverage } from '../scrape/stores/magnum/coverage.js'
 import { MAGNUM_SCOPE } from '../scrape/stores/magnum/scope.js'
@@ -47,9 +47,10 @@ const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
   },
 }
 
-const code = process.argv[2] as StoreCode
+const args = parseScrapeArgs(process.argv.slice(2))
+const code = args?.code as StoreCode
 const scraper = STORE_CODES.includes(code) ? SCRAPERS[code] : undefined
-if (!scraper) { console.error(`usage: scrape <${Object.keys(SCRAPERS).join('|')}>`); process.exit(2) }
+if (!args || !scraper) { console.error(`usage: scrape <${Object.keys(SCRAPERS).join('|')}> [--accept-drop]`); process.exit(2) }
 let file: SourceFile
 try {
   file = await scraper.run()
@@ -58,14 +59,12 @@ try {
   process.exit(1)
 }
 const out = resolve(sourcesDir(), `${code.toLowerCase()}.json`)
-// Любая ошибка запроса — отказ, прежний файл сохраняется
+// Ошибка запроса, неполное покрытие или падение числа товаров — отказ, прежний файл сохраняется
 try {
-  assertNoErrors(file)
-  scraper.assertCoverage(file)
+  acceptScrape(out, file, scraper.assertCoverage, { acceptDrop: args.acceptDrop })
 } catch (err) {
   console.error(`[${code}] ${(err as Error).message}`)
   process.exit(1)
 }
-writeSourceFile(out, file)
 const withImage = file.products.filter((p) => p.imageUrl).length
 console.log(`[${code}] ${file.products.length} products, images ${withImage}, errors ${file.errorCount} → ${out}`)
