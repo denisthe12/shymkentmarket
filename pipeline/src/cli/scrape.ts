@@ -13,11 +13,13 @@ import { GRAMAD_SCOPE } from '../scrape/stores/gramad/scope.js'
 import { summarizeGramad } from '../scrape/stores/gramad/stats.js'
 import { createFmartModule } from '../scrape/stores/fmart/index.js'
 import { assertFmartCoverage } from '../scrape/stores/fmart/coverage.js'
+import { assertFmartFreshPrices } from '../scrape/stores/fmart/fresh-prices.js'
 import { FMART_SECTIONS } from '../scrape/stores/fmart/scope.js'
 
 export type Scraper = {
   run: () => Promise<SourceFile>
   assertCoverage: (file: SourceFile) => void
+  compareWithPrevious?: (previous: SourceFile, file: SourceFile) => void
 }
 const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
   // Скрап Magnum ограничен MAGNUM_SCOPE
@@ -67,6 +69,7 @@ const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
       return file
     },
     assertCoverage: assertFmartCoverage,
+    compareWithPrevious: assertFmartFreshPrices,
   },
 }
 
@@ -84,7 +87,7 @@ try {
 const out = resolve(sourcesDir(), `${code.toLowerCase()}.json`)
 // Ошибка запроса, неполное покрытие или падение числа товаров — отказ, прежний файл сохраняется
 try {
-  acceptScrape(out, file, scraper.assertCoverage, { acceptDrop: args.acceptDrop })
+  acceptScrape(out, file, scraper.assertCoverage, { acceptDrop: args.acceptDrop, compareWithPrevious: scraper.compareWithPrevious })
 } catch (err) {
   console.error(`[${code}] ${(err as Error).message}`)
   process.exit(1)

@@ -108,6 +108,42 @@ describe('acceptScrape', () => {
     expect(existsSync(path)).toBe(false)
   })
 
+  describe('compareWithPrevious', () => {
+    const refuse = () => {
+      throw new Error('unit changed')
+    }
+
+    it('refuses and keeps the previous file, also with acceptDrop', () => {
+      writeSourceFile(path, file(100))
+      const before = readFileSync(path, 'utf8')
+      expect(() => acceptScrape(path, file(100), noCoverage, { compareWithPrevious: refuse })).toThrow('unit changed')
+      expect(() => acceptScrape(path, file(50), noCoverage, { acceptDrop: true, compareWithPrevious: refuse })).toThrow('unit changed')
+      expect(readFileSync(path, 'utf8')).toBe(before)
+    })
+
+    it('receives the previous and the new file', () => {
+      writeSourceFile(path, file(10))
+      const spy = vi.fn()
+      acceptScrape(path, file(12), noCoverage, { compareWithPrevious: spy })
+      expect(spy.mock.calls[0]![0].products).toHaveLength(10)
+      expect(spy.mock.calls[0]![1].products).toHaveLength(12)
+    })
+
+    it('is not called without a previous file or with a broken one', () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const spy = vi.fn()
+      acceptScrape(path, file(3), noCoverage, { compareWithPrevious: spy })
+      writeFileSync(path, '{broken', 'utf8')
+      acceptScrape(path, file(3), noCoverage, { compareWithPrevious: spy })
+      expect(spy).not.toHaveBeenCalled()
+    })
+
+    it('still checks the 10% drop after a passing comparison', () => {
+      writeSourceFile(path, file(100))
+      expect(() => acceptScrape(path, file(50), noCoverage, { compareWithPrevious: () => {} })).toThrow(/50 products/)
+    })
+  })
+
   it('replaces an unreadable previous file with a warning', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     writeFileSync(path, '{broken', 'utf8')
