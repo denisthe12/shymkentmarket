@@ -14,21 +14,20 @@ export function parseScrapeArgs(args: string[]): { code: string; acceptDrop: boo
   return { code, acceptDrop: flag !== undefined }
 }
 
-function previousCount(path: string, storeCode: string): number | null {
+function readPrevious(path: string, storeCode: string): SourceFile | null {
   if (!existsSync(path)) return null
   try {
-    return readSourceFile(path).products.length
+    return readSourceFile(path)
   } catch (err) {
     if (typeof (err as NodeJS.ErrnoException).code === 'string') throw err // ошибка чтения, а не содержимого
     // Битый прежний файл не должен навсегда блокировать исправный скрап
-    console.warn(`[${storeCode}] warning: previous file is unreadable, product count is not compared`)
+    console.warn(`[${storeCode}] warning: previous file is unreadable and is not compared`)
     return null
   }
 }
 
-function assertNoDrop(path: string, file: SourceFile): void {
-  const before = previousCount(path, file.storeCode)
-  if (before === null) return
+function assertNoDrop(previous: SourceFile, file: SourceFile): void {
+  const before = previous.products.length
   const now = file.products.length
   if (((before - now) * 100) / before > MAX_DROP_PERCENT) {
     throw new Error(
@@ -42,10 +41,16 @@ export function acceptScrape(
   path: string,
   file: SourceFile,
   assertCoverage: (file: SourceFile) => void,
-  options: { acceptDrop?: boolean } = {},
+  options: { acceptDrop?: boolean; compareWithPrevious?: (previous: SourceFile, file: SourceFile) => void } = {},
 ): void {
   assertNoErrors(file)
   assertCoverage(file)
-  if (!options.acceptDrop) assertNoDrop(path, file)
+  if (options.compareWithPrevious || !options.acceptDrop) {
+    const previous = readPrevious(path, file.storeCode)
+    if (previous !== null) {
+      options.compareWithPrevious?.(previous, file)
+      if (!options.acceptDrop) assertNoDrop(previous, file)
+    }
+  }
   writeSourceFile(path, file)
 }

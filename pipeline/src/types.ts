@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const STORE_CODES = ['MAGNUM', 'GRAMAD'] as const
+export const STORE_CODES = ['MAGNUM', 'GRAMAD', 'FMART'] as const
 export type StoreCode = (typeof STORE_CODES)[number]
 
 const price = z.number().int().positive().max(2_147_483_647)

@@ -8,12 +8,13 @@
 ```text
 pnpm scrape:magnum  →  data/sources/magnum.json
 pnpm scrape:gramad  →  data/sources/gramad.json
+pnpm scrape:fmart   →  data/sources/fmart.json (в `SYNC_STORES` пока не входит)
 SYNC_STORES=MAGNUM,GRAMAD pnpm sync  →  data/sync/bundle.json + data/sync/unmapped.json
 go run ./cmd/ingest -bundle data/sync/bundle.json [-apply]  →  новый snapshot
 проверка: /api/szpt
 ```
 
-1. Живой скрап (`pnpm scrape:magnum`, `pnpm scrape:gramad`, из `pipeline/`) запускается только по явному «да» Owner.
+1. Живой скрап (`pnpm scrape:magnum`, `pnpm scrape:gramad`, `pnpm scrape:fmart`, из `pipeline/`) запускается только по явному «да» Owner.
    Для проверок без сети используйте синтетический или уже имеющийся локальный `magnum.json` и `gramad.json`.
 2. `SYNC_STORES=MAGNUM,GRAMAD pnpm sync` собирает бандл по словарю `data/mapping/dictionary.json`.
    `sync` отказывается работать с отсутствующим файлом источника или файлом старше
@@ -47,6 +48,10 @@ go run ./cmd/ingest -bundle data/sync/bundle.json [-apply]  →  новый snap
 | `canonical_split_conflict` | карточка разделена, две группы претендуют на один прежний ID — разово `cmd/ingest -recluster -apply` |
 | `... previous file has N (drop above 10%), keeping previous file` (скрап) | товаров сети стало меньше более чем на 10% против прежнего файла; файл не заменён. Частичная выдача источника обычно временная — повторить скрап позже (по разрешению Owner). Если повторный скрап даёт то же число и сокращение настоящее — разово `pnpm scrape:<сеть> --accept-drop`: новый файл станет базой сравнения, поэтому флаг нельзя вносить в скрипты и расписание; если после этого ingest откажет с `store_count_drop`, порог поднимается разово по решению Owner |
 | `too few products: ...` (скрап Gramad) | в разделе источника намного меньше товаров, чем обычно; файл не заменён. `--accept-drop` это не обходит: если ассортимент действительно сократился, меняются минимумы в `pipeline/src/scrape/stores/gramad/coverage.ts` |
+| `too few products: ...`, `no products for ...` (скрап F-Mart) | источник отдал неполный каталог (например, без весовых или свежих товаров); файл не заменён, `--accept-drop` не обходит. Проверить локальный `FMART_REQUEST_HEADERS`, повторить скрап по разрешению Owner; при настоящем сокращении ассортимента меняются минимумы в `pipeline/src/scrape/stores/fmart/coverage.ts` |
+| `N distinct products of total M`, `price falls from ...`, `no window covers ...`, `total changed ...` (скрап F-Mart) | раздел не удалось обойти полностью, прогон остановлен, файл не заменён. Повторить скрап позже по разрешению Owner; повторяется — разобрать порядок выдачи источника (`pipeline/src/scrape/stores/fmart/walk.ts`) |
+| `unknownLeafProducts ... more than 10%` или предупреждение о незнакомых листьях (скрап F-Mart) | у источника появились новые листья: решить, брать или исключить, и внести в `pipeline/src/scrape/stores/fmart/scope.ts` с тестом |
+| `median fresh price ratio ...` или `only N fresh products match ...` (скрап F-Mart) | у свежих овощей и фруктов могла смениться единица цены или состав раздела. `--accept-drop` не обходит. Owner сверяет карточки с приложением сети: единица прежняя — убрать прежний локальный `fmart.json` и повторить скрап; сменилась — менять правило веса отдельным решением |
 | `... source file missing` / `... source file is stale` | файла источника нет или он старше лимита — перезапустить скрап (по разрешению Owner) или поднять лимит локально |
 
 Отказ скрапа одной сети не останавливает `daily-sync.sh`: берётся её прошлый файл, выход 3 (если он есть
@@ -55,7 +60,8 @@ go run ./cmd/ingest -bundle data/sync/bundle.json [-apply]  →  новый snap
 
 **Первый снимок с новой сетью:** ingest не с чем сравнивать, а прежнего файла может не быть. Перед первым
 `-apply` вручную сверьте число товаров сети, в том числе по разделам, с прошлыми прогонами (Gramad — около 590–600
-на 2026-11-23).
+на 2026-11-23;
+F-Mart — 1910 на 2026-11-23).
 
 Коды выхода 3 и 4 выдаёт обёртка `pipeline/scripts/daily-sync.sh` (см. `ops/sync/README.md`); в локальном потоке из §1 их нет.
 

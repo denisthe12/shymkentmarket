@@ -11,10 +11,15 @@ import { GRAMAD_SECTION_CAP, createGramadModule } from '../scrape/stores/gramad/
 import { assertGramadCoverage } from '../scrape/stores/gramad/coverage.js'
 import { GRAMAD_SCOPE } from '../scrape/stores/gramad/scope.js'
 import { summarizeGramad } from '../scrape/stores/gramad/stats.js'
+import { createFmartModule } from '../scrape/stores/fmart/index.js'
+import { assertFmartCoverage } from '../scrape/stores/fmart/coverage.js'
+import { assertFmartFreshPrices } from '../scrape/stores/fmart/fresh-prices.js'
+import { FMART_SECTIONS } from '../scrape/stores/fmart/scope.js'
 
 export type Scraper = {
   run: () => Promise<SourceFile>
   assertCoverage: (file: SourceFile) => void
+  compareWithPrevious?: (previous: SourceFile, file: SourceFile) => void
 }
 const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
   // Скрап Magnum ограничен MAGNUM_SCOPE
@@ -45,6 +50,27 @@ const SCRAPERS: Partial<Record<StoreCode, Scraper>> = {
     },
     assertCoverage: assertGramadCoverage,
   },
+  // Модуль F-Mart создаётся при запуске: ему нужна переменная FMART_REQUEST_HEADERS
+  FMART: {
+    run: async () => {
+      const { module, runStats } = createFmartModule(process.env)
+      const { concurrency, rps } = resolveStoreLimits(module.storeCode, module.limits, process.env)
+      console.log(`[FMART] mode: core (${FMART_SECTIONS.length} sections, concurrency ${concurrency}, rps ${rps})`)
+      const file = await runStore(module)
+      const stats = runStats()
+      Object.assign(file.sourceStats, stats)
+      console.log(
+        `[FMART] weighted ${stats.weightedFlag}, fresh per kg ${stats.weightedFresh}, skipped: unavailable ${stats.skippedUnavailable}, ` +
+        `piece per kg ${stats.skippedUnitKg}, fresh pieces ${stats.skippedFreshPiece}, excluded leaves ${stats.skippedExcludedLeaf}`,
+      )
+      if (stats.unknownLeaves !== '') {
+        console.warn(`[FMART] warning: ${stats.unknownLeafProducts} product(s) of unknown leaves skipped: ${stats.unknownLeaves}`)
+      }
+      return file
+    },
+    assertCoverage: assertFmartCoverage,
+    compareWithPrevious: assertFmartFreshPrices,
+  },
 }
 
 const args = parseScrapeArgs(process.argv.slice(2))
@@ -61,7 +87,7 @@ try {
 const out = resolve(sourcesDir(), `${code.toLowerCase()}.json`)
 // Ошибка запроса, неполное покрытие или падение числа товаров — отказ, прежний файл сохраняется
 try {
-  acceptScrape(out, file, scraper.assertCoverage, { acceptDrop: args.acceptDrop })
+  acceptScrape(out, file, scraper.assertCoverage, { acceptDrop: args.acceptDrop, compareWithPrevious: scraper.compareWithPrevious })
 } catch (err) {
   console.error(`[${code}] ${(err as Error).message}`)
   process.exit(1)
