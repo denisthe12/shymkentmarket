@@ -26,7 +26,7 @@
 
 - Картошка 158 в свежем разделе → `price` 316, а не 158 (тест в задаче 2).
 - Источник отдал страницы без весовых и без свежих → отказ, прежний файл на месте (тест в задаче 3).
-- Один товар повторился на второй странице, число штук совпало с `total` → отказ (тест в задаче 3).
+- Один товар повторился на второй странице, число штук совпало с `total`, разных меньше `total` и добор не помог → отказ (тест в задаче 3).
 - Источник стал отдавать свежие цены сразу за кг (158 → 316) → отказ даже с `--accept-drop` (тест в задаче 4).
 - У источника появился новый лист на 12% раздела → отказ; на 2% → предупреждение и счётчик (тест в задаче 3).
 
@@ -38,6 +38,7 @@
 
 - [ ] **Step 1:** «Да» Owner на сеанс: не больше 25 одиночных запросов, не чаще одного в секунду, без входа.
 - [ ] **Step 2:** Найти стабильную сортировку: две подряд выборки одного большого раздела дают одинаковый порядок, номера товаров по всем страницам уникальны и их число равно `total`. Нет такой — стоп и вопрос Owner.
+  **Итог (решение Owner):** стабильной сортировки нет; обход раздела по цене с добором окон — см. спецификацию, часть 1, п. 2.
 - [ ] **Step 3:** Листья разделов, не виденных в разведке (кисломолочные, сметана, сливки, сыры весовые и штучные, весовые макароны, хлебобулочные, остальные крупы), с объёмом. Предел страницы и поведение страницы за концом.
 - [ ] **Step 4:** Записать в заметки: `FMART_SECTIONS` (раздел → корень), листья со слагом, список исключённых листьев. Лимиты модуля: `concurrency 2`, `rps 4`, `maxConcurrency 4`, `maxRps 8`.
 
@@ -54,8 +55,9 @@
   - `type FmartLeaf = { id: string; slug: CategorySlug; path: readonly [string, string, string] }`;
   - `type FmartSection = { id: string; fresh: boolean; leaves: ReadonlyMap<string, FmartLeaf>; excluded: ReadonlySet<string> }`;
   - `type FmartSkips = { unavailable: number; excludedLeaf: number; unknownLeaf: number; unitKg: number; freshPiece: number }`;
-  - `type FmartPage = { products: SourceProduct[]; itemIds: string[]; seen: number; total: number; nextPage: number | null; skips: FmartSkips; unknownLeaves: string[] }`;
-  - `parseFmartPage(body: unknown, section: FmartSection, page: number, today: string): FmartPage` (`today` — `YYYY-MM-DD` в Asia/Almaty);
+  - `type FmartRow = { itemId: string; sortPrice: number; product: SourceProduct | null; skip: keyof FmartSkips | null; unknownLeaf: string | null }` (ровно одно из `product`/`skip`; `sortPrice` — обычная цена единицы источника как есть; `unknownLeaf` — имя листа при `skip: 'unknownLeaf'`);
+  - `type FmartPage = { rows: FmartRow[]; total: number; totalPages: number }`;
+  - `parseFmartPage(body: unknown, section: FmartSection, request: { page: number; perPage: number }, today: string): FmartPage` (`today` — `YYYY-MM-DD` в Asia/Almaty);
   - `fmartFreshId(name: string): string`; `FMART_FRESH_UNIT_GRAMS = 500`.
 - `rawPayload`: `{ code: string | null, itemId: string, barcode: string | null, isWeighted: boolean, priceUnit: 'kg' | null, weightSource: 'flag' | 'fresh500' | null, unitGrams: number | null, unitPrice: number, regularPrice: number, promoPrice: number | null, leafId: string, categoryId: string, sectionId: string }`; `categoryId` = `leafId`; `unitPrice` — обычная цена за единицу источника; `regularPrice` и `promoPrice` — в единицах поля `price` (у весовых за кг).
 
@@ -70,7 +72,7 @@
   - название: русское поле важнее общего; пустое русское → общее; код из 12 цифр → `barcode` null, 13-значный с «2» → строка (отсев 20–29 делает словарь);
   - товар без учётного кода вне свежего раздела → ошибка;
   - лист из `excluded` → `skips.excludedLeaf`; лист не из `leaves` и не из `excluded` → `skips.unknownLeaf`, имя в `unknownLeaves`;
-  - страница не своя, нет `total`, тело не той формы → ошибка с id раздела; `nextPage` = `page + 1`, пока страницы есть, иначе `null`; каждый товар проходит `SourceProductSchema`.
+  - страница или размер страницы не свои, нет `total`, тело не той формы, повтор номера товара на странице → ошибка с id раздела; каждый товар проходит `SourceProductSchema`. Порядок пропусков: лист → наличие → единица продажи. `skips.x` в тестах выше — это `row.skip === 'x'`; всякая строка попадает в `rows`.
 - [ ] **Step 2: Failing tests** `env-headers.test.ts`: нет переменной, не JSON, не объект, не строка в значении → ошибки с меткой и именем; объект → он же.
 - [ ] **Step 3:** `pnpm vitest run test/fmart-parse.test.ts test/env-headers.test.ts` → FAIL.
 - [ ] **Step 4:** Реализовать; `gramad/index.ts` вызывает общий разбор, тексты ошибок Gramad прежние (`gramad-module.test.ts` не менять).
@@ -80,7 +82,7 @@
 ### Task 3: Модуль, скоуп, покрытие, регистрация
 
 **Files:**
-- Create: `pipeline/src/scrape/stores/fmart/scope.ts`, `index.ts`, `coverage.ts`, `stats.ts`
+- Create: `pipeline/src/scrape/stores/fmart/scope.ts`, `walk.ts`, `index.ts`, `coverage.ts`, `stats.ts`
 - Modify: `pipeline/src/types.ts` (`STORE_CODES`), `pipeline/src/cli/scrape.ts`, `pipeline/src/cli/dict-seed-categories.ts` (`SCOPES`), `pipeline/src/agent/bundle.ts` (`IMAGE_ORDER`), `pipeline/package.json`, `pipeline/.env.example`, `pipeline/test/scrape-core-boundary.test.ts`, `pipeline/test/dict-cli.test.ts` (если проверяет список сетей)
 - Test: `pipeline/test/fmart-scope.test.ts`, `fmart-module.test.ts`, `fmart-coverage.test.ts`
 
@@ -88,7 +90,8 @@
 - Consumes: `parseFmartPage`, `FmartSection`, `FmartLeaf`, `requestHeadersFromEnv` (задача 2).
 - Produces:
   - `FMART_SECTIONS: readonly FmartSection[]` (порядок = приоритет), `FMART_SCOPE: readonly FmartLeaf[]`;
-  - `type FmartTask = { category: string; page: number }` (`category` = id раздела);
+  - `type FmartTask = { category: string }` (`category` = id раздела; одна задача ядра обходит раздел целиком);
+  - `walkFmartSection(fetchPage: (page: number, perPage: number) => Promise<FmartPage>): Promise<{ rows: FmartRow[]; total: number }>` в `walk.ts` — разные строки по `itemId`. Страницы по 100 по очереди (`totalPages` больше 100 → ошибка); `total` и число строк каждой страницы сверяются; `sortPrice` не убывает по всему проходу; для каждой группы равных `sortPrice`, разрезанной границей страниц, — один запрос окна `(page, perPage)`, `perPage` ≤ 100, целиком накрывающего группу (наибольший подходящий `perPage`; нет такого → ошибка); окно должно иметь тот же `total`, нужное число строк и те же цены, что и проход; одна группа — одно окно, группы внутри уже полученного окна не запрашиваются. Затем разных строк ровно `total`, иначе ошибка; один `itemId` с разными `sortPrice` → ошибка;
   - `createFmartModule(env: Record<string, string | undefined>, now?: () => Date): { module: StoreModule<FmartTask>; runStats(): FmartRunStats }`;
   - `type FmartRunStats = { weightedFlag: number; weightedFresh: number; skippedUnavailable: number; skippedUnitKg: number; skippedFreshPiece: number; skippedExcludedLeaf: number; unknownLeafProducts: number; unknownLeaves: string }` (имена листьев через запятую);
   - `assertFmartCoverage(file: SourceFile): void`; `MIN_BY_SECTION`, `MIN_WEIGHTED_FLAG`, `MIN_FRESH_KG` в `coverage.ts`;
@@ -96,7 +99,7 @@
 
 - [ ] **Step 1: Failing tests:**
   - `fmart-scope.test.ts`: номера разделов и листьев уникальны; слаги — из `DEFAULT_PUBLISH_CATEGORIES`, все двенадцать покрыты; лист не может быть и в `leaves`, и в `excluded`; ровно один раздел `fresh`;
-  - `fmart-module.test.ts` (фейковый `fetchImpl`, `runStore`): все страницы раздела, стоп на последней; `total` уходит в ядро — при нехватке `errorCount > 0`; повтор `itemId` на второй странице → `errorCount > 0`; два товара с одним `sourceProductId` свежего раздела → `errorCount > 0`; пересчёт раздела ядром не считает товары первого прохода повторами (первая страница сбрасывает память раздела) и не удваивает счётчики пропусков; без переменной env — ошибка с `FMART_REQUEST_HEADERS`, `fetch` не вызван; заголовки уходят в каждом запросе; больше 100 страниц раздела → ошибка;
+  - `fmart-module.test.ts` (фейковый `fetchImpl`, `runStore`): все страницы раздела, стоп на последней; `total` уходит в ядро; повтор на границе, закрытый окном → полный раздел без ошибок, пропуски не удвоены; повтор, не закрытый окном (разных меньше `total`) → `errorCount > 0`; группа длиннее страницы, убывающая цена, сменившийся `total`, короткая страница, неверные цены окна → ошибка; пустой раздел (`total` 0) — без ошибки; два товара с одним `sourceProductId` в одном разделе, свежем в том числе → `errorCount > 0`; повторный обход того же раздела не удваивает счётчики; без переменной env — ошибка с `FMART_REQUEST_HEADERS`, `fetch` не вызван; заголовки уходят в каждом запросе; больше 100 страниц раздела → ошибка;
   - `fmart-coverage.test.ts`: пустой файл; нет слага; раздел ниже минимума; `weightedFlag` ниже `MIN_WEIGHTED_FLAG`; `weightedFresh` ниже `MIN_FRESH_KG`; `unknownLeafProducts` больше 10% от `products + unknownLeafProducts` → throw с понятным именем; ровно 10% и полный файл → ok;
   - `scrape-core-boundary.test.ts`: в `BANNED` добавить `fmart`, `f-mart`, `фмарт`, `ф-март`; пример `'F-Mart'` → `['f-mart']`.
 - [ ] **Step 2:** `pnpm vitest run test/fmart-scope.test.ts test/fmart-module.test.ts test/fmart-coverage.test.ts test/scrape-core-boundary.test.ts` → FAIL.
