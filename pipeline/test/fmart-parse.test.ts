@@ -143,6 +143,15 @@ describe('parseFmartPage ordinary goods', () => {
     const notYet = prod(item({ price: 120, on_sale: true, sale_price: 85, date_on_sale_from: '2026-11-23T19:30:00Z' }))
     expect(notYet.price).toBe(120)
   })
+  it('rejects a timestamp without an offset', () => {
+    const sale = (date_on_sale_from: string) => item({ price: 120, on_sale: true, sale_price: 85, date_on_sale_from })
+    for (const bad of ['2026-11-23T10:00:00', '2026-11-23 10:00', '2026-11-23T10:00:00.123']) {
+      expect(() => run([sale(bad)])).toThrow(/unparseable date/)
+    }
+    for (const ok of ['2026-11-23', '2026-11-23T10:00:00Z', '2026-11-23T10:00:00.123+05:00', '2026-11-23T01:00:00-01:00']) {
+      expect(prod(sale(ok)).price).toBe(85)
+    }
+  })
   it('rejects an unparseable date', () => {
     expect(() => run([item({ on_sale: true, sale_price: 5, date_on_sale_to: 'soon' })])).toThrow()
   })
@@ -184,7 +193,8 @@ describe('parseFmartPage leaves, order and page shape', () => {
       item({ id: 3, in_stock: false, sell_by: 'box' }),
     ])
     expect(r.rows.map((x) => x.skip)).toEqual(['excludedLeaf', 'unknownLeaf', 'unavailable'])
-    expect(r.rows[1]!.unknownLeaf).toBe('ЧУЖОЙ')
+    expect(r.rows[1]!.unknownLeaf).toBe('99 ЧУЖОЙ')
+    expect(one(item({ category_id: 99, category_name: ' ' })).unknownLeaf).toBe('99')
     expect(r.rows[1]!.product).toBeNull()
   })
   it('keeps the regular price as the sort key', () => {
@@ -197,7 +207,8 @@ describe('parseFmartPage leaves, order and page shape', () => {
     expect(r.rows.map((x) => [x.sortLow, x.sortHigh])).toEqual([[1895, 1905], [1895, 1905], [1895, 1905]])
   })
   it('rejects a weighted row without a unit even when it is skipped', () => {
-    for (const unit_g of [null, undefined, 0, -5, '250']) {
+    expect(prod(weighted({ unit_g: 10, price: 23, price_per_kg: 2299 })).price).toBe(2299)
+    for (const unit_g of [null, undefined, 0, -5, 9, '250']) {
       expect(() => run([weighted({ id: 9, in_stock: false, unit_g })])).toThrow(/product 9.*unit_g/)
       expect(() => run([weighted({ id: 9, category_id: 12, unit_g })])).toThrow(/product 9.*unit_g/)
       expect(() => run([weighted({ id: 9, category_id: 99, unit_g })])).toThrow(/product 9.*unit_g/)

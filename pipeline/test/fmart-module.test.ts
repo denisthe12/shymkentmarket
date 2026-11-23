@@ -153,7 +153,7 @@ describe('createFmartModule', () => {
     } as unknown as HttpClient
     const expected = {
       weightedFlag: 1, weightedFresh: 1, skippedUnavailable: 1, skippedUnitKg: 1, skippedFreshPiece: 1,
-      skippedExcludedLeaf: 1, unknownLeafProducts: 3, unknownLeaves: 'ДРУГОЙ,НОВЫЙ',
+      skippedExcludedLeaf: 1, unknownLeafProducts: 3, unknownLeaves: '900001 НОВЫЙ,900002 ДРУГОЙ',
     }
     for (let i = 0; i < 2; i++) {
       const r = await module.handle({ category: FRESH.id }, undefined, http)
@@ -176,6 +176,32 @@ describe('createFmartModule', () => {
   it('rejects an unknown task category', async () => {
     const http = { json: async () => bodyOf([], 1, 100) } as unknown as HttpClient
     await expect(createFmartModule(ENV).module.handle({ category: '1' }, undefined, http)).rejects.toThrow(/FMART_SECTIONS/)
+  })
+
+  it('accepts a two-page section where a weighted item stands by its price per kg', async () => {
+    // 253 per 250 g is 1012 per kg: after 1000 and before 1020
+    const list = many(150, id => (id === 101
+      ? { price: 253, sell_by: 'weight', unit_g: 250, on_sale: true, sale_price: 200, price_per_kg: 800 }
+      : { price: id * 10 }))
+    const { run, of, runStats } = setup({ [FIRST.id]: () => list })
+    const file = await run()
+    expect(file.errorCount).toBe(0)
+    expect(file.products).toHaveLength(150)
+    expect(file.products.find(p => p.sourceProductId === 'fmart_ext-101')!.price).toBe(800)
+    expect(of(FIRST.id)).toEqual(['1/100', '2/100'])
+    expect(runStats().weightedFlag).toBe(1)
+  })
+
+  it('counts a window row whose price interval does not overlap as an error', async () => {
+    const list = many(150, id => (id === 100 || id === 101
+      ? { price: 253, sell_by: 'weight', unit_g: 250, price_per_kg: 1012 }
+      : { price: id * 10 }))
+    const good = setup({ [FIRST.id]: () => list })
+    expect((await good.run()).errorCount).toBe(0)
+    expect(good.of(FIRST.id)).toEqual(['1/100', '2/100', '2/99'])
+    const bad = setup({ [FIRST.id]: per => (per === 100 ? list : list.map((x, i) => (i === 100 ? item(900, { price: 1500 }) : x))) })
+    expect((await bad.run()).errorCount).toBeGreaterThan(0)
+    expect(bad.logs.join(' ')).toMatch(/price 1500.* at position 100/)
   })
 
   it.each<[string, RegExp, (b: Body) => unknown]>([

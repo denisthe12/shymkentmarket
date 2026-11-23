@@ -23,6 +23,8 @@ export type FmartPage = { rows: FmartRow[]; total: number; totalPages: number }
 
 /** Fresh produce sold by "piece" with unit "kg" is priced for this many grams. */
 export const FMART_FRESH_UNIT_GRAMS = 500
+/** A smaller unit is bad data: its rounding interval would be too wide to check anything. */
+const MIN_UNIT_GRAMS = 10
 const FRESH_VENDOR_ID = 1
 
 const PageSchema = z.looseObject({
@@ -63,6 +65,8 @@ type Item = z.infer<typeof ItemSchema>
 
 const THIRTEEN_DIGITS = /^\d{13}$/
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+// A timestamp without an offset would depend on the machine's time zone.
+const OFFSET_TIMESTAMP = /\d:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/
 const DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit' })
 
 /** How far a per-kg price may stand from the rounded unit price. */
@@ -91,7 +95,7 @@ function almatyDate(value: string | null | undefined): string | null {
   if (!text) return null
   if (DATE_ONLY.test(text)) return text
   const time = Date.parse(text)
-  if (Number.isNaN(time)) throw new Error(`unparseable date ${JSON.stringify(text)}`)
+  if (Number.isNaN(time) || !OFFSET_TIMESTAMP.test(text)) throw new Error(`unparseable date ${JSON.stringify(text)}`)
   return almatyDay(new Date(time))
 }
 
@@ -137,7 +141,7 @@ function mapItem(item: Item, section: FmartSection, leaf: FmartLeaf, today: stri
   if (sellBy === 'weight') {
     const unit = item.unit_g
     const perKg = item.price_per_kg
-    if (typeof unit !== 'number' || !(unit > 0)) throw new Error(`bad unit_g ${String(unit)}`)
+    if (typeof unit !== 'number' || !(unit >= MIN_UNIT_GRAMS)) throw new Error(`bad unit_g ${String(unit)}`)
     if (typeof perKg !== 'number' || !(perKg > 0)) throw new Error(`bad price_per_kg ${String(perKg)}`)
     const tolerance = weightSlack(unit)
     const near = (unitPrice: number): boolean => Math.abs((unitPrice * 1000) / unit - perKg) <= tolerance
@@ -195,7 +199,7 @@ function mapItem(item: Item, section: FmartSection, leaf: FmartLeaf, today: stri
 function sortKey(raw: Record<string, unknown>, price: number): { sortLow: number; sortHigh: number } | null {
   if (raw.sell_by !== 'weight') return { sortLow: price, sortHigh: price }
   const unit = raw.unit_g
-  if (typeof unit !== 'number' || !(unit > 0)) return null
+  if (typeof unit !== 'number' || !(unit >= MIN_UNIT_GRAMS)) return null
   const perKg = (price * 1000) / unit
   const slack = weightSlack(unit)
   return { sortLow: perKg - slack, sortHigh: perKg + slack }
@@ -243,7 +247,7 @@ export function parseFmartPage(
     const leaf = section.leaves.get(leafId)
     if (!leaf) {
       const name = (raw as { category_name?: unknown }).category_name
-      rows.push(skipRow('unknownLeaf', typeof name === 'string' && name.trim() !== '' ? name.trim() : leafId))
+      rows.push(skipRow('unknownLeaf', typeof name === 'string' && name.trim() !== '' ? `${leafId} ${name.trim()}` : leafId))
       continue
     }
     if (!base.data.in_stock || !base.data.sellable) {

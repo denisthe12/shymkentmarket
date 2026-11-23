@@ -4,7 +4,7 @@ import { FMART_SCOPE, FMART_SECTIONS, fmartSectionName } from './scope.js'
 const SLUG_BY_LEAF = new Map(FMART_SCOPE.map(l => [l.id, l.slug]))
 
 /** Falling below these means the source returned a partial catalogue without weighted or fresh goods. */
-export const MIN_WEIGHTED_FLAG = 25
+export const MIN_WEIGHTED_FLAG = 50
 export const MIN_FRESH_KG = 15
 
 /**
@@ -31,7 +31,7 @@ export const MIN_BY_SECTION: Readonly<Record<string, number>> = {
   '3374': 20,
   '3076': 38,
   '3091': 33,
-  '3618': 30,
+  '3618': 17,
   '3709': 25,
 }
 

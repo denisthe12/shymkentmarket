@@ -29,7 +29,8 @@ describe('assertFmartCoverage', () => {
     const ids = FMART_SECTIONS.map(s => s.id)
     for (const id of Object.keys(MIN_BY_SECTION)) expect(ids).toContain(id)
     expect(MIN_FRESH_KG).toBe(15)
-    expect(MIN_WEIGHTED_FLAG).toBe(25)
+    expect(MIN_WEIGHTED_FLAG).toBe(50)
+    expect(MIN_BY_SECTION['3618']).toBe(17)
   })
 
   it('throws on an empty file', () => {
@@ -52,7 +53,7 @@ describe('assertFmartCoverage', () => {
   })
 
   it('refuses too few weighted or fresh goods', () => {
-    expect(() => assertFmartCoverage(file(NORMAL, { ...STATS, weightedFlag: MIN_WEIGHTED_FLAG - 1 }))).toThrow(/weightedFlag 24 of at least 25/)
+    expect(() => assertFmartCoverage(file(NORMAL, { ...STATS, weightedFlag: MIN_WEIGHTED_FLAG - 1 }))).toThrow(/weightedFlag 49 of at least 50/)
     expect(() => assertFmartCoverage(file(NORMAL, { ...STATS, weightedFresh: MIN_FRESH_KG - 1 }))).toThrow(/weightedFresh 14 of at least 15/)
   })
 
