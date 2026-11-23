@@ -1,0 +1,11 @@
+{
+  "items": [
+    { "id": 9001, "name": "Тестовая крупа 400г", "name_ru": "Тестовая крупа 400г", "sku": "4870000000017", "external_id": "ext-9001", "price": 655, "in_stock": true, "sellable": true, "category_id": 11, "category_name": "КРУПЫ", "on_sale": true, "sale_price": 535, "date_on_sale_from": "2026-11-16", "date_on_sale_to": "2026-11-30", "sell_by": "piece", "uom": "шт", "vendor_id": null, "image_url": "https://img.example.test/9001.jpg" },
+    { "id": 9002, "name": "Тестовый сыр весовой", "name_ru": null, "sku": "2400000000001", "external_id": "ext-9002", "price": 879, "in_stock": true, "sellable": true, "category_id": 11, "category_name": "КРУПЫ", "on_sale": false, "sale_price": null, "date_on_sale_from": null, "date_on_sale_to": null, "sell_by": "weight", "unit_g": 100, "price_per_kg": 8790, "uom": "кг", "vendor_id": null },
+    { "id": 9003, "name": "Нет в наличии", "sku": "1", "external_id": "ext-9003", "price": 100, "in_stock": false, "sellable": true, "category_id": 11, "sell_by": "piece", "uom": "шт" }
+  ],
+  "total": 3,
+  "page": 1,
+  "per_page": 100,
+  "total_pages": 1
+}
